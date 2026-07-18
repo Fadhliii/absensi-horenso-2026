@@ -89,13 +89,13 @@ export default function BukaSesiPage() {
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <Link href="/admin/dashboard" className="text-gray-500 hover:text-gray-700">
+            <Link href="/admin/dashboard" className="text-black hover:text-black">
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <h1 className="text-xl font-bold text-gray-900">Buka Sesi Absensi</h1>
+            <h1 className="text-xl font-bold text-black">Buka Sesi Absensi</h1>
           </div>
           <form action={logoutAction}>
-            <button className="flex items-center text-gray-600 hover:text-red-600 text-sm font-medium transition-colors">
+            <button className="flex items-center text-black hover:text-red-600 text-sm font-medium transition-colors">
               <LogOut className="w-4 h-4 mr-1" /> Logout
             </button>
           </form>
@@ -105,8 +105,8 @@ export default function BukaSesiPage() {
       <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         <div className="bg-white shadow rounded-lg p-6 sm:p-8">
           <div className="mb-6">
-            <h2 className="text-lg font-medium text-gray-900">Pengaturan Sesi Baru</h2>
-            <p className="text-sm text-gray-500 mt-1">Siswa hanya bisa absen jika berada di dalam radius toleransi dari lokasi Anda saat ini.</p>
+            <h2 className="text-lg font-medium text-black">Pengaturan Sesi Baru</h2>
+            <p className="text-sm text-black mt-1">Siswa hanya bisa absen jika berada di dalam radius toleransi dari lokasi Anda saat ini.</p>
           </div>
 
           {submitError && (
@@ -118,7 +118,7 @@ export default function BukaSesiPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Radius */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Radius Toleransi (Meter)</label>
+              <label className="block text-sm font-semibold text-black mb-1">Radius Toleransi (Meter)</label>
               <input 
                 type="number" 
                 name="radius" 
@@ -126,17 +126,17 @@ export default function BukaSesiPage() {
                 onChange={(e) => setRadius(Number(e.target.value) || 10)}
                 min="10" 
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-blue-50/50 font-medium text-lg text-blue-900"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-black bg-blue-50/50 font-medium text-lg text-blue-900"
               />
-              <p className="text-xs text-gray-500 mt-1">Lingkaran pada peta akan membesar/mengecil sesuai radius ini.</p>
+              <p className="text-xs text-black mt-1">Lingkaran pada peta akan membesar/mengecil sesuai radius ini.</p>
             </div>
 
             {/* Lokasi GPS + Map */}
             <div className="border border-gray-200 rounded-xl bg-gray-50 overflow-hidden shadow-sm">
               <div className="p-4 bg-white border-b border-gray-200 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700">Titik Pusat Absensi</label>
-                  <p className="text-xs text-gray-500 mt-0.5">Geser pin di peta untuk menyesuaikan lokasi presisi.</p>
+                  <label className="block text-sm font-semibold text-black">Titik Pusat Absensi</label>
+                  <p className="text-xs text-black mt-0.5">Geser pin di peta untuk menyesuaikan lokasi presisi.</p>
                 </div>
                 <button 
                   type="button" 
@@ -164,7 +164,7 @@ export default function BukaSesiPage() {
               </div>
 
               {/* Readonly info lat/lng for debugging/transparency */}
-              <div className="px-4 py-3 bg-gray-100 border-t border-gray-200 flex justify-between text-xs text-gray-600">
+              <div className="px-4 py-3 bg-gray-100 border-t border-gray-200 flex justify-between text-xs text-black">
                 <span>Lat: {lat === '' ? '-' : (lat as number).toFixed(6)}</span>
                 <span>Lng: {lng === '' ? '-' : (lng as number).toFixed(6)}</span>
               </div>
@@ -172,11 +172,11 @@ export default function BukaSesiPage() {
 
             {/* Interval Refresh QR */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Interval Refresh QR Code</label>
+              <label className="block text-sm font-medium text-black mb-1">Interval Refresh QR Code</label>
               <select 
                 value={intervalType}
                 onChange={(e) => setIntervalType(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all mb-2"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-black mb-2"
               >
                 <option value="3">3 Detik (Paling Aman, Realtime)</option>
                 <option value="5">5 Detik (Disarankan)</option>
@@ -192,7 +192,7 @@ export default function BukaSesiPage() {
                   placeholder="Masukkan angka dalam detik (misal: 15)"
                   min="2"
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-black"
                 />
               )}
             </div>
