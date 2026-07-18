@@ -114,8 +114,8 @@ export async function submitAbsensiAction(qrToken: string, studentLat: number, s
           sesi_id: sessionId,
           siswa_id: userId,
           status: finalStatus,
-          lokasi_lat: studentLat,
-          lokasi_lng: studentLng,
+          lat_siswa: studentLat,
+          lng_siswa: studentLng,
           jarak_meter: Math.round(distance),
           waktu_scan: new Date().toISOString()
         },
