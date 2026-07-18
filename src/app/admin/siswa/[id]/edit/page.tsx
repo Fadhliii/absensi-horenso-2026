@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSiswaByIdAction, updateSiswaProfileAction } from '@/app/actions/master';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Eye, EyeOff } from 'lucide-react';
 import React from 'react';
 import Link from 'next/link';
 
@@ -11,7 +11,8 @@ export default function EditSiswaPage({ params }: { params: Promise<{ id: string
   const router = useRouter();
   const { id } = React.use(params);
   
-  const [data, setData] = useState({ name: '', email: '', phone: '' });
+  const [data, setData] = useState({ name: '', email: '', phone: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -26,7 +27,8 @@ export default function EditSiswaPage({ params }: { params: Promise<{ id: string
           setData({
             name: res.data.name || '',
             email: res.data.email || '',
-            phone: res.data.phone || ''
+            phone: res.data.phone || '',
+            password: ''
           });
         }
       } catch (err: any) {
@@ -130,6 +132,33 @@ export default function EditSiswaPage({ params }: { params: Promise<{ id: string
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                   placeholder="08123456789"
                 />
+              </div>
+
+              <div className="pt-2 border-t mt-6">
+                <h3 className="text-md font-semibold text-gray-900 mb-4 mt-4">Keamanan</h3>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Password Baru (Opsional)
+                </label>
+                <div className="relative">
+                  <input 
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={data.password}
+                    onChange={(e) => setData({ ...data, password: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 pr-10 font-mono"
+                    placeholder="Kosongkan jika tidak ingin diubah"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Jika diisi, siswa akan dipaksa mengganti password tersebut saat login berikutnya.
+                </p>
               </div>
 
               <div className="pt-4 flex justify-end gap-3 border-t mt-6">

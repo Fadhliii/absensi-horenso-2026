@@ -2,6 +2,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
+import { hashPassword } from '@/lib/auth';
 
 // ================= PERUSAHAAN ACTIONS ================= //
 
@@ -197,10 +198,20 @@ export async function updateSiswaProfileAction(id: string, formData: FormData) {
   const name = formData.get('name') as string;
   const email = formData.get('email') as string;
   const phone = formData.get('phone') as string;
+  const password = formData.get('password') as string;
 
   if (!name || !email) return { error: 'Nama dan Email wajib diisi.' };
 
-  const { error } = await supabase.from('users').update({ name, email, phone }).eq('id', id);
+  const updateData: any = { name, email, phone };
+  
+  if (password) {
+    if (password.length < 6) return { error: 'Password minimal 6 karakter.' };
+    const passwordHash = await hashPassword(password);
+    updateData.password_hash = passwordHash;
+    updateData.force_change_password = true; // Paksa siswa untuk ganti password saat login
+  }
+
+  const { error } = await supabase.from('users').update(updateData).eq('id', id);
   if (error) {
     if (error.code === '23505') return { error: 'Email sudah digunakan oleh akun lain.' };
     return { error: error.message };
