@@ -118,21 +118,23 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
     if (error) return { error: error.message };
     
     // Map kembali bentuknya agar sama
-    const mappedData = data?.map(d => {
+    const mappedData = (data || []).map(d => {
+      if (!d) return null;
       const user = Array.isArray(d.users) ? d.users[0] : (d.users as any);
+      const perusahaanObj = Array.isArray(d.perusahaan) ? d.perusahaan[0] : (d.perusahaan as any);
       return {
         id: user?.id || '',
-        name: user?.name || '',
+        name: user?.name || 'Siswa',
         email: user?.email || '',
         phone: user?.phone || '',
         siswa: {
-          id: d.id,
-          status_penempatan: d.status_penempatan,
-          perusahaan_id: d.perusahaan_id,
-          perusahaan: d.perusahaan
+          id: d.id || '',
+          status_penempatan: d.status_penempatan || 'belum',
+          perusahaan_id: d.perusahaan_id || null,
+          perusahaan: perusahaanObj ? { nama: perusahaanObj.nama || '' } : null
         }
       };
-    });
+    }).filter((item): item is NonNullable<typeof item> => item !== null);
 
     return { data: mappedData, total: count || 0, limit };
   }
@@ -144,22 +146,23 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
 
   if (error) return { error: error.message };
 
-  const mappedData = data?.map(d => {
-    // Ambil item pertama dari array siswa jika terdeteksi array
-    const siswaObj = Array.isArray(d.siswa) ? d.siswa[0] : d.siswa;
+  const mappedData = (data || []).map(d => {
+    if (!d) return null;
+    const siswaObj = Array.isArray(d.siswa) ? d.siswa[0] : (d.siswa as any);
+    const perusahaanObj = siswaObj?.perusahaan ? (Array.isArray(siswaObj.perusahaan) ? siswaObj.perusahaan[0] : siswaObj.perusahaan) : null;
     return {
-      id: d.id,
-      name: d.name,
-      email: d.email,
-      phone: d.phone,
+      id: d.id || '',
+      name: d.name || 'Siswa',
+      email: d.email || '',
+      phone: d.phone || '',
       siswa: siswaObj ? {
-        id: siswaObj.id,
-        status_penempatan: siswaObj.status_penempatan,
-        perusahaan_id: siswaObj.perusahaan_id,
-        perusahaan: siswaObj.perusahaan
+        id: siswaObj.id || '',
+        status_penempatan: siswaObj.status_penempatan || 'belum',
+        perusahaan_id: siswaObj.perusahaan_id || null,
+        perusahaan: perusahaanObj ? { nama: perusahaanObj.nama || '' } : null
       } : null
     };
-  });
+  }).filter((item): item is NonNullable<typeof item> => item !== null);
 
   return { data: mappedData, total: count || 0, limit };
 }

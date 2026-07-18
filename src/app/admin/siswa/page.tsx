@@ -22,6 +22,7 @@ type SiswaData = {
 export default function SiswaPage() {
   const [data, setData] = useState<SiswaData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pageError, setPageError] = useState('');
   
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -34,18 +35,30 @@ export default function SiswaPage() {
   const [resetModal, setResetModal] = useState<{ isOpen: boolean; studentName: string; newPassword?: string; error?: string }>({ isOpen: false, studentName: '' });
 
   const fetchPerusahaan = useCallback(async () => {
-    const res = await getAllPerusahaanAction();
-    if (res.data) setPerusahaanList(res.data);
+    try {
+      const res = await getAllPerusahaanAction();
+      if (res?.data) setPerusahaanList(res.data);
+    } catch (err: any) {
+      console.error('Gagal mengambil data perusahaan:', err);
+    }
   }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const result = await getSiswaApprovedAction(page, search, statusFilter);
-    if (result.data) {
-      setData(result.data as any);
-      setTotal(result.total || 0);
+    setPageError('');
+    try {
+      const result = await getSiswaApprovedAction(page, search, statusFilter);
+      if (result?.data) {
+        setData(result.data as any);
+        setTotal(result.total || 0);
+      } else if (result?.error) {
+        setPageError(result.error);
+      }
+    } catch (err: any) {
+      setPageError(err.message || 'Terjadi kesalahan saat memuat data siswa.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [page, search, statusFilter]);
 
   useEffect(() => {
@@ -111,6 +124,12 @@ export default function SiswaPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {pageError && (
+          <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6 text-sm font-medium border border-red-200">
+            {pageError}
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6">
           <div className="relative flex-1 max-w-md">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
