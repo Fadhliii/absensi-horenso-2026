@@ -30,7 +30,7 @@ function LoginForm() {
       <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-gray-900">Login Absensi LPK</h2>
-          <p className="text-gray-500 mt-2">Masuk ke akun Anda</p>
+          <p className="text-gray-900 mt-2">Masuk ke akun Anda</p>
         </div>
 
         {(error || pendingError) && (
@@ -83,7 +83,7 @@ export default function LoginPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <span className="animate-pulse text-gray-500">Memuat halaman...</span>
+        <span className="animate-pulse text-gray-900">Memuat halaman...</span>
       </div>
     }>
       <LoginForm />

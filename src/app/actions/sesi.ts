@@ -49,8 +49,8 @@ export async function mulaiSesiAction(formData: FormData) {
 
   if (error) return { error: error.message };
 
-  // Redirect ke halaman QR Live
-  redirect(`/admin/sesi/${data.id}`);
+  // Kembalikan ID untuk di-redirect oleh client
+  return { success: true, sessionId: data.id };
 }
 
 export async function selesaiSesiAction(sessionId: string) {
@@ -67,7 +67,7 @@ export async function selesaiSesiAction(sessionId: string) {
 
   if (error) return { error: error.message };
 
-  redirect('/admin/dashboard'); // Kembali ke dashboard setelah selesai
+  return { success: true };
 }
 
 export async function getDetailSesiAction(sessionId: string) {

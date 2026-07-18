@@ -123,8 +123,13 @@ export default function ActiveSessionPage({ params }: { params: { id: string } }
     // Bersihkan semua timer
     if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
     if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+    const result = await selesaiSesiAction(sessionId);
     
-    await selesaiSesiAction(sessionId);
+    if (result?.error) {
+      setError(result.error);
+    } else {
+      router.push('/admin/dashboard');
+    }
   }
 
   if (loading) {

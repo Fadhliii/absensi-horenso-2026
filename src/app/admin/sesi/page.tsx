@@ -6,6 +6,7 @@ import { logoutAction } from '@/app/actions/auth';
 import { MapPin, LogOut, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 
 const MapPicker = dynamic(() => import('@/components/MapPicker'), { 
   ssr: false, 
@@ -18,6 +19,7 @@ const MapPicker = dynamic(() => import('@/components/MapPicker'), {
 });
 
 export default function BukaSesiPage() {
+  const router = useRouter();
   const [lat, setLat] = useState<number | ''>('');
   const [lng, setLng] = useState<number | ''>('');
   const [locLoading, setLocLoading] = useState(false);
@@ -76,8 +78,10 @@ export default function BukaSesiPage() {
     if (result?.error) {
       setSubmitError(result.error);
       setSubmitLoading(false);
+    } else if (result?.success && result.sessionId) {
+      // Jika sukses, redirect ke halaman QR Live menggunakan router client
+      router.push(`/admin/sesi/${result.sessionId}`);
     }
-    // Jika sukses, mulaiSesiAction akan me-redirect halaman ke /admin/sesi/[id]
   }
 
   return (

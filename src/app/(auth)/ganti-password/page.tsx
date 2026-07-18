@@ -30,7 +30,7 @@ export default function GantiPasswordPage() {
             🔒
           </div>
           <h2 className="text-2xl font-bold text-gray-900">Ganti Password Wajib</h2>
-          <p className="text-gray-500 mt-2 text-sm">
+          <p className="text-gray-900 mt-2 text-sm">
             Password Anda telah di-reset oleh admin. Untuk keamanan, Anda diwajibkan untuk mengganti password sekarang sebelum bisa mengakses dashboard.
           </p>
         </div>
@@ -78,7 +78,7 @@ export default function GantiPasswordPage() {
         <form action={logoutAction} className="mt-4">
           <button 
             type="submit"
-            className="w-full text-gray-500 hover:text-gray-800 text-sm py-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="w-full text-gray-900 hover:text-gray-800 text-sm py-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             Batal dan Keluar
           </button>
