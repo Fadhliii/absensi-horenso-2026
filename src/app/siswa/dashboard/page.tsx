@@ -60,23 +60,23 @@ export default function SiswaDashboardPage() {
         {/* Profile & Placement Badge */}
         {data && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
-            <h2 className="text-gray-500 text-sm font-medium">Selamat datang,</h2>
+            <h2 className="text-gray-800 text-sm font-semibold">Selamat datang,</h2>
             <p className="text-2xl font-bold text-gray-900 mb-4">{data.profile.name}</p>
             
             {data.profile.statusPenempatan === 'sudah' ? (
               <div className="flex items-start bg-green-50 border border-green-200 rounded-xl p-3">
-                <Building2 className="w-5 h-5 text-green-600 mr-3 mt-0.5" />
+                <Building2 className="w-5 h-5 text-green-700 mr-3 mt-0.5" />
                 <div>
-                  <p className="text-xs text-green-600 font-semibold uppercase tracking-wider">Status Penempatan</p>
-                  <p className="text-sm font-medium text-green-900 mt-0.5">Sudah ditempatkan di <span className="font-bold">{data.profile.namaPerusahaan}</span></p>
+                  <p className="text-xs text-green-800 font-bold uppercase tracking-wider">Status Penempatan</p>
+                  <p className="text-sm font-semibold text-green-950 mt-0.5">Sudah ditempatkan di <span className="font-bold">{data.profile.namaPerusahaan}</span></p>
                 </div>
               </div>
             ) : (
               <div className="flex items-start bg-yellow-50 border border-yellow-200 rounded-xl p-3">
-                <AlertCircle className="w-5 h-5 text-yellow-600 mr-3 mt-0.5" />
+                <AlertCircle className="w-5 h-5 text-yellow-700 mr-3 mt-0.5" />
                 <div>
-                  <p className="text-xs text-yellow-600 font-semibold uppercase tracking-wider">Status Penempatan</p>
-                  <p className="text-sm font-medium text-yellow-900 mt-0.5">Belum ditempatkan di Perusahaan Mitra.</p>
+                  <p className="text-xs text-yellow-800 font-bold uppercase tracking-wider">Status Penempatan</p>
+                  <p className="text-sm font-semibold text-yellow-950 mt-0.5">Belum ditempatkan di Perusahaan Mitra.</p>
                 </div>
               </div>
             )}
@@ -97,7 +97,7 @@ export default function SiswaDashboardPage() {
         {/* Attendance History Section */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-            <h3 className="font-bold text-gray-800 flex items-center">
+            <h3 className="font-bold text-gray-900 flex items-center">
               <Calendar className="w-5 h-5 mr-2 text-blue-600" />
               Riwayat Absensi
             </h3>
@@ -106,21 +106,21 @@ export default function SiswaDashboardPage() {
               type="month" 
               value={monthFilter}
               onChange={(e) => setMonthFilter(e.target.value)}
-              className="text-sm border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white py-1.5 px-3"
+              className="text-sm border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white py-1.5 px-3 text-gray-900 font-semibold"
             />
           </div>
 
           <div className="p-0">
             {loading ? (
-              <div className="p-8 text-center text-gray-500">Memuat riwayat...</div>
+              <div className="p-8 text-center text-gray-800 font-medium">Memuat riwayat...</div>
             ) : error ? (
-              <div className="p-8 text-center text-red-500">{error}</div>
+              <div className="p-8 text-center text-red-600 font-semibold">{error}</div>
             ) : data?.riwayat?.length === 0 ? (
               <div className="p-10 text-center flex flex-col items-center">
-                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-3">
-                  <Calendar className="w-8 h-8 text-gray-300" />
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                  <Calendar className="w-8 h-8 text-gray-500" />
                 </div>
-                <p className="text-gray-500">Belum ada riwayat absensi pada bulan ini.</p>
+                <p className="text-gray-800 font-medium">Belum ada riwayat absensi pada bulan ini.</p>
               </div>
             ) : (
               <ul className="divide-y divide-gray-100">
@@ -129,8 +129,8 @@ export default function SiswaDashboardPage() {
                     <div className="flex justify-between items-start">
                       <div>
                         <p className="text-sm font-bold text-gray-900 mb-1">{formatDate(absen.waktu_scan)}</p>
-                        <div className="flex items-center text-xs text-gray-500 space-x-3">
-                          <span className="flex items-center"><Clock className="w-3.5 h-3.5 mr-1" /> {formatTime(absen.waktu_scan)}</span>
+                        <div className="flex items-center text-xs text-gray-800 font-medium space-x-3">
+                          <span className="flex items-center"><Clock className="w-3.5 h-3.5 mr-1 text-gray-700" /> {formatTime(absen.waktu_scan)}</span>
                         </div>
                       </div>
                       

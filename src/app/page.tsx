@@ -14,7 +14,7 @@ export default function Home() {
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-700 mb-6 tracking-tight leading-tight">
           Absensi Horenso
         </h1>
-        <p className="text-lg md:text-xl text-slate-600 mb-10 leading-relaxed max-w-xl mx-auto font-medium">
+        <p className="text-lg md:text-xl text-slate-900 mb-10 leading-relaxed max-w-xl mx-auto font-medium">
           Platform absensi digital modern yang cepat, akurat, dan transparan. Terintegrasi dengan QR Code Dinamis dan validasi Geolocation.
         </p>
         <div className="flex justify-center">
@@ -32,7 +32,7 @@ export default function Home() {
           </Link>
         </div>
       </div>
-      <div className="mt-12 text-sm text-slate-500 font-medium">
+      <div className="mt-12 text-sm text-slate-900 font-semibold">
         &copy; {new Date().getFullYear()} Horenso. All rights reserved.
       </div>
     </div>

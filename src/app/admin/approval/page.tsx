@@ -81,9 +81,9 @@ export default function AdminApprovalPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-10 text-gray-500">Memuat data...</div>
+          <div className="text-center py-10 text-gray-800 font-medium">Memuat data...</div>
         ) : students.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-10 text-center text-gray-500">
+          <div className="bg-white rounded-lg shadow p-10 text-center text-gray-800 font-medium">
             Tidak ada siswa yang menunggu persetujuan saat ini.
           </div>
         ) : (
@@ -93,11 +93,11 @@ export default function AdminApprovalPage() {
                 <li key={student.id} className="p-4 sm:px-6 hover:bg-gray-50 transition-colors">
                   <div className="flex items-center justify-between flex-wrap gap-4">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-blue-600 truncate">{student.name}</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm font-bold text-blue-700 truncate">{student.name}</p>
+                      <p className="text-sm text-gray-800 font-medium">
                         {student.email} • {student.phone || '-'}
                       </p>
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="text-xs text-gray-700 mt-1 font-medium">
                         Terdaftar: {new Date(student.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                       </p>
                     </div>
@@ -105,10 +105,10 @@ export default function AdminApprovalPage() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleResetPassword(student.id, student.name)}
-                        className="inline-flex items-center p-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                        className="inline-flex items-center p-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-800 bg-white hover:bg-gray-50"
                         title="Reset Password"
                       >
-                        <Key className="w-4 h-4 text-gray-500" />
+                        <Key className="w-4 h-4 text-gray-800" />
                       </button>
                       <button
                         onClick={() => handleReject(student.id)}
@@ -149,10 +149,10 @@ export default function AdminApprovalPage() {
                     </h3>
                     <div className="mt-2">
                       {resetModal.error ? (
-                        <p className="text-sm text-red-500">{resetModal.error}</p>
+                        <p className="text-sm text-red-600 font-semibold">{resetModal.error}</p>
                       ) : (
                         <>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-gray-800">
                             Password sementara untuk <strong>{resetModal.studentName}</strong> adalah:
                           </p>
                           <div className="mt-3 p-4 bg-gray-100 rounded-md border border-gray-200 text-center">

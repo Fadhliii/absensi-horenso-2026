@@ -153,7 +153,7 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ id: st
       <div className="bg-gray-800 text-white p-4 shadow-md flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold tracking-wide">Sesi Absensi Aktif</h1>
-          <p className="text-gray-400 text-xs mt-1 flex items-center">
+          <p className="text-gray-200 text-xs mt-1 flex items-center font-medium">
             <MapPin className="w-3 h-3 mr-1" />
             Radius {sessionData.radius_meter}m • Refresh tiap {sessionData.interval_qr_detik} detik
           </p>
@@ -173,7 +173,7 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ id: st
         <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center w-full max-w-md transform transition-all">
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Scan untuk Absen</h2>
-            <p className="text-gray-500 mt-1">Gunakan aplikasi siswa untuk scan kode ini</p>
+            <p className="text-gray-900 font-semibold mt-1">Gunakan aplikasi siswa untuk scan kode ini</p>
           </div>
 
           <div className="relative p-4 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
@@ -203,21 +203,21 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ id: st
 
           {/* Countdown Text */}
           <div className="mt-8 flex items-center justify-center space-x-2">
-            <span className="text-gray-600">Berubah dalam:</span>
+            <span className="text-gray-900 font-bold">Berubah dalam:</span>
             <span className={`text-2xl font-black tabular-nums ${countdown <= 3 ? 'text-red-600 animate-pulse' : 'text-blue-600'}`}>
               {countdown}
             </span>
-            <span className="text-gray-600">detik</span>
+            <span className="text-gray-900 font-bold">detik</span>
           </div>
         </div>
 
         {/* Live Counter (Bottom Panel) */}
         <div className="mt-12 bg-gray-800 rounded-full px-6 py-3 flex items-center shadow-lg border border-gray-700">
           <div className="bg-green-500 w-2.5 h-2.5 rounded-full animate-pulse mr-3"></div>
-          <Users className="w-5 h-5 text-gray-300 mr-2" />
-          <span className="text-gray-300 mr-2">Total Kehadiran:</span>
+          <Users className="w-5 h-5 text-gray-100 mr-2" />
+          <span className="text-gray-100 font-semibold mr-2">Total Kehadiran:</span>
           <span className="text-white font-bold text-xl">{hadirCount}</span>
-          <span className="text-gray-400 ml-1">Siswa</span>
+          <span className="text-gray-200 font-semibold ml-1">Siswa</span>
         </div>
 
       </div>

@@ -83,7 +83,7 @@ export default function AdminDashboardPage() {
                   <Users className="w-7 h-7 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">Total Siswa Aktif</p>
+                  <p className="text-sm font-semibold text-gray-800 mb-1">Total Siswa Aktif</p>
                   <p className="text-3xl font-bold text-gray-900">{data.stats.totalSiswa}</p>
                 </div>
               </div>
@@ -93,7 +93,7 @@ export default function AdminDashboardPage() {
                   <UserCheck className="w-7 h-7 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">Hadir Hari Ini</p>
+                  <p className="text-sm font-semibold text-gray-800 mb-1">Hadir Hari Ini</p>
                   <p className="text-3xl font-bold text-gray-900">{data.stats.hadirHariIni}</p>
                 </div>
               </div>
@@ -103,7 +103,7 @@ export default function AdminDashboardPage() {
                   <UserPlus className="w-7 h-7 text-yellow-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">Pending Approval</p>
+                  <p className="text-sm font-semibold text-gray-800 mb-1">Pending Approval</p>
                   <p className="text-3xl font-bold text-gray-900">{data.stats.pendingApproval}</p>
                 </div>
                 {data.stats.pendingApproval > 0 && (
@@ -120,14 +120,14 @@ export default function AdminDashboardPage() {
               
               {/* Grafik Mingguan */}
               <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <h3 className="text-lg font-bold text-gray-800 mb-6">Grafik Kehadiran (7 Hari Terakhir)</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-6">Grafik Kehadiran (7 Hari Terakhir)</h3>
                 <DashboardChart data={data.chartData} />
               </div>
 
               {/* Log Audit Terakhir */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col h-full">
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-bold text-gray-800">Log Pemindaian</h3>
+                  <h3 className="text-lg font-bold text-gray-900">Log Pemindaian</h3>
                   <Link href="/admin/laporan" className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center bg-blue-50 px-2 py-1 rounded">
                     Eksport <ExternalLink className="w-3 h-3 ml-1" />
                   </Link>
@@ -135,35 +135,35 @@ export default function AdminDashboardPage() {
 
                 <div className="flex-1 overflow-y-auto pr-2">
                   {data.logAbsensi.length === 0 ? (
-                    <p className="text-gray-500 text-sm text-center mt-10">Belum ada aktivitas.</p>
+                    <p className="text-gray-800 text-sm text-center mt-10 font-medium">Belum ada aktivitas.</p>
                   ) : (
                     <ul className="space-y-4">
                       {data.logAbsensi.map((log: any) => (
-                        <li key={log.id} className="border-b border-gray-50 pb-3 last:border-0 last:pb-0">
+                        <li key={log.id} className="border-b border-gray-100 pb-3 last:border-0 last:pb-0">
                           <div className="flex justify-between items-start">
                             <div>
-                              <p className="text-sm font-semibold text-gray-900">{log.users?.name}</p>
-                              <p className="text-xs text-gray-500">{formatDate(log.waktu_scan)} • {formatTime(log.waktu_scan)}</p>
+                              <p className="text-sm font-bold text-gray-900">{log.users?.name}</p>
+                              <p className="text-xs text-gray-700 font-medium">{formatDate(log.waktu_scan)} • {formatTime(log.waktu_scan)}</p>
                             </div>
                             
                             {/* Badges Status */}
                             {log.status === 'hadir' && (
-                              <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 uppercase tracking-wider">
+                              <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-800 uppercase tracking-wider">
                                 Hadir
                               </span>
                             )}
                             {log.status === 'ditolak_lokasi' && (
                               <div className="flex flex-col items-end">
-                                <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 uppercase tracking-wider mb-1">
+                                <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-800 uppercase tracking-wider mb-1">
                                   Ditolak
                                 </span>
-                                <span className="text-[10px] text-gray-500 flex items-center">
+                                <span className="text-[10px] text-gray-700 font-medium flex items-center">
                                   <MapPin className="w-3 h-3 mr-0.5 text-red-500" /> {log.jarak_meter}m
                                 </span>
                               </div>
                             )}
                             {log.status === 'ditolak_expired' && (
-                              <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 uppercase tracking-wider">
+                              <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-900 uppercase tracking-wider">
                                 Expired
                               </span>
                             )}

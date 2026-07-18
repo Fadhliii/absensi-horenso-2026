@@ -87,8 +87,8 @@ export default function MapPicker({ lat, lng, radius, onLocationChange }: MapPic
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </div>
-          <h3 className="text-lg font-bold text-slate-800 mb-1">Lokasi Belum Ditentukan</h3>
-          <p className="text-sm text-slate-600 font-medium">Klik tombol <b>Ambil Lokasi Saat Ini</b> di bawah, atau geser pin pada peta.</p>
+          <h3 className="text-lg font-bold text-slate-900 mb-1">Lokasi Belum Ditentukan</h3>
+          <p className="text-sm text-slate-900 font-semibold">Klik tombol <b>Ambil Lokasi Saat Ini</b> di bawah, atau geser pin pada peta.</p>
         </div>
       )}
     </div>

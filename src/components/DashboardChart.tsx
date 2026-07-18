@@ -6,7 +6,7 @@ export default function DashboardChart({ data }: { data: any[] }) {
   if (!data || data.length === 0) {
     return (
       <div className="h-64 w-full flex items-center justify-center bg-gray-50 rounded-xl border border-gray-100">
-        <span className="text-gray-400 font-medium">Belum ada data grafik</span>
+        <span className="text-gray-800 font-semibold">Belum ada data grafik</span>
       </div>
     );
   }
@@ -24,18 +24,18 @@ export default function DashboardChart({ data }: { data: any[] }) {
               <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
           <XAxis 
             dataKey="name" 
             axisLine={false} 
             tickLine={false} 
-            tick={{ fontSize: 12, fill: '#6b7280' }} 
+            tick={{ fontSize: 12, fill: '#1f2937', fontWeight: 600 }} 
             dy={10}
           />
           <YAxis 
             axisLine={false} 
             tickLine={false} 
-            tick={{ fontSize: 12, fill: '#6b7280' }} 
+            tick={{ fontSize: 12, fill: '#1f2937', fontWeight: 600 }} 
             allowDecimals={false}
           />
           <Tooltip 

@@ -151,44 +151,44 @@ export default function SiswaPage() {
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-100 border-b border-gray-200">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Siswa</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Kontak</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Penempatan & Batch</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">Nama Siswa</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider hidden sm:table-cell">Kontak</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">Penempatan & Batch</th>
                   <th scope="col" className="relative px-6 py-3"><span className="sr-only">Aksi</span></th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {loading ? (
-                  <tr><td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-500">Memuat data...</td></tr>
+                  <tr><td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-800 font-medium">Memuat data...</td></tr>
                 ) : data.length === 0 ? (
-                  <tr><td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-500">Tidak ada data siswa ditemukan.</td></tr>
+                  <tr><td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-800 font-medium">Tidak ada data siswa ditemukan.</td></tr>
                 ) : (
                   data.map((s) => (
                     <tr key={s.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-bold text-gray-900">{s.name}</div>
-                        <div className="text-sm text-gray-500 sm:hidden">{s.phone || s.email}</div>
+                        <div className="text-sm text-gray-800 font-medium sm:hidden">{s.phone || s.email}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
-                        <div className="text-sm text-gray-900">{s.email}</div>
-                        <div className="text-sm text-gray-500">{s.phone || '-'}</div>
+                        <div className="text-sm font-bold text-gray-900">{s.email}</div>
+                        <div className="text-sm text-gray-800 font-medium">{s.phone || '-'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {s.siswa?.status_penempatan === 'sudah' ? (
                           <div className="flex flex-col gap-1 items-start">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-900">
                               {s.siswa?.perusahaan?.nama || 'Ada Perusahaan'}
                             </span>
                             {s.siswa?.batch && (
-                              <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded-md border border-gray-200">
+                              <span className="text-xs text-gray-900 font-bold bg-gray-100 px-2 py-0.5 rounded-md border border-gray-300">
                                 Batch {s.siswa.batch}
                               </span>
                             )}
                           </div>
                         ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-200 text-gray-900">
                             Belum Ditempatkan
                           </span>
                         )}

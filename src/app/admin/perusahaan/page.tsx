@@ -105,30 +105,30 @@ export default function PerusahaanPage() {
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-100 border-b border-gray-200">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Perusahaan</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kontak</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Alamat</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">Nama Perusahaan</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">Kontak</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider hidden sm:table-cell">Alamat</th>
                   <th scope="col" className="relative px-6 py-3"><span className="sr-only">Aksi</span></th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {loading ? (
-                  <tr><td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-500">Memuat data...</td></tr>
+                  <tr><td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-800 font-medium">Memuat data...</td></tr>
                 ) : data.length === 0 ? (
-                  <tr><td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-500">Tidak ada data ditemukan.</td></tr>
+                  <tr><td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-800 font-medium">Tidak ada data ditemukan.</td></tr>
                 ) : (
                   data.map((p) => (
                     <tr key={p.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{p.nama}</div>
+                        <div className="text-sm font-bold text-gray-900">{p.nama}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{p.kontak || '-'}</div>
+                        <div className="text-sm text-gray-800 font-medium">{p.kontak || '-'}</div>
                       </td>
                       <td className="px-6 py-4 hidden sm:table-cell">
-                        <div className="text-sm text-gray-500 line-clamp-1">{p.alamat || '-'}</div>
+                        <div className="text-sm text-gray-800 font-medium line-clamp-1">{p.alamat || '-'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button onClick={() => setModal({ isOpen: true, mode: 'edit', data: p })} className="text-blue-600 hover:text-blue-900 mr-4">
@@ -149,8 +149,8 @@ export default function PerusahaanPage() {
           <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm text-gray-700">
-                  Menampilkan <span className="font-medium">{total === 0 ? 0 : (page - 1) * 10 + 1}</span> hingga <span className="font-medium">{Math.min(page * 10, total)}</span> dari <span className="font-medium">{total}</span> data
+                <p className="text-sm text-gray-900 font-medium">
+                  Menampilkan <span className="font-bold">{total === 0 ? 0 : (page - 1) * 10 + 1}</span> hingga <span className="font-bold">{Math.min(page * 10, total)}</span> dari <span className="font-bold">{total}</span> data
                 </p>
               </div>
               <div>
@@ -158,17 +158,17 @@ export default function PerusahaanPage() {
                   <button
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-800 hover:bg-gray-50 disabled:opacity-50"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
-                  <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                  <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-bold text-gray-900">
                     Hal {page} dari {totalPages || 1}
                   </span>
                   <button
                     onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                     disabled={page >= totalPages}
-                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-800 hover:bg-gray-50 disabled:opacity-50"
                   >
                     <ChevronRight className="h-5 w-5" />
                   </button>

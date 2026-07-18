@@ -64,8 +64,8 @@ export default function LaporanPage() {
               <FileSpreadsheet className="w-6 h-6 text-green-600" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-800">Unduh Data Absensi</h2>
-              <p className="text-sm text-gray-500">File akan diekspor dalam format Excel (.xlsx)</p>
+              <h2 className="text-xl font-bold text-gray-900">Unduh Data Absensi</h2>
+              <p className="text-sm text-gray-800 font-medium">File akan diekspor dalam format Excel (.xlsx)</p>
             </div>
           </div>
 
@@ -74,35 +74,35 @@ export default function LaporanPage() {
             {/* Filter Tanggal */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mulai Tanggal</label>
+                <label className="block text-sm font-bold text-gray-900 mb-1">Mulai Tanggal</label>
                 <input 
                   type="date" 
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm text-gray-900" 
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sampai Tanggal</label>
+                <label className="block text-sm font-bold text-gray-900 mb-1">Sampai Tanggal</label>
                 <input 
                   type="date" 
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" 
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm text-gray-900" 
                 />
               </div>
             </div>
 
             {/* Filter Penempatan */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Filter Penempatan Siswa</label>
+              <label className="block text-sm font-bold text-gray-900 mb-1">Filter Penempatan Siswa</label>
               <select 
                 value={statusPenempatan}
                 onChange={(e) => {
                   setStatusPenempatan(e.target.value);
                   if (e.target.value !== 'sudah') setPerusahaanId('');
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm text-gray-900"
               >
                 <option value="semua">Semua Siswa</option>
                 <option value="belum">Hanya Belum Ditempatkan</option>
@@ -113,12 +113,12 @@ export default function LaporanPage() {
             {/* Filter Perusahaan Spesifik */}
             {statusPenempatan === 'sudah' && (
               <div className="animate-in fade-in slide-in-from-top-4 duration-300">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Pilih Perusahaan Mitra (Opsional)</label>
+                <label className="block text-sm font-bold text-gray-900 mb-1">Pilih Perusahaan Mitra (Opsional)</label>
                 <select 
                   value={perusahaanId}
                   onChange={(e) => setPerusahaanId(e.target.value)}
                   disabled={loading}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm text-gray-900"
                 >
                   <option value="">-- Semua Perusahaan Mitra --</option>
                   {perusahaanList.map(p => (
