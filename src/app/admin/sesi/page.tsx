@@ -5,6 +5,17 @@ import { mulaiSesiAction } from '@/app/actions/sesi';
 import { logoutAction } from '@/app/actions/auth';
 import { MapPin, LogOut, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+
+const MapPicker = dynamic(() => import('@/components/MapPicker'), { 
+  ssr: false, 
+  loading: () => (
+    <div className="h-[400px] w-full bg-slate-100 animate-pulse rounded-xl flex flex-col items-center justify-center text-slate-500 border-2 border-slate-200 border-dashed">
+      <Loader2 className="w-8 h-8 animate-spin mb-2" />
+      <p className="font-medium">Memuat Peta (OpenStreetMap)...</p>
+    </div>
+  ) 
+});
 
 export default function BukaSesiPage() {
   const [lat, setLat] = useState<number | ''>('');
@@ -13,6 +24,7 @@ export default function BukaSesiPage() {
   const [locError, setLocError] = useState('');
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [radius, setRadius] = useState(50);
   
   const [intervalType, setIntervalType] = useState('10'); // default 10 detik
   const [customInterval, setCustomInterval] = useState('');
@@ -100,46 +112,58 @@ export default function BukaSesiPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Lokasi GPS */}
-            <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Titik Lokasi Kelas (GPS)</label>
-              
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Latitude</label>
-                  <input type="text" readOnly value={lat} className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100 text-sm focus:outline-none" placeholder="Belum diambil" />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Longitude</label>
-                  <input type="text" readOnly value={lng} className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100 text-sm focus:outline-none" placeholder="Belum diambil" />
-                </div>
-              </div>
-
-              {locError && <p className="text-xs text-red-500 mb-3">{locError}</p>}
-
-              <button 
-                type="button" 
-                onClick={handleGetLocation} 
-                disabled={locLoading}
-                className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:opacity-70 transition-colors"
-              >
-                {locLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <MapPin className="w-4 h-4 mr-2" />}
-                {lat === '' ? 'Ambil Lokasi Saat Ini' : 'Perbarui Lokasi'}
-              </button>
-            </div>
-
             {/* Radius */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Radius Toleransi (Meter)</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Radius Toleransi (Meter)</label>
               <input 
                 type="number" 
                 name="radius" 
-                defaultValue="50" 
+                value={radius}
+                onChange={(e) => setRadius(Number(e.target.value) || 10)}
                 min="10" 
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-blue-50/50 font-medium text-lg text-blue-900"
               />
-              <p className="text-xs text-gray-500 mt-1">Siswa harus berada di dalam radius ini untuk bisa diabsen.</p>
+              <p className="text-xs text-gray-500 mt-1">Lingkaran pada peta akan membesar/mengecil sesuai radius ini.</p>
+            </div>
+
+            {/* Lokasi GPS + Map */}
+            <div className="border border-gray-200 rounded-xl bg-gray-50 overflow-hidden shadow-sm">
+              <div className="p-4 bg-white border-b border-gray-200 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700">Titik Pusat Absensi</label>
+                  <p className="text-xs text-gray-500 mt-0.5">Geser pin di peta untuk menyesuaikan lokasi presisi.</p>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={handleGetLocation} 
+                  disabled={locLoading}
+                  className="inline-flex justify-center items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 disabled:opacity-70 transition-colors shrink-0"
+                >
+                  {locLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <MapPin className="w-4 h-4 mr-2" />}
+                  Ambil Lokasi Saat Ini
+                </button>
+              </div>
+
+              {locError && <p className="text-xs text-red-500 p-4 pb-0">{locError}</p>}
+
+              <div className="p-4">
+                <MapPicker 
+                  lat={lat} 
+                  lng={lng} 
+                  radius={radius} 
+                  onLocationChange={(newLat, newLng) => {
+                    setLat(newLat);
+                    setLng(newLng);
+                  }} 
+                />
+              </div>
+
+              {/* Readonly info lat/lng for debugging/transparency */}
+              <div className="px-4 py-3 bg-gray-100 border-t border-gray-200 flex justify-between text-xs text-gray-600">
+                <span>Lat: {lat === '' ? '-' : (lat as number).toFixed(6)}</span>
+                <span>Lng: {lng === '' ? '-' : (lng as number).toFixed(6)}</span>
+              </div>
             </div>
 
             {/* Interval Refresh QR */}
