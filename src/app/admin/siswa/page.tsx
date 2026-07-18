@@ -359,7 +359,10 @@ export default function SiswaPage() {
                     <input 
                       type="text"
                       value={resetModal.customPassword || ''}
-                      onChange={(e) => setResetModal(prev => ({ ...prev, customPassword: e.target.value }))}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setResetModal(prev => ({ ...prev, customPassword: val }));
+                      }}
                       placeholder="Kosongkan untuk password acak (8 karakter)"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm font-mono text-gray-900"
                     />
