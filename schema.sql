@@ -46,6 +46,7 @@ CREATE TABLE siswa (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE UNIQUE, -- Relasi 1-to-1
     status_penempatan status_penempatan NOT NULL DEFAULT 'belum',
     perusahaan_id UUID REFERENCES perusahaan(id) ON DELETE SET NULL,
+    batch VARCHAR(50),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

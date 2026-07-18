@@ -84,7 +84,7 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
     .from('users')
     .select(`
       id, name, email, phone,
-      siswa ( id, status_penempatan, perusahaan_id, perusahaan (nama) )
+      siswa ( id, status_penempatan, perusahaan_id, batch, perusahaan (nama) )
     `, { count: 'exact' })
     .eq('role', 'siswa')
     .eq('status_registrasi', 'approved');
@@ -101,7 +101,7 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
     let siswaQuery = supabase
       .from('siswa')
       .select(`
-        id, status_penempatan, perusahaan_id, perusahaan (nama),
+        id, status_penempatan, perusahaan_id, batch, perusahaan (nama),
         users!inner (id, name, email, phone, status_registrasi, role)
       `, { count: 'exact' })
       .eq('users.status_registrasi', 'approved')
@@ -132,6 +132,7 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
           id: d.id || '',
           status_penempatan: d.status_penempatan || 'belum',
           perusahaan_id: d.perusahaan_id || null,
+          batch: d.batch || null,
           perusahaan: perusahaanObj ? { nama: perusahaanObj.nama || '' } : null
         }
       };
@@ -160,6 +161,7 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
         id: siswaObj.id || '',
         status_penempatan: siswaObj.status_penempatan || 'belum',
         perusahaan_id: siswaObj.perusahaan_id || null,
+        batch: siswaObj.batch || null,
         perusahaan: perusahaanObj ? { nama: perusahaanObj.nama || '' } : null
       } : null
     };
@@ -168,13 +170,19 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
   return { data: mappedData, total: count || 0, limit };
 }
 
-export async function assignSiswaPerusahaanAction(userId: string, status: 'belum' | 'sudah', perusahaanId?: string) {
+export async function assignSiswaPerusahaanAction(userId: string, status: 'belum' | 'sudah', perusahaanId?: string, batch?: string) {
   const updateData: any = { status_penempatan: status };
   
   if (status === 'sudah' && perusahaanId) {
     updateData.perusahaan_id = perusahaanId;
   } else {
     updateData.perusahaan_id = null;
+  }
+  
+  if (batch) {
+    updateData.batch = batch;
+  } else {
+    updateData.batch = null;
   }
 
   const { error } = await supabase

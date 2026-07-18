@@ -15,6 +15,7 @@ type SiswaData = {
     id: string;
     status_penempatan: 'belum' | 'sudah';
     perusahaan_id: string | null;
+    batch: string | null;
     perusahaan: { nama: string } | null;
   };
 };
@@ -31,7 +32,7 @@ export default function SiswaPage() {
   
   const [perusahaanList, setPerusahaanList] = useState<{id: string, nama: string}[]>([]);
 
-  const [assignModal, setAssignModal] = useState<{ isOpen: boolean; userId: string; name: string; currentStatus: string; currentCompanyId?: string }>({ isOpen: false, userId: '', name: '', currentStatus: 'belum' });
+  const [assignModal, setAssignModal] = useState<{ isOpen: boolean; userId: string; name: string; currentStatus: string; currentCompanyId?: string; currentBatch?: string }>({ isOpen: false, userId: '', name: '', currentStatus: 'belum' });
 
   const fetchPerusahaan = useCallback(async () => {
     try {
@@ -88,8 +89,9 @@ export default function SiswaPage() {
     const formData = new FormData(e.currentTarget);
     const status = formData.get('status_penempatan') as 'belum' | 'sudah';
     const perusahaanId = formData.get('perusahaan_id') as string;
+    const batch = formData.get('batch') as string;
 
-    await assignSiswaPerusahaanAction(assignModal.userId, status, status === 'sudah' ? perusahaanId : undefined);
+    await assignSiswaPerusahaanAction(assignModal.userId, status, status === 'sudah' ? perusahaanId : undefined, status === 'sudah' ? batch : undefined);
     setAssignModal({ isOpen: false, userId: '', name: '', currentStatus: 'belum' });
     fetchData();
   }
@@ -153,7 +155,7 @@ export default function SiswaPage() {
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Siswa</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Kontak</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Penempatan</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Penempatan & Batch</th>
                   <th scope="col" className="relative px-6 py-3"><span className="sr-only">Aksi</span></th>
                 </tr>
               </thead>
@@ -175,9 +177,16 @@ export default function SiswaPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {s.siswa?.status_penempatan === 'sudah' ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            {s.siswa?.perusahaan?.nama || 'Ada Perusahaan'}
-                          </span>
+                          <div className="flex flex-col gap-1 items-start">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              {s.siswa?.perusahaan?.nama || 'Ada Perusahaan'}
+                            </span>
+                            {s.siswa?.batch && (
+                              <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded-md border border-gray-200">
+                                Batch {s.siswa.batch}
+                              </span>
+                            )}
+                          </div>
                         ) : (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                             Belum Ditempatkan
@@ -193,7 +202,7 @@ export default function SiswaPage() {
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-1 hidden sm:inline"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg> Edit
                         </Link>
                         <button 
-                          onClick={() => setAssignModal({ isOpen: true, userId: s.id, name: s.name, currentStatus: s.siswa?.status_penempatan || 'belum', currentCompanyId: s.siswa?.perusahaan_id || undefined })} 
+                          onClick={() => setAssignModal({ isOpen: true, userId: s.id, name: s.name, currentStatus: s.siswa?.status_penempatan || 'belum', currentCompanyId: s.siswa?.perusahaan_id || undefined, currentBatch: s.siswa?.batch || undefined })} 
                           className="inline-flex items-center text-blue-600 hover:text-blue-900 mr-3"
                           title="Ubah Penempatan"
                         >
@@ -257,19 +266,31 @@ export default function SiswaPage() {
                       </select>
                     </div>
                     {assignModal.currentStatus === 'sudah' && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Pilih Perusahaan Mitra *</label>
-                        <select 
-                          name="perusahaan_id" 
-                          required 
-                          defaultValue={assignModal.currentCompanyId || ''}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                        >
-                          <option value="" disabled>-- Pilih Perusahaan --</option>
-                          {perusahaanList.map(p => (
-                            <option key={p.id} value={p.id}>{p.nama}</option>
-                          ))}
-                        </select>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Pilih Perusahaan Mitra *</label>
+                          <select 
+                            name="perusahaan_id" 
+                            required 
+                            defaultValue={assignModal.currentCompanyId || ''}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                          >
+                            <option value="" disabled>-- Pilih Perusahaan --</option>
+                            {perusahaanList.map(p => (
+                              <option key={p.id} value={p.id}>{p.nama}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Batch (Opsional)</label>
+                          <input 
+                            type="text"
+                            name="batch"
+                            defaultValue={assignModal.currentBatch || ''}
+                            placeholder="Contoh: 1, 2, 2024A"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
