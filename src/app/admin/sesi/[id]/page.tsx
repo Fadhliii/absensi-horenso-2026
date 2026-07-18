@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, use } from 'react';
 import { getDetailSesiAction, selesaiSesiAction, getJumlahHadirAction } from '@/app/actions/sesi';
 import { QRCodeSVG } from 'qrcode.react';
 import { Users, Loader2, MapPin, StopCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export default function ActiveSessionPage({ params }: { params: { id: string } }) {
+export default function ActiveSessionPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const sessionId = params.id;
+  const { id: sessionId } = use(params);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
