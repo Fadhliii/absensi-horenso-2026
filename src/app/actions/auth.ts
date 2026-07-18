@@ -186,9 +186,15 @@ export async function rejectStudentAction(id: string) {
   return { success: true };
 }
 
-export async function resetPasswordAction(id: string) {
-  // Generate random 8 chars password
-  const newPassword = Math.random().toString(36).slice(-8);
+export async function resetPasswordAction(id: string, customPassword?: string) {
+  const newPassword = customPassword && customPassword.trim() !== '' 
+    ? customPassword 
+    : Math.random().toString(36).slice(-8);
+    
+  if (newPassword.length < 6) {
+    return { error: 'Password minimal 6 karakter.' };
+  }
+
   const passwordHash = await hashPassword(newPassword);
 
   const { error } = await supabase

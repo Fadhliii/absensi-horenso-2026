@@ -32,7 +32,7 @@ export default function SiswaPage() {
   const [perusahaanList, setPerusahaanList] = useState<{id: string, nama: string}[]>([]);
 
   const [assignModal, setAssignModal] = useState<{ isOpen: boolean; userId: string; name: string; currentStatus: string; currentCompanyId?: string }>({ isOpen: false, userId: '', name: '', currentStatus: 'belum' });
-  const [resetModal, setResetModal] = useState<{ isOpen: boolean; studentName: string; newPassword?: string; error?: string }>({ isOpen: false, studentName: '' });
+  const [resetModal, setResetModal] = useState<{ isOpen: boolean; userId: string; studentName: string; customPassword?: string; newPassword?: string; error?: string; loading?: boolean }>({ isOpen: false, userId: '', studentName: '' });
 
   const fetchPerusahaan = useCallback(async () => {
     try {
@@ -95,13 +95,35 @@ export default function SiswaPage() {
     fetchData();
   }
 
-  async function handleResetPassword(id: string, name: string) {
-    if (!confirm(`Yakin ingin mereset password untuk ${name}?`)) return;
-    const result = await resetPasswordAction(id);
+  function openResetModal(userId: string, name: string) {
+    setResetModal({
+      isOpen: true,
+      userId,
+      studentName: name,
+      customPassword: '',
+      newPassword: '',
+      error: '',
+      loading: false,
+    });
+  }
+
+  async function handleResetPasswordSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setResetModal(prev => ({ ...prev, loading: true, error: '' }));
+    const result = await resetPasswordAction(resetModal.userId, resetModal.customPassword);
     if (result.success && result.newPassword) {
-      setResetModal({ isOpen: true, studentName: name, newPassword: result.newPassword });
+      setResetModal(prev => ({
+        ...prev,
+        loading: false,
+        newPassword: result.newPassword,
+        error: '',
+      }));
     } else {
-      setResetModal({ isOpen: true, studentName: name, error: result.error || 'Gagal reset password' });
+      setResetModal(prev => ({
+        ...prev,
+        loading: false,
+        error: result.error || 'Gagal reset password',
+      }));
     }
   }
 
@@ -203,7 +225,8 @@ export default function SiswaPage() {
                           <Briefcase className="w-4 h-4 mr-1 hidden sm:inline" /> Assign
                         </button>
                         <button 
-                          onClick={() => handleResetPassword(s.id, s.name)} 
+                          type="button"
+                          onClick={() => openResetModal(s.id, s.name)} 
                           className="inline-flex items-center text-orange-600 hover:text-orange-900"
                           title="Reset Password"
                         >
@@ -298,27 +321,60 @@ export default function SiswaPage() {
         </div>
       )}
 
-      {/* Modal Reset Password (Copas dari Approval) */}
+      {/* Modal Reset Password */}
       {resetModal.isOpen && (
         <div className="fixed inset-0 z-[60] overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:p-0">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setResetModal({ isOpen: false, studentName: '' })}></div>
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setResetModal({ isOpen: false, userId: '', studentName: '' })}></div>
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
             <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full p-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-2">Password Direset</h3>
-              {resetModal.error ? (
-                <p className="text-red-500">{resetModal.error}</p>
-              ) : (
-                <>
-                  <p className="text-sm text-gray-500">Password sementara untuk <strong>{resetModal.studentName}</strong>:</p>
-                  <div className="mt-3 p-4 bg-gray-100 rounded-md text-center">
+              <h3 className="text-lg leading-6 font-bold text-gray-900 mb-2">Reset Password Siswa</h3>
+              
+              {resetModal.newPassword ? (
+                <div>
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center my-4">
+                    <p className="text-sm font-medium text-green-800 mb-1">Password berhasil diperbarui!</p>
+                    <p className="text-xs text-gray-500 mb-2">Password baru untuk <strong>{resetModal.studentName}</strong>:</p>
                     <span className="text-2xl font-mono font-bold tracking-wider text-gray-900 select-all">{resetModal.newPassword}</span>
                   </div>
-                </>
+                  <p className="text-xs text-gray-500 mb-4">Siswa wajib mengganti password ini saat login berikutnya.</p>
+                  <button type="button" onClick={() => setResetModal({ isOpen: false, userId: '', studentName: '' })} className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:text-sm">
+                    Selesai & Tutup
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleResetPasswordSubmit}>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Reset password untuk siswa <strong>{resetModal.studentName}</strong>. Anda bisa memasukkan password manual atau membiarkannya kosong untuk membuat password acak otomatis.
+                  </p>
+
+                  {resetModal.error && (
+                    <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-md mb-4 font-medium">
+                      {resetModal.error}
+                    </div>
+                  )}
+
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Password Baru (Opsional)</label>
+                    <input 
+                      type="text"
+                      value={resetModal.customPassword || ''}
+                      onChange={(e) => setResetModal(prev => ({ ...prev, customPassword: e.target.value }))}
+                      placeholder="Kosongkan untuk password acak (8 karakter)"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm font-mono text-gray-900"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-2">
+                    <button type="button" onClick={() => setResetModal({ isOpen: false, userId: '', studentName: '' })} className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                      Batal
+                    </button>
+                    <button type="submit" disabled={resetModal.loading} className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 disabled:opacity-50">
+                      {resetModal.loading ? 'Memproses...' : 'Reset Password'}
+                    </button>
+                  </div>
+                </form>
               )}
-              <button onClick={() => setResetModal({ isOpen: false, studentName: '' })} className="mt-6 w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:text-sm">
-                Tutup
-              </button>
             </div>
           </div>
         </div>
