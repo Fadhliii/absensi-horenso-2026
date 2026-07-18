@@ -186,3 +186,26 @@ export async function assignSiswaPerusahaanAction(userId: string, status: 'belum
   revalidatePath('/admin/siswa');
   return { success: true };
 }
+
+export async function getSiswaByIdAction(id: string) {
+  const { data, error } = await supabase.from('users').select('id, name, email, phone').eq('id', id).single();
+  if (error) return { error: error.message };
+  return { data };
+}
+
+export async function updateSiswaProfileAction(id: string, formData: FormData) {
+  const name = formData.get('name') as string;
+  const email = formData.get('email') as string;
+  const phone = formData.get('phone') as string;
+
+  if (!name || !email) return { error: 'Nama dan Email wajib diisi.' };
+
+  const { error } = await supabase.from('users').update({ name, email, phone }).eq('id', id);
+  if (error) {
+    if (error.code === '23505') return { error: 'Email sudah digunakan oleh akun lain.' };
+    return { error: error.message };
+  }
+
+  revalidatePath('/admin/siswa');
+  return { success: true };
+}

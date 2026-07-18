@@ -217,6 +217,13 @@ export default function SiswaPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <Link 
+                          href={`/admin/siswa/${s.id}/edit`}
+                          className="inline-flex items-center text-green-600 hover:text-green-900 mr-3"
+                          title="Edit Profil"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-1 hidden sm:inline"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg> Edit
+                        </Link>
                         <button 
                           onClick={() => setAssignModal({ isOpen: true, userId: s.id, name: s.name, currentStatus: s.siswa?.status_penempatan || 'belum', currentCompanyId: s.siswa?.perusahaan_id || undefined })} 
                           className="inline-flex items-center text-blue-600 hover:text-blue-900 mr-3"
