@@ -81,7 +81,7 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
-  let query = supabase
+  let query = supabaseAdmin
     .from('users')
     .select(`
       id, name, email, phone,
@@ -99,8 +99,8 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
   // Instead, if statusFilter is used, we can query `siswa` table directly and join `users`.
   
   if (statusFilter && statusFilter !== 'semua') {
-    let siswaQuery = supabase
-      .from('siswa')
+    let siswaQuery = supabaseAdmin
+    .from('siswa')
       .select(`
         id, status_penempatan, perusahaan_id, batch, perusahaan (nama),
         users!inner (id, name, email, phone, status_registrasi, role)
@@ -186,7 +186,7 @@ export async function assignSiswaPerusahaanAction(userId: string, status: 'belum
     updateData.batch = null;
   }
 
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from('siswa')
     .update(updateData)
     .eq('user_id', userId);
@@ -198,7 +198,7 @@ export async function assignSiswaPerusahaanAction(userId: string, status: 'belum
 }
 
 export async function getSiswaByIdAction(id: string) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('users')
     .select(`
       id, name, email, phone,
