@@ -27,6 +27,7 @@ export default function EditSiswaPage({ params }: { params: Promise<{ id: string
         ]);
         
         if (perusahaanRes.data) {
+          console.log(`[DEBUG] Berhasil fetch ${perusahaanRes.data.length} data perusahaan dari server.`);
           setPerusahaanList(perusahaanRes.data);
         }
 
