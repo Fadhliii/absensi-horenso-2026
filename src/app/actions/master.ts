@@ -1,6 +1,7 @@
 'use server';
 
 import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { revalidatePath } from 'next/cache';
 import { hashPassword } from '@/lib/auth';
 
@@ -11,7 +12,7 @@ export async function getPerusahaanAction(page: number, search: string) {
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
-  let query = supabase.from('perusahaan').select('*', { count: 'exact' });
+  let query = supabaseAdmin.from('perusahaan').select('*', { count: 'exact' });
 
   if (search) {
     query = query.ilike('nama', `%${search}%`);
@@ -27,7 +28,7 @@ export async function getPerusahaanAction(page: number, search: string) {
 
 export async function getAllPerusahaanAction() {
   // Untuk dropdown assign siswa
-  const { data, error } = await supabase.from('perusahaan').select('id, nama').order('nama');
+  const { data, error } = await supabaseAdmin.from('perusahaan').select('id, nama').order('nama');
   if (error) return { error: error.message };
   return { data };
 }
@@ -39,7 +40,7 @@ export async function createPerusahaanAction(formData: FormData) {
 
   if (!nama) return { error: 'Nama perusahaan wajib diisi.' };
 
-  const { error } = await supabase.from('perusahaan').insert([{ nama, alamat, kontak }]);
+  const { error } = await supabaseAdmin.from('perusahaan').insert([{ nama, alamat, kontak }]);
   if (error) return { error: error.message };
 
   revalidatePath('/admin/perusahaan');
@@ -53,7 +54,7 @@ export async function updatePerusahaanAction(id: string, formData: FormData) {
 
   if (!nama) return { error: 'Nama perusahaan wajib diisi.' };
 
-  const { error } = await supabase.from('perusahaan').update({ nama, alamat, kontak }).eq('id', id);
+  const { error } = await supabaseAdmin.from('perusahaan').update({ nama, alamat, kontak }).eq('id', id);
   if (error) return { error: error.message };
 
   revalidatePath('/admin/perusahaan');
@@ -63,9 +64,9 @@ export async function updatePerusahaanAction(id: string, formData: FormData) {
 export async function deletePerusahaanAction(id: string) {
   // Karena schema menggunakan ON DELETE SET NULL, kita perlu update manual status_penempatan siswa
   // yang asalnya perusahaan ini agar kembali menjadi 'belum'
-  await supabase.from('siswa').update({ status_penempatan: 'belum' }).eq('perusahaan_id', id);
+  await supabaseAdmin.from('siswa').update({ status_penempatan: 'belum' }).eq('perusahaan_id', id);
 
-  const { error } = await supabase.from('perusahaan').delete().eq('id', id);
+  const { error } = await supabaseAdmin.from('perusahaan').delete().eq('id', id);
   if (error) return { error: error.message };
 
   revalidatePath('/admin/perusahaan');
@@ -197,9 +198,26 @@ export async function assignSiswaPerusahaanAction(userId: string, status: 'belum
 }
 
 export async function getSiswaByIdAction(id: string) {
-  const { data, error } = await supabase.from('users').select('id, name, email, phone').eq('id', id).single();
+  const { data, error } = await supabase
+    .from('users')
+    .select(`
+      id, name, email, phone,
+      siswa ( status_penempatan, perusahaan_id, batch )
+    `)
+    .eq('id', id)
+    .single();
+    
   if (error) return { error: error.message };
-  return { data };
+  
+  const siswaObj = Array.isArray(data.siswa) ? data.siswa[0] : (data.siswa as any);
+  
+  return { 
+    data: {
+      ...data,
+      perusahaan_id: siswaObj?.perusahaan_id || '',
+      batch: siswaObj?.batch || '',
+    } 
+  };
 }
 
 export async function updateSiswaProfileAction(id: string, formData: FormData) {
@@ -207,6 +225,9 @@ export async function updateSiswaProfileAction(id: string, formData: FormData) {
   const email = formData.get('email') as string;
   const phone = formData.get('phone') as string;
   const password = formData.get('password') as string;
+  
+  const perusahaan_id = formData.get('perusahaan_id') as string;
+  const batch = formData.get('batch') as string;
 
   if (!name || !email) return { error: 'Nama dan Email wajib diisi.' };
 
@@ -219,11 +240,26 @@ export async function updateSiswaProfileAction(id: string, formData: FormData) {
     updateData.force_change_password = true; // Paksa siswa untuk ganti password saat login
   }
 
-  const { error } = await supabase.from('users').update(updateData).eq('id', id);
+  const { error } = await supabaseAdmin.from('users').update(updateData).eq('id', id);
   if (error) {
     if (error.code === '23505') return { error: 'Email sudah digunakan oleh akun lain.' };
     return { error: error.message };
   }
+
+  // Update perusahaan_id dan batch ke tabel siswa
+  const updateSiswaData: any = {
+    batch: batch || null,
+  };
+  
+  if (perusahaan_id) {
+    updateSiswaData.perusahaan_id = perusahaan_id;
+    updateSiswaData.status_penempatan = 'sudah';
+  } else {
+    updateSiswaData.perusahaan_id = null;
+    updateSiswaData.status_penempatan = 'belum';
+  }
+  
+  await supabaseAdmin.from('siswa').update(updateSiswaData).eq('user_id', id);
 
   revalidatePath('/admin/siswa');
   return { success: true };
