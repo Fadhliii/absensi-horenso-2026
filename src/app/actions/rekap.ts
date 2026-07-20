@@ -23,7 +23,8 @@ export async function getRekapAbsensiAction(year: number, month: number, perusah
         id,
         name,
         siswa!inner (
-          perusahaan_id
+          perusahaan_id,
+          tanggal_berangkat
         )
       `)
       .eq('role', 'siswa')
@@ -71,11 +72,15 @@ export async function getRekapAbsensiAction(year: number, month: number, perusah
     });
 
     // Convert Set to Array for JSON serialization
-    const result = students.map(s => ({
-      id: s.id,
-      name: s.name,
-      attendance: Array.from(attendanceMap[s.id] || [])
-    }));
+    const result = students.map(s => {
+      const siswaData = Array.isArray(s.siswa) ? s.siswa[0] : (s.siswa as any);
+      return {
+        id: s.id,
+        name: s.name,
+        tanggal_berangkat: siswaData?.tanggal_berangkat || null,
+        attendance: Array.from(attendanceMap[s.id] || [])
+      };
+    });
 
     return { success: true, data: result };
   } catch (error: any) {

@@ -9,7 +9,7 @@ import Link from 'next/link';
 
 export default function RekapGridPage() {
   const [loading, setLoading] = useState(true);
-  const [rekapData, setRekapData] = useState<{id: string, name: string, attendance: number[]}[]>([]);
+  const [rekapData, setRekapData] = useState<{id: string, name: string, tanggal_berangkat: string | null, attendance: number[]}[]>([]);
   const [perusahaanList, setPerusahaanList] = useState<{id: string, nama: string}[]>([]);
   const [holidays, setHolidays] = useState<Record<string, string>>({}); // date string (YYYY-MM-DD) -> Holiday Name
   
@@ -17,6 +17,7 @@ export default function RekapGridPage() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedPerusahaan, setSelectedPerusahaan] = useState('');
+  const [showDeparted, setShowDeparted] = useState(false);
 
   const fetchFilters = useCallback(async () => {
     const res = await getAllPerusahaanAction();
@@ -90,6 +91,20 @@ export default function RekapGridPage() {
     return dayOfWeek === 0 || dayOfWeek === 6; // 0 is Sunday, 6 is Saturday
   }, [selectedYear, selectedMonth]);
 
+  // Derived filtered data
+  const filteredData = useMemo(() => {
+    return rekapData.filter(siswa => {
+      if (showDeparted) return true;
+      if (!siswa.tanggal_berangkat) return true;
+      
+      const tglBerangkat = new Date(siswa.tanggal_berangkat);
+      const startOfMonth = new Date(selectedYear, selectedMonth - 1, 1);
+      
+      // Jika berangkat SEBELUM bulan ini, sembunyikan jika toggle dimatikan
+      return tglBerangkat >= startOfMonth;
+    });
+  }, [rekapData, showDeparted, selectedYear, selectedMonth]);
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white shadow-sm border-b border-gray-200">
@@ -154,6 +169,20 @@ export default function RekapGridPage() {
               ))}
             </select>
           </div>
+          
+          <div className="flex items-center ml-auto">
+            <label className="flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={showDeparted} 
+                onChange={(e) => setShowDeparted(e.target.checked)}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="ml-2 text-sm font-medium text-gray-700">
+                Tampilkan Alumni (Selesai/Berangkat)
+              </span>
+            </label>
+          </div>
 
           {loading && <Loader2 className="w-5 h-5 animate-spin text-blue-600 mb-2 ml-2" />}
         </div>
@@ -188,14 +217,14 @@ export default function RekapGridPage() {
                 </tr>
               </thead>
               <tbody>
-                {rekapData.length === 0 && !loading ? (
+                {filteredData.length === 0 && !loading ? (
                   <tr>
                     <td colSpan={daysInMonth + 1} className="px-6 py-8 text-center text-gray-500">
                       Tidak ada data siswa untuk filter tersebut.
                     </td>
                   </tr>
                 ) : (
-                  rekapData.map((siswa, idx) => (
+                  filteredData.map((siswa, idx) => (
                     <tr key={siswa.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-2 font-medium text-gray-900 sticky left-0 bg-white z-10 border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] group-hover:bg-gray-50">
                         <div className="truncate max-w-[200px]" title={siswa.name}>{siswa.name}</div>
@@ -207,21 +236,31 @@ export default function RekapGridPage() {
                         const holidayName = getHolidayName(day);
                         const isHoliday = !!holidayName;
                         
+                        const currentDate = new Date(selectedYear, selectedMonth - 1, day);
+                        const isDeparted = siswa.tanggal_berangkat && currentDate >= new Date(siswa.tanggal_berangkat);
+                        
                         let cellClass = "px-1 py-1 text-center border-r border-gray-50 last:border-0";
                         let innerClass = "w-7 h-7 mx-auto rounded flex items-center justify-center text-xs font-bold transition-all ";
 
-                        if (hadir) {
+                        let content: React.ReactNode = '0';
+
+                        if (isDeparted) {
+                          innerClass += "bg-blue-100 text-blue-600";
+                          content = '✈️';
+                        } else if (hadir) {
                           innerClass += "bg-green-500 text-white shadow-sm scale-110";
+                          content = '1';
                         } else if (weekend || isHoliday) {
                           innerClass += "bg-gray-200 text-transparent";
+                          content = '';
                         } else {
                           innerClass += "bg-red-100 text-red-500";
                         }
 
                         return (
-                          <td key={day} className={cellClass} title={isHoliday ? holidayName : ''}>
+                          <td key={day} className={cellClass} title={isDeparted ? 'Sudah Berangkat' : (isHoliday ? holidayName : '')}>
                             <div className={innerClass}>
-                              {hadir ? '1' : ((weekend || isHoliday) ? '' : '0')}
+                              {content}
                             </div>
                           </td>
                         );
@@ -234,13 +273,28 @@ export default function RekapGridPage() {
           </div>
         </div>
 
-        {/* Keterangan Hari Libur Nasional */}
-        {Object.keys(holidays).length > 0 && (
-          <div className="mt-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        {/* Legenda & Keterangan Hari Libur Nasional */}
+        <div className="mt-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-6">
+          
+          <div>
             <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center">
-              <span className="w-3 h-3 rounded bg-gray-300 mr-2"></span>
-              Keterangan Hari Libur Nasional (Bulan Ini)
+              <span className="w-3 h-3 rounded bg-blue-500 mr-2"></span>
+              Legenda Tabel
             </h3>
+            <div className="flex flex-wrap gap-4 text-sm text-gray-700">
+              <div className="flex items-center"><div className="w-6 h-6 rounded bg-green-500 text-white flex items-center justify-center font-bold text-xs mr-2">1</div> Hadir</div>
+              <div className="flex items-center"><div className="w-6 h-6 rounded bg-red-100 text-red-500 flex items-center justify-center font-bold text-xs mr-2">0</div> Tidak Hadir / Alpa</div>
+              <div className="flex items-center"><div className="w-6 h-6 rounded bg-gray-200 flex items-center justify-center text-xs mr-2"></div> Libur (Sabtu/Minggu/Nasional)</div>
+              <div className="flex items-center"><div className="w-6 h-6 rounded bg-blue-100 text-blue-600 flex items-center justify-center text-xs mr-2">✈️</div> Sudah Berangkat ke Jepang</div>
+            </div>
+          </div>
+
+          {Object.keys(holidays).length > 0 && (
+            <div className="pt-4 border-t border-gray-100">
+              <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center">
+                <span className="w-3 h-3 rounded bg-gray-300 mr-2"></span>
+                Keterangan Hari Libur Nasional (Bulan Ini)
+              </h3>
             <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-sm text-gray-600">
               {Object.entries(holidays)
                 .filter(([dateStr]) => {
@@ -270,7 +324,8 @@ export default function RekapGridPage() {
               )}
             </ul>
           </div>
-        )}
+          )}
+        </div>
 
       </main>
     </div>

@@ -16,6 +16,7 @@ type SiswaData = {
     status_penempatan: 'belum' | 'sudah';
     perusahaan_id: string | null;
     batch: string | null;
+    tanggal_berangkat: string | null;
     perusahaan: { nama: string } | null;
   };
 };
@@ -32,7 +33,7 @@ export default function SiswaPage() {
   
   const [perusahaanList, setPerusahaanList] = useState<{id: string, nama: string}[]>([]);
 
-  const [assignModal, setAssignModal] = useState<{ isOpen: boolean; userId: string; name: string; currentStatus: string; currentCompanyId?: string; currentBatch?: string }>({ isOpen: false, userId: '', name: '', currentStatus: 'belum' });
+  const [assignModal, setAssignModal] = useState<{ isOpen: boolean; userId: string; name: string; currentStatus: string; currentCompanyId?: string; currentBatch?: string; currentTanggalBerangkat?: string }>({ isOpen: false, userId: '', name: '', currentStatus: 'belum' });
 
   const fetchPerusahaan = useCallback(async () => {
     try {
@@ -90,8 +91,9 @@ export default function SiswaPage() {
     const status = formData.get('status_penempatan') as 'belum' | 'sudah';
     const perusahaanId = formData.get('perusahaan_id') as string;
     const batch = formData.get('batch') as string;
+    const tanggal_berangkat = formData.get('tanggal_berangkat') as string;
 
-    await assignSiswaPerusahaanAction(assignModal.userId, status, status === 'sudah' ? perusahaanId : undefined, status === 'sudah' ? batch : undefined);
+    await assignSiswaPerusahaanAction(assignModal.userId, status, status === 'sudah' ? perusahaanId : undefined, status === 'sudah' ? batch : undefined, status === 'sudah' ? tanggal_berangkat : undefined);
     setAssignModal({ isOpen: false, userId: '', name: '', currentStatus: 'belum' });
     fetchData();
   }
@@ -186,6 +188,11 @@ export default function SiswaPage() {
                                 Batch {s.siswa.batch}
                               </span>
                             )}
+                            {s.siswa?.tanggal_berangkat && (
+                              <span className="text-xs text-blue-900 font-bold bg-blue-100 px-2 py-0.5 rounded-md border border-blue-300 flex items-center">
+                                ✈️ {new Date(s.siswa.tanggal_berangkat).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </span>
+                            )}
                           </div>
                         ) : (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-200 text-gray-900">
@@ -202,7 +209,7 @@ export default function SiswaPage() {
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-1 hidden sm:inline"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg> Edit
                         </Link>
                         <button 
-                          onClick={() => setAssignModal({ isOpen: true, userId: s.id, name: s.name, currentStatus: s.siswa?.status_penempatan || 'belum', currentCompanyId: s.siswa?.perusahaan_id || undefined, currentBatch: s.siswa?.batch || undefined })} 
+                          onClick={() => setAssignModal({ isOpen: true, userId: s.id, name: s.name, currentStatus: s.siswa?.status_penempatan || 'belum', currentCompanyId: s.siswa?.perusahaan_id || undefined, currentBatch: s.siswa?.batch || undefined, currentTanggalBerangkat: s.siswa?.tanggal_berangkat || undefined })} 
                           className="inline-flex items-center text-blue-600 hover:text-blue-900 mr-3"
                           title="Ubah Penempatan"
                         >
@@ -289,6 +296,15 @@ export default function SiswaPage() {
                             name="batch"
                             defaultValue={assignModal.currentBatch || ''}
                             placeholder="Contoh: 1, 2, 2024A"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Keberangkatan ✈️ (Opsional)</label>
+                          <input 
+                            type="date"
+                            name="tanggal_berangkat"
+                            defaultValue={assignModal.currentTanggalBerangkat || ''}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                           />
                         </div>

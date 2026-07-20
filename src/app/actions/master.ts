@@ -85,7 +85,7 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
     .from('users')
     .select(`
       id, name, email, phone,
-      siswa ( id, status_penempatan, perusahaan_id, batch, perusahaan (nama) )
+      siswa ( id, status_penempatan, perusahaan_id, batch, tanggal_berangkat, perusahaan (nama) )
     `, { count: 'exact' })
     .eq('role', 'siswa')
     .eq('status_registrasi', 'approved');
@@ -102,7 +102,7 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
     let siswaQuery = supabaseAdmin
     .from('siswa')
       .select(`
-        id, status_penempatan, perusahaan_id, batch, perusahaan (nama),
+        id, status_penempatan, perusahaan_id, batch, tanggal_berangkat, perusahaan (nama),
         users!inner (id, name, email, phone, status_registrasi, role)
       `, { count: 'exact' })
       .eq('users.status_registrasi', 'approved')
@@ -134,6 +134,7 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
           status_penempatan: d.status_penempatan || 'belum',
           perusahaan_id: d.perusahaan_id || null,
           batch: d.batch || null,
+          tanggal_berangkat: d.tanggal_berangkat || null,
           perusahaan: perusahaanObj ? { nama: perusahaanObj.nama || '' } : null
         }
       };
@@ -163,6 +164,7 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
         status_penempatan: siswaObj.status_penempatan || 'belum',
         perusahaan_id: siswaObj.perusahaan_id || null,
         batch: siswaObj.batch || null,
+        tanggal_berangkat: siswaObj.tanggal_berangkat || null,
         perusahaan: perusahaanObj ? { nama: perusahaanObj.nama || '' } : null
       } : null
     };
@@ -171,7 +173,7 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
   return { data: mappedData, total: count || 0, limit };
 }
 
-export async function assignSiswaPerusahaanAction(userId: string, status: 'belum' | 'sudah', perusahaanId?: string, batch?: string) {
+export async function assignSiswaPerusahaanAction(userId: string, status: 'belum' | 'sudah', perusahaanId?: string, batch?: string, tanggal_berangkat?: string) {
   const updateData: any = { status_penempatan: status };
   
   if (status === 'sudah' && perusahaanId) {
@@ -184,6 +186,12 @@ export async function assignSiswaPerusahaanAction(userId: string, status: 'belum
     updateData.batch = batch;
   } else {
     updateData.batch = null;
+  }
+  
+  if (tanggal_berangkat) {
+    updateData.tanggal_berangkat = tanggal_berangkat;
+  } else {
+    updateData.tanggal_berangkat = null;
   }
 
   const { error } = await supabaseAdmin
@@ -202,7 +210,7 @@ export async function getSiswaByIdAction(id: string) {
     .from('users')
     .select(`
       id, name, email, phone,
-      siswa ( status_penempatan, perusahaan_id, batch )
+      siswa ( status_penempatan, perusahaan_id, batch, tanggal_berangkat )
     `)
     .eq('id', id)
     .single();
@@ -216,6 +224,7 @@ export async function getSiswaByIdAction(id: string) {
       ...data,
       perusahaan_id: siswaObj?.perusahaan_id || '',
       batch: siswaObj?.batch || '',
+      tanggal_berangkat: siswaObj?.tanggal_berangkat || '',
     } 
   };
 }
@@ -228,6 +237,7 @@ export async function updateSiswaProfileAction(id: string, formData: FormData) {
   
   const perusahaan_id = formData.get('perusahaan_id') as string;
   const batch = formData.get('batch') as string;
+  const tanggal_berangkat = formData.get('tanggal_berangkat') as string;
 
   if (!name || !email) return { error: 'Nama dan Email wajib diisi.' };
 
@@ -249,6 +259,7 @@ export async function updateSiswaProfileAction(id: string, formData: FormData) {
   // Update perusahaan_id dan batch ke tabel siswa
   const updateSiswaData: any = {
     batch: batch || null,
+    tanggal_berangkat: tanggal_berangkat || null,
   };
   
   if (perusahaan_id) {
