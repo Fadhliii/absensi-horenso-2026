@@ -76,7 +76,7 @@ export async function deletePerusahaanAction(id: string) {
 
 // ================= SISWA ACTIONS ================= //
 
-export async function getSiswaApprovedAction(page: number, search: string, statusFilter: string) {
+export async function getSiswaApprovedAction(page: number, search: string, statusFilter: string, perusahaanFilter: string = '') {
   const limit = 10;
   const from = (page - 1) * limit;
   const to = from + limit - 1;
@@ -96,9 +96,9 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
 
   // Next.js PostgREST filter on nested relation is a bit tricky, but we can filter by querying the joined table
   // However, Supabase (PostgREST) doesn't support easy nested filtering that affects the main row return.
-  // Instead, if statusFilter is used, we can query `siswa` table directly and join `users`.
+  // Instead, if statusFilter is used OR perusahaanFilter is used, we can query `siswa` table directly and join `users`.
   
-  if (statusFilter && statusFilter !== 'semua') {
+  if ((statusFilter && statusFilter !== 'semua') || perusahaanFilter) {
     let siswaQuery = supabaseAdmin
     .from('siswa')
       .select(`
@@ -106,11 +106,18 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
         users!inner (id, name, email, phone, status_registrasi, role)
       `, { count: 'exact' })
       .eq('users.status_registrasi', 'approved')
-      .eq('users.role', 'siswa')
-      .eq('status_penempatan', statusFilter);
+      .eq('users.role', 'siswa');
+
+    if (statusFilter && statusFilter !== 'semua') {
+      siswaQuery = siswaQuery.eq('status_penempatan', statusFilter);
+    }
 
     if (search) {
       siswaQuery = siswaQuery.ilike('users.name', `%${search}%`);
+    }
+
+    if (perusahaanFilter) {
+      siswaQuery = siswaQuery.eq('perusahaan_id', perusahaanFilter);
     }
 
     const { data, count, error } = await siswaQuery
@@ -198,6 +205,20 @@ export async function assignSiswaPerusahaanAction(userId: string, status: 'belum
     .from('siswa')
     .update(updateData)
     .eq('user_id', userId);
+
+  if (error) return { error: error.message };
+  
+  revalidatePath('/admin/siswa');
+  return { success: true };
+}
+
+export async function bulkSetKeberangkatanAction(userIds: string[], tanggal_berangkat: string | null) {
+  if (!userIds || userIds.length === 0) return { error: 'Tidak ada siswa yang dipilih.' };
+
+  const { error } = await supabaseAdmin
+    .from('siswa')
+    .update({ tanggal_berangkat: tanggal_berangkat || null })
+    .in('user_id', userIds);
 
   if (error) return { error: error.message };
   

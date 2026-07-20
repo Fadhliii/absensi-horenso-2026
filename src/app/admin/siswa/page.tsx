@@ -29,9 +29,13 @@ export default function SiswaPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('semua');
+  const [perusahaanFilter, setPerusahaanFilter] = useState('');
   const [total, setTotal] = useState(0);
   
   const [perusahaanList, setPerusahaanList] = useState<{id: string, nama: string}[]>([]);
+
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
 
   const [assignModal, setAssignModal] = useState<{ isOpen: boolean; userId: string; name: string; currentStatus: string; currentCompanyId?: string; currentBatch?: string; currentTanggalBerangkat?: string }>({ isOpen: false, userId: '', name: '', currentStatus: 'belum' });
 
@@ -48,7 +52,7 @@ export default function SiswaPage() {
     setLoading(true);
     setPageError('');
     try {
-      const result = await getSiswaApprovedAction(page, search, statusFilter);
+      const result = await getSiswaApprovedAction(page, search, statusFilter, perusahaanFilter);
       if (result?.data) {
         setData(result.data as any);
         setTotal(result.total || 0);
@@ -60,7 +64,7 @@ export default function SiswaPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, statusFilter]);
+  }, [page, search, statusFilter, perusahaanFilter]);
 
   useEffect(() => {
     fetchPerusahaan();
@@ -97,6 +101,36 @@ export default function SiswaPage() {
     setAssignModal({ isOpen: false, userId: '', name: '', currentStatus: 'belum' });
     fetchData();
   }
+
+  async function handleBulkSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const tanggal_berangkat = formData.get('tanggal_berangkat') as string;
+    
+    // Kita panggil bulkSetKeberangkatanAction (perlu diimport)
+    const { bulkSetKeberangkatanAction } = await import('@/app/actions/master');
+    await bulkSetKeberangkatanAction(selectedIds, tanggal_berangkat || null);
+    
+    setIsBulkModalOpen(false);
+    setSelectedIds([]);
+    fetchData();
+  }
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      // Hanya pilih yang statusnya 'sudah'
+      const placableIds = data.filter(s => s.siswa?.status_penempatan === 'sudah').map(s => s.id);
+      setSelectedIds(placableIds);
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectOne = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
 
 
   return (
@@ -137,11 +171,21 @@ export default function SiswaPage() {
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
           </div>
-          <div className="w-full sm:w-48">
+          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+            <select
+              value={perusahaanFilter}
+              onChange={(e) => { setPerusahaanFilter(e.target.value); setPage(1); }}
+              className="block w-full sm:w-48 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg"
+            >
+              <option value="">Semua Perusahaan</option>
+              {perusahaanList.map(p => (
+                <option key={p.id} value={p.id}>{p.nama}</option>
+              ))}
+            </select>
             <select
               value={statusFilter}
               onChange={handleFilter}
-              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg"
+              className="block w-full sm:w-48 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg"
             >
               <option value="semua">Semua Status</option>
               <option value="belum">Belum Ditempatkan</option>
@@ -150,11 +194,33 @@ export default function SiswaPage() {
           </div>
         </div>
 
+        {selectedIds.length > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex items-center justify-between shadow-sm">
+            <span className="text-sm font-medium text-blue-800">
+              {selectedIds.length} siswa dipilih
+            </span>
+            <button 
+              onClick={() => setIsBulkModalOpen(true)}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+            >
+              Set Keberangkatan Massal
+            </button>
+          </div>
+        )}
+
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-100 border-b border-gray-200">
                 <tr>
+                  <th scope="col" className="px-6 py-3 text-left w-12">
+                    <input 
+                      type="checkbox" 
+                      onChange={handleSelectAll}
+                      checked={data.length > 0 && data.filter(s => s.siswa?.status_penempatan === 'sudah').every(s => selectedIds.includes(s.id)) && data.some(s => s.siswa?.status_penempatan === 'sudah')}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                  </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">Nama Siswa</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider hidden sm:table-cell">Kontak</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">Penempatan & Batch</th>
@@ -163,12 +229,21 @@ export default function SiswaPage() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {loading ? (
-                  <tr><td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-800 font-medium">Memuat data...</td></tr>
+                  <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-800 font-medium">Memuat data...</td></tr>
                 ) : data.length === 0 ? (
-                  <tr><td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-800 font-medium">Tidak ada data siswa ditemukan.</td></tr>
+                  <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-800 font-medium">Tidak ada data siswa ditemukan.</td></tr>
                 ) : (
                   data.map((s) => (
                     <tr key={s.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input 
+                          type="checkbox"
+                          checked={selectedIds.includes(s.id)}
+                          onChange={() => handleSelectOne(s.id)}
+                          disabled={s.siswa?.status_penempatan !== 'sudah'}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50"
+                        />
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-bold text-gray-900">{s.name}</div>
                         <div className="text-sm text-gray-800 font-medium sm:hidden">{s.phone || s.email}</div>
@@ -322,6 +397,42 @@ export default function SiswaPage() {
                 </div>
               </form>
             </div>
+        </div>
+      )}
+
+      {/* Modal Bulk Set Keberangkatan */}
+      {isBulkModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="fixed inset-0 z-40 bg-gray-900/60" 
+            onClick={() => setIsBulkModalOpen(false)}
+          ></div>
+          <div className="relative z-50 w-full max-w-md bg-white rounded-lg text-left shadow-xl overflow-hidden">
+            <form onSubmit={handleBulkSubmit}>
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Set Tanggal Keberangkatan ({selectedIds.length} Siswa)</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Keberangkatan ✈️</label>
+                    <input 
+                      type="date"
+                      name="tanggal_berangkat"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <p className="mt-2 text-xs text-gray-500">Kosongkan jika ingin menghapus tanggal keberangkatan dari siswa-siswa ini.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="submit" className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:ml-3 sm:w-auto sm:text-sm">
+                  Simpan Perubahan
+                </button>
+                <button type="button" onClick={() => setIsBulkModalOpen(false)} className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                  Batal
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
