@@ -43,7 +43,7 @@ export async function getDashboardStatsAction() {
       supabase.from('absensi').select('waktu_scan, status').eq('status', 'hadir').gte('waktu_scan', sevenDaysAgo.toISOString()),
       
       // 6. Cek Sesi Aktif
-      supabase.from('sesi').select('id').eq('is_active', true).limit(1)
+      supabase.from('sesi_absensi').select('id').eq('status', 'aktif').limit(1)
     ]);
 
     // Agregasi manual di Node.js (cepat & ringan untuk skala kecil-menengah)

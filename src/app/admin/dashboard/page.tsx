@@ -20,11 +20,18 @@ const DashboardChart = dynamic(() => import('@/components/DashboardChart'), {
 export default function AdminDashboardPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
-    const result = await getDashboardStatsAction();
-    if (result.success) {
-      setData(result);
+    try {
+      const result = await getDashboardStatsAction();
+      if (result.success) {
+        setData(result);
+      } else {
+        setError(result.error || 'Terjadi kesalahan saat memuat data');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Error jaringan');
     }
     setLoading(false);
   }, []);
@@ -64,6 +71,13 @@ export default function AdminDashboardPage() {
         
         {loading ? (
           <div className="flex justify-center py-20"><span className="animate-pulse text-gray-500">Memuat Data...</span></div>
+        ) : error ? (
+          <div className="flex justify-center py-20">
+            <div className="bg-[#ff003c] text-white p-6 neo-card max-w-md text-center">
+              <h2 className="text-xl font-black uppercase mb-2">Terjadi Kesalahan</h2>
+              <p className="font-bold">{error}</p>
+            </div>
+          </div>
         ) : data && (
           <div className="space-y-6">
             
