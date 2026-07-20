@@ -73,6 +73,9 @@ export default function AdminDashboardPage() {
               <Link href="/admin/siswa" className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">Data Siswa</Link>
               <Link href="/admin/perusahaan" className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">Data Perusahaan</Link>
               <Link href="/admin/sesi" className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors shadow-sm">Buka Sesi Kelas</Link>
+              <Link href="/admin/sesi/aktif" target="_blank" className="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-100 transition-colors shadow-sm flex items-center" title="Link Dedicated untuk menampilkan QR Sesi Aktif yang bisa digunakan oleh Guru lain">
+                <ExternalLink className="w-4 h-4 mr-1" /> Sesi Aktif (QR)
+              </Link>
             </div>
 
             {/* Statistik Cards */}

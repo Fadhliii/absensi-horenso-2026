@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, use } from 'react';
 import { getDetailSesiAction, selesaiSesiAction, getJumlahHadirAction } from '@/app/actions/sesi';
 import { QRCodeSVG } from 'qrcode.react';
-import { Users, Loader2, MapPin, StopCircle } from 'lucide-react';
+import { Users, Loader2, MapPin, StopCircle, Copy, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function ActiveSessionPage({ params }: { params: Promise<{ id: string }> }) {
@@ -23,6 +23,15 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ id: st
   const tokenTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleCopyLink = () => {
+    const url = `${window.location.origin}/admin/sesi/aktif`;
+    navigator.clipboard.writeText(url);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
 
   // Fetch token baru dari API
   const generateNewToken = useCallback(async (interval: number) => {
@@ -158,12 +167,24 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ id: st
             Radius {sessionData.radius_meter}m • Refresh tiap {sessionData.interval_qr_detik} detik
           </p>
         </div>
-        <button 
-          onClick={handleTutupSesi}
-          className="flex items-center bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-        >
-          <StopCircle className="w-4 h-4 mr-2" /> Tutup Sesi
-        </button>
+        <div className="flex space-x-2">
+          <button 
+            onClick={handleCopyLink}
+            className="flex items-center bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors border border-gray-600"
+          >
+            {isCopied ? (
+              <><Check className="w-4 h-4 mr-2 text-green-400" /> Tersalin</>
+            ) : (
+              <><Copy className="w-4 h-4 mr-2" /> Salin Link</>
+            )}
+          </button>
+          <button 
+            onClick={handleTutupSesi}
+            className="flex items-center bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+          >
+            <StopCircle className="w-4 h-4 mr-2" /> Tutup Sesi
+          </button>
+        </div>
       </div>
 
       {/* Main Content Area */}
