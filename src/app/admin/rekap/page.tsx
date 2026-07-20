@@ -234,6 +234,44 @@ export default function RekapGridPage() {
           </div>
         </div>
 
+        {/* Keterangan Hari Libur Nasional */}
+        {Object.keys(holidays).length > 0 && (
+          <div className="mt-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center">
+              <span className="w-3 h-3 rounded bg-gray-300 mr-2"></span>
+              Keterangan Hari Libur Nasional (Bulan Ini)
+            </h3>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-sm text-gray-600">
+              {Object.entries(holidays)
+                .filter(([dateStr]) => {
+                  const [y, m, d] = dateStr.split('-');
+                  return parseInt(m) === selectedMonth && parseInt(y) === selectedYear;
+                })
+                .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+                .map(([dateStr, name]) => {
+                  const [y, m, d] = dateStr.split('-');
+                  const formattedDate = `${parseInt(d)} ${[
+                    '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+                  ][parseInt(m)]} ${y}`;
+                  
+                  return (
+                    <li key={dateStr} className="flex items-start">
+                      <span className="font-semibold text-red-500 mr-2 min-w-[90px]">{formattedDate}</span>
+                      <span>: {name}</span>
+                    </li>
+                  );
+                })}
+              {Object.entries(holidays).filter(([dateStr]) => {
+                const [y, m, d] = dateStr.split('-');
+                return parseInt(m) === selectedMonth && parseInt(y) === selectedYear;
+              }).length === 0 && (
+                <li className="text-gray-400 italic">Tidak ada hari libur nasional di bulan ini.</li>
+              )}
+            </ul>
+          </div>
+        )}
+
       </main>
     </div>
   );
