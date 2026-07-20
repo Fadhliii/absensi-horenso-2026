@@ -76,6 +76,9 @@ export default function AdminDashboardPage() {
               <Link href="/admin/sesi/aktif" target="_blank" className="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-100 transition-colors shadow-sm flex items-center" title="Link Dedicated untuk menampilkan QR Sesi Aktif yang bisa digunakan oleh Guru lain">
                 <ExternalLink className="w-4 h-4 mr-1" /> Sesi Aktif (QR)
               </Link>
+              <Link href="/admin/rekap" className="bg-purple-50 border border-purple-200 text-purple-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-100 transition-colors shadow-sm flex items-center">
+                Rekap Grid
+              </Link>
             </div>
 
             {/* Statistik Cards */}
