@@ -23,8 +23,9 @@ export async function middleware(request: NextRequest) {
 
   // Jika tidak ada sesi tapi mencoba akses halaman yang dilindungi
   const isProtectedRoute = pathname.startsWith('/admin') || pathname.startsWith('/siswa') || pathname === '/ganti-password';
+  const isPublicSesi = pathname === '/admin/sesi/aktif' || /^\/admin\/sesi\/[a-zA-Z0-9-]+$/.test(pathname);
   
-  if (isProtectedRoute && !session) {
+  if (isProtectedRoute && !session && !isPublicSesi) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
@@ -42,7 +43,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // 3. Pengecekan hak akses admin
-    if (pathname.startsWith('/admin') && session.role !== 'admin') {
+    if (pathname.startsWith('/admin') && session.role !== 'admin' && !isPublicSesi) {
       return NextResponse.redirect(new URL('/siswa/dashboard', request.url));
     }
 

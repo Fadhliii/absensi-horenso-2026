@@ -5,13 +5,6 @@ import { verifySessionToken } from '@/lib/auth';
 import Link from 'next/link';
 
 export default async function AktifSessionRedirectPage() {
-  // Check auth
-  const cookieStore = await cookies();
-  const token = cookieStore.get('session')?.value;
-  if (!token) redirect('/');
-  const session = await verifySessionToken(token);
-  if (!session || session.role !== 'admin') redirect('/');
-
   // Find active session
   const { data, error } = await supabase
     .from('sesi_absensi')

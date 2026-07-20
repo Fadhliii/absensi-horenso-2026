@@ -54,11 +54,6 @@ export async function mulaiSesiAction(formData: FormData) {
 }
 
 export async function selesaiSesiAction(sessionId: string) {
-  try {
-    await getAdminId(); // Verifikasi admin
-  } catch (e) {
-    return { error: 'Unauthorized' };
-  }
 
   const { error } = await supabase
     .from('sesi_absensi')
