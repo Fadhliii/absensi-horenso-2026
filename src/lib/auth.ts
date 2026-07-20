@@ -17,7 +17,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 // Data yang disimpan di dalam cookie JWT
 export interface SessionPayload {
   userId: string;
-  role: 'admin' | 'siswa';
+  role: 'admin' | 'siswa' | 'instruktur';
   status: 'pending' | 'approved' | 'rejected';
   forceChangePassword: boolean;
 }

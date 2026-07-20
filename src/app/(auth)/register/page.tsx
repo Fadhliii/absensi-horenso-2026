@@ -66,6 +66,18 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Daftar Sebagai</label>
+            <select
+              name="role"
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 bg-white"
+            >
+              <option value="siswa">Siswa (Peserta Pelatihan)</option>
+              <option value="instruktur">Instruktur (Pengajar)</option>
+            </select>
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
             <input 
               type="text" 

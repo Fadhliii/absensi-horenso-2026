@@ -83,9 +83,13 @@ export default function AdminDashboardPage() {
             
             {/* Quick Menu */}
             <div className="flex flex-wrap gap-4 mb-6">
-              <Link href="/admin/approval" className="bg-white text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Menu Approval</Link>
-              <Link href="/admin/siswa" className="bg-white text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Data Siswa</Link>
-              <Link href="/admin/perusahaan" className="bg-white text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Data Perusahaan</Link>
+              {data.role === 'admin' && (
+                <>
+                  <Link href="/admin/approval" className="bg-white text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Menu Approval</Link>
+                  <Link href="/admin/siswa" className="bg-white text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Data Siswa</Link>
+                  <Link href="/admin/perusahaan" className="bg-white text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Data Perusahaan</Link>
+                </>
+              )}
               <Link href="/admin/sesi" className="bg-[#4deeea] text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Buka Sesi Kelas</Link>
               {data.isSesiAktif ? (
                 <Link href="/admin/sesi/aktif" target="_blank" className="bg-[#ff003c] text-white px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1 flex items-center" title="Link Dedicated untuk menampilkan QR Sesi Aktif yang bisa digunakan oleh Guru lain">
@@ -98,6 +102,9 @@ export default function AdminDashboardPage() {
               )}
               <Link href="/admin/rekap" className="bg-[#ffe700] text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1 flex items-center">
                 Rekap Grid
+              </Link>
+              <Link href="/admin/izin" className="bg-[#f000ff] text-white px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1 flex items-center">
+                Permohonan Izin
               </Link>
             </div>
 
@@ -124,20 +131,22 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              <div className="bg-[#ffe700] neo-card p-6 flex items-center relative overflow-hidden group hover:-translate-y-1 transition-transform">
-                <div className="w-14 h-14 bg-white neo-border flex items-center justify-center mr-4">
-                  <UserPlus className="w-7 h-7 text-black" />
+              {data.role === 'admin' && (
+                <div className="bg-[#ffe700] neo-card p-6 flex items-center relative overflow-hidden group hover:-translate-y-1 transition-transform">
+                  <div className="w-14 h-14 bg-white neo-border flex items-center justify-center mr-4">
+                    <UserPlus className="w-7 h-7 text-black" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-black uppercase mb-1">Pending Approval</p>
+                    <p className="text-4xl font-black text-black">{data.stats.pendingApproval}</p>
+                  </div>
+                  {data.stats.pendingApproval > 0 && (
+                    <Link href="/admin/approval" className="absolute top-0 right-0 h-full w-4 flex items-center justify-center bg-black hover:w-full transition-all opacity-100">
+                      <span className="hidden group-hover:block text-white font-black text-lg tracking-wide uppercase">Cek Sekarang</span>
+                    </Link>
+                  )}
                 </div>
-                <div>
-                  <p className="text-sm font-black text-black uppercase mb-1">Pending Approval</p>
-                  <p className="text-4xl font-black text-black">{data.stats.pendingApproval}</p>
-                </div>
-                {data.stats.pendingApproval > 0 && (
-                  <Link href="/admin/approval" className="absolute top-0 right-0 h-full w-4 flex items-center justify-center bg-black hover:w-full transition-all opacity-100">
-                    <span className="hidden group-hover:block text-white font-black text-lg tracking-wide uppercase">Cek Sekarang</span>
-                  </Link>
-                )}
-              </div>
+              )}
               
             </div>
 

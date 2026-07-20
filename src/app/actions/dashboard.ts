@@ -1,9 +1,20 @@
 'use server';
 
 import { supabase } from '@/lib/supabase';
+import { cookies } from 'next/headers';
+import { verifySessionToken } from '@/lib/auth';
 
 export async function getDashboardStatsAction() {
   try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('session')?.value;
+    let role = 'admin';
+    
+    if (token) {
+      const session = await verifySessionToken(token);
+      if (session) role = session.role;
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayISO = today.toISOString();
@@ -81,7 +92,8 @@ export async function getDashboardStatsAction() {
       },
       logAbsensi: logAbsensi || [],
       chartData,
-      isSesiAktif
+      isSesiAktif,
+      role
     };
 
   } catch (error: any) {

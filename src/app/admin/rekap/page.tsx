@@ -9,7 +9,7 @@ import Link from 'next/link';
 
 export default function RekapGridPage() {
   const [loading, setLoading] = useState(true);
-  const [rekapData, setRekapData] = useState<{id: string, name: string, tanggal_berangkat: string | null, attendance: number[]}[]>([]);
+  const [rekapData, setRekapData] = useState<{id: string, name: string, tanggal_berangkat: string | null, attendance: Record<number, string>}[]>([]);
   const [perusahaanList, setPerusahaanList] = useState<{id: string, nama: string}[]>([]);
   const [holidays, setHolidays] = useState<Record<string, string>>({}); // date string (YYYY-MM-DD) -> Holiday Name
   
@@ -231,7 +231,11 @@ export default function RekapGridPage() {
                       </td>
                       
                       {daysArray.map(day => {
-                        const hadir = siswa.attendance.includes(day);
+                        const status = siswa.attendance[day];
+                        const hadir = status === 'H';
+                        const izin = status === 'I';
+                        const sakit = status === 'S';
+                        
                         const weekend = isWeekend(day);
                         const holidayName = getHolidayName(day);
                         const isHoliday = !!holidayName;
@@ -250,6 +254,12 @@ export default function RekapGridPage() {
                         } else if (hadir) {
                           innerClass += "bg-green-500 text-white shadow-sm scale-110";
                           content = '1';
+                        } else if (izin) {
+                          innerClass += "bg-[#ffe700] text-black shadow-sm scale-110";
+                          content = 'I';
+                        } else if (sakit) {
+                          innerClass += "bg-[#ff003c] text-white shadow-sm scale-110";
+                          content = 'S';
                         } else if (weekend || isHoliday) {
                           innerClass += "bg-gray-200 text-transparent";
                           content = '';
@@ -257,8 +267,12 @@ export default function RekapGridPage() {
                           innerClass += "bg-red-100 text-red-500";
                         }
 
+                        let titleStr = isDeparted ? 'Sudah Berangkat' : (isHoliday ? holidayName : '');
+                        if (izin) titleStr = 'Izin';
+                        if (sakit) titleStr = 'Sakit';
+
                         return (
-                          <td key={day} className={cellClass} title={isDeparted ? 'Sudah Berangkat' : (isHoliday ? holidayName : '')}>
+                          <td key={day} className={cellClass} title={titleStr}>
                             <div className={innerClass}>
                               {content}
                             </div>
@@ -283,6 +297,8 @@ export default function RekapGridPage() {
             </h3>
             <div className="flex flex-wrap gap-4 text-sm text-gray-700">
               <div className="flex items-center"><div className="w-6 h-6 rounded bg-green-500 text-white flex items-center justify-center font-bold text-xs mr-2">1</div> Hadir</div>
+              <div className="flex items-center"><div className="w-6 h-6 rounded bg-[#ffe700] text-black flex items-center justify-center font-bold text-xs mr-2">I</div> Izin</div>
+              <div className="flex items-center"><div className="w-6 h-6 rounded bg-[#ff003c] text-white flex items-center justify-center font-bold text-xs mr-2">S</div> Sakit</div>
               <div className="flex items-center"><div className="w-6 h-6 rounded bg-red-100 text-red-500 flex items-center justify-center font-bold text-xs mr-2">0</div> Tidak Hadir / Alpa</div>
               <div className="flex items-center"><div className="w-6 h-6 rounded bg-gray-200 flex items-center justify-center text-xs mr-2"></div> Libur (Sabtu/Minggu/Nasional)</div>
               <div className="flex items-center"><div className="w-6 h-6 rounded bg-blue-100 text-blue-600 flex items-center justify-center text-xs mr-2">✈️</div> Sudah Berangkat ke Jepang</div>

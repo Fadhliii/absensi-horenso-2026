@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getStudentDashboardDataAction } from '@/app/actions/siswa';
+import { ajukanIzinAction } from '@/app/actions/izin';
 import { logoutAction } from '@/app/actions/auth';
 import { QrCode, LogOut, Calendar, Clock, MapPin, CheckCircle, XCircle, AlertCircle, Building2 } from 'lucide-react';
 import Link from 'next/link';
@@ -14,6 +15,14 @@ export default function SiswaDashboardPage() {
   // Ambil bulan saat ini (YYYY-MM)
   const currentMonth = new Date().toISOString().slice(0, 7);
   const [monthFilter, setMonthFilter] = useState(currentMonth);
+  
+  // State untuk modal izin
+  const [isIzinModalOpen, setIsIzinModalOpen] = useState(false);
+  const [izinTanggal, setIzinTanggal] = useState('');
+  const [izinTipe, setIzinTipe] = useState<'izin' | 'sakit'>('izin');
+  const [izinAlasan, setIzinAlasan] = useState('');
+  const [izinLoading, setIzinLoading] = useState(false);
+  const [izinError, setIzinError] = useState('');
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -39,6 +48,29 @@ export default function SiswaDashboardPage() {
   const formatTime = (isoString: string) => {
     const date = new Date(isoString);
     return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const handleAjukanIzin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIzinError('');
+    setIzinLoading(true);
+
+    const formData = new FormData();
+    formData.append('tanggal', izinTanggal);
+    formData.append('tipe', izinTipe);
+    formData.append('alasan', izinAlasan);
+
+    const result = await ajukanIzinAction(formData);
+    if (result.error) {
+      setIzinError(result.error);
+    } else {
+      setIsIzinModalOpen(false);
+      setIzinTanggal('');
+      setIzinAlasan('');
+      alert('Permohonan izin/sakit berhasil diajukan.');
+      fetchData(); // Refresh data
+    }
+    setIzinLoading(false);
   };
 
   return (
@@ -84,14 +116,22 @@ export default function SiswaDashboardPage() {
         )}
 
         {/* Scan Action Button */}
-        <div className="mb-8">
+        <div className="mb-8 grid grid-cols-2 gap-4">
           <Link 
             href="/siswa/scan"
-            className="flex items-center justify-center w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] transition-all text-white font-bold py-4 px-4 rounded-2xl shadow-lg"
+            className="flex flex-col items-center justify-center w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] transition-all text-white font-bold py-4 px-4 rounded-2xl shadow-sm border-2 border-blue-800"
           >
-            <QrCode className="w-6 h-6 mr-3" />
-            Scan QR Absensi Sekarang
+            <QrCode className="w-8 h-8 mb-2" />
+            <span className="text-sm">Scan QR Absensi</span>
           </Link>
+
+          <button 
+            onClick={() => setIsIzinModalOpen(true)}
+            className="flex flex-col items-center justify-center w-full bg-white hover:bg-gray-50 active:scale-[0.98] transition-all text-gray-800 font-bold py-4 px-4 rounded-2xl shadow-sm border-2 border-gray-200"
+          >
+            <Calendar className="w-8 h-8 mb-2 text-gray-600" />
+            <span className="text-sm">Ajukan Izin/Sakit</span>
+          </button>
         </div>
 
         {/* Attendance History Section */}
@@ -161,6 +201,81 @@ export default function SiswaDashboardPage() {
         </div>
 
       </main>
+
+      {/* Modal Izin/Sakit */}
+      {isIzinModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 border-b pb-2">Pengajuan Izin/Sakit</h3>
+            
+            {izinError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 text-sm p-3 rounded-lg mb-4">
+                {izinError}
+              </div>
+            )}
+            
+            <form onSubmit={handleAjukanIzin} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Tanggal</label>
+                <input 
+                  type="date" 
+                  required
+                  value={izinTanggal}
+                  onChange={(e) => setIzinTanggal(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Jenis</label>
+                <select 
+                  value={izinTipe}
+                  onChange={(e) => setIzinTipe(e.target.value as 'izin' | 'sakit')}
+                  className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                >
+                  <option value="izin">Izin</option>
+                  <option value="sakit">Sakit</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Alasan</label>
+                <textarea 
+                  required
+                  value={izinAlasan}
+                  onChange={(e) => setIzinAlasan(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                  rows={3}
+                  placeholder="Jelaskan alasan izin/sakit..."
+                ></textarea>
+              </div>
+              
+              <div className="pt-2 text-xs text-gray-500 italic">
+                * Bukti foto/surat dokter silakan dikirimkan langsung melalui WhatsApp Instruktur atau Admin LPK.
+              </div>
+
+              <div className="flex space-x-3 pt-4 border-t mt-4">
+                <button 
+                  type="button" 
+                  onClick={() => setIsIzinModalOpen(false)}
+                  className="flex-1 py-2 px-4 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50"
+                  disabled={izinLoading}
+                >
+                  Batal
+                </button>
+                <button 
+                  type="submit" 
+                  className="flex-1 py-2 px-4 bg-blue-600 rounded-xl text-white font-bold hover:bg-blue-700"
+                  disabled={izinLoading}
+                >
+                  {izinLoading ? 'Mengirim...' : 'Kirim'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

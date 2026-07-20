@@ -10,15 +10,20 @@ export async function registerAction(formData: FormData) {
   const email = formData.get('email') as string;
   const phone = formData.get('phone') as string;
   const password = formData.get('password') as string;
+  const role = (formData.get('role') as string) || 'siswa';
 
   if (!name || !email || !password) {
     return { error: 'Semua kolom wajib diisi!' };
   }
 
+  if (role !== 'siswa' && role !== 'instruktur') {
+    return { error: 'Peran (Role) tidak valid!' };
+  }
+
   try {
     const passwordHash = await hashPassword(password);
     
-    // Default role 'siswa', status 'pending'
+    // Status 'pending' until approved by admin
     const { error } = await supabase
       .from('users')
       .insert([
@@ -27,7 +32,7 @@ export async function registerAction(formData: FormData) {
           email,
           phone,
           password_hash: passwordHash,
-          role: 'siswa',
+          role,
           status_registrasi: 'pending',
           force_change_password: false,
         }

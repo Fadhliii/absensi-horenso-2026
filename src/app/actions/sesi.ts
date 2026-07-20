@@ -6,19 +6,19 @@ import { verifySessionToken } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-async function getAdminId() {
+async function getAdminOrInstrukturId() {
   const cookieStore = await cookies();
   const token = cookieStore.get('session')?.value;
   if (!token) throw new Error('Unauthorized');
   const session = await verifySessionToken(token);
-  if (!session || session.role !== 'admin') throw new Error('Unauthorized');
+  if (!session || (session.role !== 'admin' && session.role !== 'instruktur')) throw new Error('Unauthorized');
   return session.userId;
 }
 
 export async function mulaiSesiAction(formData: FormData) {
   let userId;
   try {
-    userId = await getAdminId();
+    userId = await getAdminOrInstrukturId();
   } catch (e) {
     return { error: 'Anda tidak memiliki akses.' };
   }
@@ -55,9 +55,9 @@ export async function mulaiSesiAction(formData: FormData) {
 
 export async function selesaiSesiAction(sessionId: string) {
   try {
-    await getAdminId(); // Verifikasi admin
+    await getAdminOrInstrukturId(); // Verifikasi admin/instruktur
   } catch (e) {
-    return { error: 'Hanya Admin yang dapat menutup sesi.' };
+    return { error: 'Hanya Admin/Instruktur yang dapat menutup sesi.' };
   }
 
   const { error } = await supabase

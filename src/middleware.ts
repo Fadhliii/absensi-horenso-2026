@@ -17,7 +17,9 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute = pathname === '/login' || pathname === '/register';
 
   if (isAuthRoute && session) {
-    if (session.role === 'admin') return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+    if (session.role === 'admin' || session.role === 'instruktur') {
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+    }
     if (session.role === 'siswa') return NextResponse.redirect(new URL('/siswa/dashboard', request.url));
   }
 
@@ -42,9 +44,17 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/ganti-password', request.url));
     }
 
-    // 3. Pengecekan hak akses admin
-    if (pathname.startsWith('/admin') && session.role !== 'admin' && !isPublicSesi) {
+    // 3. Pengecekan hak akses admin & instruktur (keduanya boleh akses /admin)
+    if (pathname.startsWith('/admin') && session.role !== 'admin' && session.role !== 'instruktur' && !isPublicSesi) {
       return NextResponse.redirect(new URL('/siswa/dashboard', request.url));
+    }
+
+    // 3b. Restriksi Instruktur ke halaman admin tertentu
+    if (session.role === 'instruktur') {
+      const forbiddenForInstruktur = ['/admin/siswa', '/admin/perusahaan', '/admin/approval'];
+      if (forbiddenForInstruktur.some(route => pathname.startsWith(route))) {
+        return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+      }
     }
 
     // 4. Pengecekan hak akses siswa
@@ -54,7 +64,9 @@ export async function middleware(request: NextRequest) {
 
     // 5. Mencegah akses ke ganti-password jika tidak diwajibkan
     if (pathname === '/ganti-password' && !session.forceChangePassword) {
-      if (session.role === 'admin') return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+      if (session.role === 'admin' || session.role === 'instruktur') {
+        return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+      }
       return NextResponse.redirect(new URL('/siswa/dashboard', request.url));
     }
   }

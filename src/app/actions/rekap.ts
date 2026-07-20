@@ -4,17 +4,17 @@ import { supabase } from '@/lib/supabase';
 import { cookies } from 'next/headers';
 import { verifySessionToken } from '@/lib/auth';
 
-async function verifyAdmin() {
+async function verifyAdminOrInstruktur() {
   const cookieStore = await cookies();
   const token = cookieStore.get('session')?.value;
   if (!token) throw new Error('Unauthorized');
   const session = await verifySessionToken(token);
-  if (!session || session.role !== 'admin') throw new Error('Unauthorized');
+  if (!session || (session.role !== 'admin' && session.role !== 'instruktur')) throw new Error('Unauthorized');
 }
 
 export async function getRekapAbsensiAction(year: number, month: number, perusahaanId?: string) {
   try {
-    await verifyAdmin();
+    await verifyAdminOrInstruktur();
     
     // Fetch students
     let query = supabase
@@ -52,14 +52,21 @@ export async function getRekapAbsensiAction(year: number, month: number, perusah
 
     if (absensiError) throw absensiError;
 
-    // Process data to a map: student_id -> { date (1-31): boolean }
-    // Note: waktu_scan is in UTC. We should convert it to local timezone (e.g., +07:00) 
-    // or just assume standard offset for simplicity.
-    // For simplicity, we just use the UTC date since the scan usually happens during daytime
-    const attendanceMap: Record<string, Set<number>> = {};
+    // Fetch approved leaves
+    const { data: izin, error: izinError } = await supabase
+      .from('izin_absen')
+      .select('siswa_id, tanggal, tipe')
+      .gte('tanggal', startDate.substring(0, 10))
+      .lt('tanggal', endDate.substring(0, 10))
+      .eq('status', 'approved');
+
+    if (izinError) throw izinError;
+
+    // Process data to a map: student_id -> { date (1-31): status (H, I, S) }
+    const attendanceMap: Record<string, Record<number, string>> = {};
     
     students.forEach(s => {
-      attendanceMap[s.id] = new Set();
+      attendanceMap[s.id] = {};
     });
 
     absensi.forEach(a => {
@@ -67,18 +74,26 @@ export async function getRekapAbsensiAction(year: number, month: number, perusah
         // Parse date
         const dateObj = new Date(a.waktu_scan);
         const day = dateObj.getDate();
-        attendanceMap[a.siswa_id].add(day);
+        attendanceMap[a.siswa_id][day] = 'H';
       }
     });
 
-    // Convert Set to Array for JSON serialization
+    izin?.forEach(i => {
+      if (attendanceMap[i.siswa_id]) {
+        const dateObj = new Date(i.tanggal);
+        const day = dateObj.getDate();
+        attendanceMap[i.siswa_id][day] = i.tipe === 'izin' ? 'I' : 'S';
+      }
+    });
+
+    // Convert to JSON serialization
     const result = students.map(s => {
       const siswaData = Array.isArray(s.siswa) ? s.siswa[0] : (s.siswa as any);
       return {
         id: s.id,
         name: s.name,
         tanggal_berangkat: siswaData?.tanggal_berangkat || null,
-        attendance: Array.from(attendanceMap[s.id] || [])
+        attendance: attendanceMap[s.id] || {}
       };
     });
 
