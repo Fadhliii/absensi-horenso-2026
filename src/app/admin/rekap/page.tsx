@@ -11,6 +11,7 @@ export default function RekapGridPage() {
   const [loading, setLoading] = useState(true);
   const [rekapData, setRekapData] = useState<{id: string, name: string, attendance: number[]}[]>([]);
   const [perusahaanList, setPerusahaanList] = useState<{id: string, nama: string}[]>([]);
+  const [holidays, setHolidays] = useState<Record<string, string>>({}); // date string (YYYY-MM-DD) -> Holiday Name
   
   // Filters
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -21,6 +22,22 @@ export default function RekapGridPage() {
     const res = await getAllPerusahaanAction();
     if (res.data) setPerusahaanList(res.data);
   }, []);
+
+  const fetchHolidays = useCallback(async () => {
+    try {
+      const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${selectedYear}/ID`);
+      if (res.ok) {
+        const data = await res.json();
+        const holidayMap: Record<string, string> = {};
+        data.forEach((h: any) => {
+          holidayMap[h.date] = h.localName;
+        });
+        setHolidays(holidayMap);
+      }
+    } catch (error) {
+      console.error('Failed to fetch holidays:', error);
+    }
+  }, [selectedYear]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -36,6 +53,10 @@ export default function RekapGridPage() {
   }, [fetchFilters]);
 
   useEffect(() => {
+    fetchHolidays();
+  }, [fetchHolidays]);
+
+  useEffect(() => {
     fetchData();
   }, [fetchData]);
 
@@ -47,6 +68,20 @@ export default function RekapGridPage() {
   const daysArray = useMemo(() => {
     return Array.from({ length: daysInMonth }, (_, i) => i + 1);
   }, [daysInMonth]);
+
+  const getDayName = useCallback((day: number) => {
+    const date = new Date(selectedYear, selectedMonth - 1, day);
+    const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+    return dayNames[date.getDay()];
+  }, [selectedYear, selectedMonth]);
+
+  const getHolidayName = useCallback((day: number) => {
+    // Format to YYYY-MM-DD
+    const m = selectedMonth.toString().padStart(2, '0');
+    const d = day.toString().padStart(2, '0');
+    const dateStr = `${selectedYear}-${m}-${d}`;
+    return holidays[dateStr];
+  }, [selectedYear, selectedMonth, holidays]);
 
   // Helper to check if a day is weekend
   const isWeekend = useCallback((day: number) => {
@@ -127,20 +162,29 @@ export default function RekapGridPage() {
         <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col relative">
           <div className="overflow-x-auto h-full max-h-[70vh]">
             <table className="w-full text-sm text-left whitespace-nowrap border-collapse">
-              <thead className="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-20">
+              <thead className="text-xs text-gray-700 bg-gray-100 sticky top-0 z-20">
                 <tr>
-                  <th scope="col" className="px-4 py-3 sticky left-0 bg-gray-100 z-30 border-r border-b border-gray-200 min-w-[200px]">
+                  <th scope="col" className="px-4 py-3 sticky left-0 bg-gray-100 z-30 border-r border-b border-gray-200 min-w-[200px] align-bottom uppercase">
                     Nama Siswa
                   </th>
-                  {daysArray.map(day => (
-                    <th 
-                      key={day} 
-                      scope="col" 
-                      className={`px-2 py-3 border-b border-gray-200 text-center w-8 ${isWeekend(day) ? 'bg-gray-200 text-gray-500' : ''}`}
-                    >
-                      {day}
-                    </th>
-                  ))}
+                  {daysArray.map(day => {
+                    const isWknd = isWeekend(day);
+                    const holidayName = getHolidayName(day);
+                    const isHoliday = !!holidayName;
+                    return (
+                      <th 
+                        key={day} 
+                        scope="col" 
+                        title={holidayName || ''}
+                        className={`px-2 py-2 border-b border-gray-200 text-center w-10 min-w-[40px] ${(isWknd || isHoliday) ? 'bg-gray-200 text-gray-500' : ''}`}
+                      >
+                        <div className={`text-[10px] uppercase font-bold ${(isWknd || isHoliday) ? 'text-red-500' : 'text-gray-500'}`}>
+                          {getDayName(day)}
+                        </div>
+                        <div className="text-sm mt-1">{day}</div>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
@@ -160,22 +204,24 @@ export default function RekapGridPage() {
                       {daysArray.map(day => {
                         const hadir = siswa.attendance.includes(day);
                         const weekend = isWeekend(day);
+                        const holidayName = getHolidayName(day);
+                        const isHoliday = !!holidayName;
                         
                         let cellClass = "px-1 py-1 text-center border-r border-gray-50 last:border-0";
-                        let innerClass = "w-6 h-6 mx-auto rounded flex items-center justify-center text-xs font-bold transition-all ";
+                        let innerClass = "w-7 h-7 mx-auto rounded flex items-center justify-center text-xs font-bold transition-all ";
 
                         if (hadir) {
                           innerClass += "bg-green-500 text-white shadow-sm scale-110";
-                        } else if (weekend) {
+                        } else if (weekend || isHoliday) {
                           innerClass += "bg-gray-200 text-transparent";
                         } else {
                           innerClass += "bg-red-100 text-red-500";
                         }
 
                         return (
-                          <td key={day} className={cellClass}>
+                          <td key={day} className={cellClass} title={isHoliday ? holidayName : ''}>
                             <div className={innerClass}>
-                              {hadir ? '1' : (weekend ? '' : '0')}
+                              {hadir ? '1' : ((weekend || isHoliday) ? '' : '0')}
                             </div>
                           </td>
                         );
