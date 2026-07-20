@@ -12,13 +12,14 @@ export async function getDashboardStatsAction() {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
     sevenDaysAgo.setHours(0, 0, 0, 0);
 
-    // Jalankan 5 query secara paralel (bersamaan) untuk menghindari waterfall (sangat lambat jika beda region)
+    // Jalankan 6 query secara paralel
     const [
       { count: totalSiswa },
       { count: pendingApproval },
       { count: hadirHariIni },
       { data: logAbsensi },
-      { data: rawChartData }
+      { data: rawChartData },
+      { data: sesiAktif }
     ] = await Promise.all([
       // 1. Total Siswa Aktif
       supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'siswa').eq('status_registrasi', 'approved'),
@@ -39,7 +40,10 @@ export async function getDashboardStatsAction() {
       `).order('waktu_scan', { ascending: false }).limit(10),
       
       // 5. Data Grafik (7 Hari Terakhir)
-      supabase.from('absensi').select('waktu_scan, status').eq('status', 'hadir').gte('waktu_scan', sevenDaysAgo.toISOString())
+      supabase.from('absensi').select('waktu_scan, status').eq('status', 'hadir').gte('waktu_scan', sevenDaysAgo.toISOString()),
+      
+      // 6. Cek Sesi Aktif
+      supabase.from('sesi').select('id').eq('is_active', true).limit(1)
     ]);
 
     // Agregasi manual di Node.js (cepat & ringan untuk skala kecil-menengah)
@@ -66,6 +70,8 @@ export async function getDashboardStatsAction() {
       Hadir: chartMap[key]
     }));
 
+    const isSesiAktif = sesiAktif && sesiAktif.length > 0;
+
     return {
       success: true,
       stats: {
@@ -74,7 +80,8 @@ export async function getDashboardStatsAction() {
         hadirHariIni: hadirHariIni || 0,
       },
       logAbsensi: logAbsensi || [],
-      chartData
+      chartData,
+      isSesiAktif
     };
 
   } catch (error: any) {

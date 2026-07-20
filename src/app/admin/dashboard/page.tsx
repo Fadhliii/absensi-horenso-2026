@@ -73,9 +73,15 @@ export default function AdminDashboardPage() {
               <Link href="/admin/siswa" className="bg-white text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Data Siswa</Link>
               <Link href="/admin/perusahaan" className="bg-white text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Data Perusahaan</Link>
               <Link href="/admin/sesi" className="bg-[#4deeea] text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Buka Sesi Kelas</Link>
-              <Link href="/admin/sesi/aktif" target="_blank" className="bg-[#74ee15] text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1 flex items-center" title="Link Dedicated untuk menampilkan QR Sesi Aktif yang bisa digunakan oleh Guru lain">
-                <ExternalLink className="w-4 h-4 mr-1" /> Sesi Aktif (QR)
-              </Link>
+              {data.isSesiAktif ? (
+                <Link href="/admin/sesi/aktif" target="_blank" className="bg-[#ff003c] text-white px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1 flex items-center" title="Link Dedicated untuk menampilkan QR Sesi Aktif yang bisa digunakan oleh Guru lain">
+                  <ExternalLink className="w-4 h-4 mr-1" /> Sesi Aktif (QR)
+                </Link>
+              ) : (
+                <button disabled className="bg-gray-300 text-gray-500 px-4 py-2 neo-btn shadow-none flex items-center opacity-70 cursor-not-allowed" title="Sesi belum dibuka">
+                  <ExternalLink className="w-4 h-4 mr-1" /> Sesi Aktif (QR)
+                </button>
+              )}
               <Link href="/admin/rekap" className="bg-[#ffe700] text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1 flex items-center">
                 Rekap Grid
               </Link>
