@@ -54,6 +54,11 @@ export async function mulaiSesiAction(formData: FormData) {
 }
 
 export async function selesaiSesiAction(sessionId: string) {
+  try {
+    await getAdminId(); // Verifikasi admin
+  } catch (e) {
+    return { error: 'Hanya Admin yang dapat menutup sesi.' };
+  }
 
   const { error } = await supabase
     .from('sesi_absensi')

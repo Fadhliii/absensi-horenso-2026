@@ -135,7 +135,7 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ id: st
     const result = await selesaiSesiAction(sessionId);
     
     if (result?.error) {
-      setError(result.error);
+      alert(result.error);
     } else {
       router.push('/admin/dashboard');
     }
