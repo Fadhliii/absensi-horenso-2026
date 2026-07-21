@@ -10,7 +10,7 @@ import Link from 'next/link';
 
 export default function RekapGridPage() {
   const [loading, setLoading] = useState(true);
-  const [rekapData, setRekapData] = useState<{id: string, name: string, tanggal_berangkat: string | null, attendance: Record<number, {status: string, alasan?: string}>}[]>([]);
+  const [rekapData, setRekapData] = useState<{id: string, name: string, created_at: string, tanggal_berangkat: string | null, attendance: Record<number, {status: string, alasan?: string}>}[]>([]);
   const [perusahaanList, setPerusahaanList] = useState<{id: string, nama: string}[]>([]);
   const [holidays, setHolidays] = useState<Record<string, string>>({}); // date string (YYYY-MM-DD) -> Holiday Name
   
@@ -290,6 +290,10 @@ export default function RekapGridPage() {
                         const currentDate = new Date(selectedYear, selectedMonth - 1, day);
                         const isDeparted = siswa.tanggal_berangkat && currentDate >= new Date(siswa.tanggal_berangkat);
                         
+                        const createdAtDate = new Date(siswa.created_at);
+                        createdAtDate.setHours(0,0,0,0);
+                        const isNotJoinedYet = currentDate < createdAtDate;
+                        
                         let cellClass = "px-1 py-1 text-center border-r border-gray-50 last:border-0";
                         let innerClass = "w-7 h-7 mx-auto rounded flex items-center justify-center text-xs font-bold transition-all ";
 
@@ -298,6 +302,9 @@ export default function RekapGridPage() {
                         if (isDeparted) {
                           innerClass += "bg-blue-100 text-blue-600";
                           content = '✈️';
+                        } else if (isNotJoinedYet) {
+                          innerClass += "bg-gray-100 text-gray-400";
+                          content = '-';
                         } else if (hadir) {
                           innerClass += "bg-green-500 text-white shadow-sm scale-110";
                           content = '1';
@@ -314,7 +321,7 @@ export default function RekapGridPage() {
                           innerClass += "bg-red-100 text-red-500";
                         }
 
-                        let titleStr = isDeparted ? 'Sudah Berangkat' : (isHoliday ? holidayName : '');
+                        let titleStr = isDeparted ? 'Sudah Berangkat' : (isNotJoinedYet ? 'Belum Bergabung (Akun belum dibuat)' : (isHoliday ? holidayName : ''));
                         if (izin) titleStr = `Izin${alasan ? ' - ' + alasan : ''}`;
                         if (sakit) titleStr = `Sakit${alasan ? ' - ' + alasan : ''}`;
 
@@ -348,6 +355,7 @@ export default function RekapGridPage() {
               <div className="flex items-center"><div className="w-6 h-6 rounded bg-[#ff003c] text-white flex items-center justify-center font-bold text-xs mr-2">S</div> Sakit</div>
               <div className="flex items-center"><div className="w-6 h-6 rounded bg-red-100 text-red-500 flex items-center justify-center font-bold text-xs mr-2">0</div> Tidak Hadir / Alpa</div>
               <div className="flex items-center"><div className="w-6 h-6 rounded bg-gray-200 flex items-center justify-center text-xs mr-2"></div> Libur (Sabtu/Minggu/Nasional)</div>
+              <div className="flex items-center"><div className="w-6 h-6 rounded bg-gray-100 text-gray-400 flex items-center justify-center font-bold text-xs mr-2">-</div> Belum Bergabung</div>
               <div className="flex items-center"><div className="w-6 h-6 rounded bg-blue-100 text-blue-600 flex items-center justify-center text-xs mr-2">✈️</div> Sudah Berangkat ke Jepang</div>
             </div>
           </div>

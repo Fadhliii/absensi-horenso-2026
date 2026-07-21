@@ -22,6 +22,7 @@ export async function getRekapAbsensiAction(year: number, month: number, perusah
       .select(`
         id,
         name,
+        created_at,
         siswa!inner (
           perusahaan_id,
           tanggal_berangkat
@@ -95,6 +96,7 @@ export async function getRekapAbsensiAction(year: number, month: number, perusah
       return {
         id: s.id,
         name: s.name,
+        created_at: s.created_at,
         tanggal_berangkat: siswaData?.tanggal_berangkat || null,
         attendance: attendanceMap[s.id] || {}
       };
