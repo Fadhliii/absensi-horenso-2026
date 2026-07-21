@@ -148,19 +148,19 @@ export default function SiswaPage() {
 
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
+    <div className="min-h-screen bg-[#f4f4f0] font-sans">
+      <header className="bg-white border-b-4 border-black sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <Link href="/admin/dashboard" className="text-gray-500 hover:text-gray-700">
+            <Link href="/admin/dashboard" className="p-2 text-black hover:bg-black hover:text-white neo-border transition-colors">
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <h1 className="text-xl font-bold text-gray-900">Data Siswa Aktif</h1>
+            <h1 className="text-xl font-black text-black uppercase tracking-tight">Data Siswa Aktif</h1>
           </div>
           <div className="flex items-center gap-4">
             <IndonesianClock className="hidden sm:inline-flex" />
             <form action={logoutAction}>
-              <button className="flex items-center text-gray-600 hover:text-red-600 text-sm font-medium transition-colors">
+              <button className="flex items-center text-black bg-white hover:bg-black hover:text-white px-3 py-1.5 neo-btn text-xs">
                 <LogOut className="w-4 h-4 mr-1" /> Logout
               </button>
             </form>
@@ -170,29 +170,29 @@ export default function SiswaPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {pageError && (
-          <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6 text-sm font-medium border border-red-200">
-            {pageError}
+          <div className="bg-[#ff1744] text-white neo-border p-4 mb-6 text-xs font-black uppercase">
+            ⚠️ {pageError}
           </div>
         )}
 
         <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6">
           <div className="relative flex-1 max-w-md">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-gray-400" />
+              <Search className="h-4 w-4 text-black" />
             </div>
             <input
               type="text"
               placeholder="Cari nama siswa..."
               value={search}
               onChange={handleSearch}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className="block w-full pl-10 pr-3 py-2 neo-input text-xs font-bold"
             />
           </div>
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
             <select
               value={perusahaanFilter}
               onChange={(e) => { setPerusahaanFilter(e.target.value); setPage(1); }}
-              className="block w-full sm:w-48 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg"
+              className="block w-full sm:w-48 px-3 py-2 neo-input text-xs font-bold"
             >
               <option value="">Semua Perusahaan</option>
               {perusahaanList.map(p => (
@@ -202,7 +202,7 @@ export default function SiswaPage() {
             <select
               value={statusFilter}
               onChange={handleFilter}
-              className="block w-full sm:w-48 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-lg"
+              className="block w-full sm:w-48 px-3 py-2 neo-input text-xs font-bold"
             >
               <option value="semua">Semua Status</option>
               <option value="belum">Belum Ditempatkan</option>
@@ -212,22 +212,22 @@ export default function SiswaPage() {
         </div>
 
         {selectedIds.length > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex items-center justify-between shadow-sm">
-            <span className="text-sm font-medium text-blue-800">
+          <div className="bg-[#ffe600] neo-card p-4 mb-6 flex items-center justify-between">
+            <span className="text-xs font-black text-black uppercase">
               {selectedIds.length} siswa dipilih
             </span>
             <button 
               onClick={() => setIsBulkModalOpen(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+              className="px-4 py-2 text-xs text-black bg-[#00f0ff] hover:bg-[#00d8e6] neo-btn"
             >
               Set Keberangkatan Massal
             </button>
           </div>
         )}
 
-        <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="bg-white neo-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full divide-y-3 divide-black">
               <thead className="bg-gray-100 border-b border-gray-200">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left w-12">

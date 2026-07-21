@@ -79,16 +79,16 @@ export default function SiswaDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-[#f4f4f0] font-sans flex flex-col">
       {/* Header */}
-      <header className="bg-blue-600 text-white shadow-md">
+      <header className="bg-white border-b-4 border-black shadow-none sticky top-0 z-30">
         <div className="max-w-3xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold">Portal Siswa</h1>
+          <h1 className="text-xl font-black text-black uppercase tracking-tight">Portal Siswa</h1>
           <div className="flex items-center gap-3">
-            <IndonesianClock className="bg-blue-700/60 border-blue-500/50 text-white" />
+            <IndonesianClock />
             <form action={logoutAction}>
-              <button className="flex items-center text-blue-100 hover:text-white transition-colors">
-                <LogOut className="w-5 h-5" />
+              <button className="flex items-center text-black bg-white hover:bg-black hover:text-white px-2.5 py-1.5 neo-btn text-xs">
+                <LogOut className="w-4 h-4" />
               </button>
             </form>
           </div>
@@ -99,24 +99,24 @@ export default function SiswaDashboardPage() {
         
         {/* Profile & Placement Badge */}
         {data && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
-            <h2 className="text-gray-800 text-sm font-semibold">Selamat datang,</h2>
-            <p className="text-2xl font-bold text-gray-900 mb-4">{data.profile.name}</p>
+          <div className="bg-white neo-card p-5 mb-6">
+            <h2 className="text-black text-xs font-black uppercase">Selamat datang,</h2>
+            <p className="text-2xl font-black text-black uppercase tracking-tight mb-4">{data.profile.name}</p>
             
             {data.profile.statusPenempatan === 'sudah' ? (
-              <div className="flex items-start bg-green-50 border border-green-200 rounded-xl p-3">
-                <Building2 className="w-5 h-5 text-green-700 mr-3 mt-0.5" />
+              <div className="flex items-start bg-[#00e676] neo-border p-3">
+                <Building2 className="w-5 h-5 text-black mr-3 mt-0.5" />
                 <div>
-                  <p className="text-xs text-green-800 font-bold uppercase tracking-wider">Status Penempatan</p>
-                  <p className="text-sm font-semibold text-green-950 mt-0.5">Sudah ditempatkan di <span className="font-bold">{data.profile.namaPerusahaan}</span></p>
+                  <p className="text-xs text-black font-black uppercase tracking-wider">Status Penempatan</p>
+                  <p className="text-xs font-black text-black mt-0.5">Sudah ditempatkan di <span className="underline">{data.profile.namaPerusahaan}</span></p>
                 </div>
               </div>
             ) : (
-              <div className="flex items-start bg-yellow-50 border border-yellow-200 rounded-xl p-3">
-                <AlertCircle className="w-5 h-5 text-yellow-700 mr-3 mt-0.5" />
+              <div className="flex items-start bg-[#ffe600] neo-border p-3">
+                <AlertCircle className="w-5 h-5 text-black mr-3 mt-0.5" />
                 <div>
-                  <p className="text-xs text-yellow-800 font-bold uppercase tracking-wider">Status Penempatan</p>
-                  <p className="text-sm font-semibold text-yellow-950 mt-0.5">Belum ditempatkan di Perusahaan Mitra.</p>
+                  <p className="text-xs text-black font-black uppercase tracking-wider">Status Penempatan</p>
+                  <p className="text-xs font-black text-black mt-0.5">Belum ditempatkan di Perusahaan Mitra.</p>
                 </div>
               </div>
             )}
@@ -127,26 +127,26 @@ export default function SiswaDashboardPage() {
         <div className="mb-8 grid grid-cols-2 gap-4">
           <Link 
             href="/siswa/scan"
-            className="flex flex-col items-center justify-center w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] transition-all text-white font-bold py-4 px-4 rounded-2xl shadow-sm border-2 border-blue-800"
+            className="flex flex-col items-center justify-center w-full bg-[#00f0ff] hover:bg-[#00d8e6] text-black font-black py-4 px-4 neo-btn"
           >
-            <QrCode className="w-8 h-8 mb-2" />
-            <span className="text-sm">Scan QR Absensi</span>
+            <QrCode className="w-8 h-8 mb-2 text-black" />
+            <span className="text-xs uppercase">Scan QR Absensi</span>
           </Link>
 
           <button 
             onClick={() => setIsIzinModalOpen(true)}
-            className="flex flex-col items-center justify-center w-full bg-white hover:bg-gray-50 active:scale-[0.98] transition-all text-gray-800 font-bold py-4 px-4 rounded-2xl shadow-sm border-2 border-gray-200"
+            className="flex flex-col items-center justify-center w-full bg-[#ffe600] hover:bg-[#ebd300] text-black font-black py-4 px-4 neo-btn"
           >
-            <Calendar className="w-8 h-8 mb-2 text-gray-600" />
-            <span className="text-sm">Ajukan Izin/Sakit</span>
+            <Calendar className="w-8 h-8 mb-2 text-black" />
+            <span className="text-xs uppercase">Ajukan Izin/Sakit</span>
           </button>
         </div>
 
         {/* Attendance History Section */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-            <h3 className="font-bold text-gray-900 flex items-center">
-              <Calendar className="w-5 h-5 mr-2 text-blue-600" />
+        <div className="bg-white neo-card overflow-hidden">
+          <div className="p-4 border-b-3 border-black flex items-center justify-between bg-[#fffde7]">
+            <h3 className="font-black text-black uppercase flex items-center text-sm">
+              <Calendar className="w-4 h-4 mr-2 text-black" />
               Riwayat Absensi
             </h3>
             
@@ -154,7 +154,7 @@ export default function SiswaDashboardPage() {
               type="month" 
               value={monthFilter}
               onChange={(e) => setMonthFilter(e.target.value)}
-              className="text-sm border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white py-1.5 px-3 text-gray-900 font-semibold"
+              className="text-xs neo-input py-1 px-3"
             />
           </div>
 

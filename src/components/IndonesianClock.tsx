@@ -6,11 +6,9 @@ import { Clock } from 'lucide-react';
 export default function IndonesianClock({ 
   showIcon = true, 
   className = "",
-  variant = "default"
 }: { 
   showIcon?: boolean; 
   className?: string;
-  variant?: "default" | "compact" | "badge";
 }) {
   const [timeStr, setTimeStr] = useState<string>('');
   const [dateStr, setDateStr] = useState<string>('');
@@ -46,21 +44,12 @@ export default function IndonesianClock({
 
   if (!dateStr) return null;
 
-  if (variant === "compact") {
-    return (
-      <span className={`inline-flex items-center gap-1.5 text-xs text-gray-500 font-medium ${className}`}>
-        {showIcon && <Clock className="w-3.5 h-3.5 text-blue-600" />}
-        <span>{dateStr} • {timeStr}</span>
-      </span>
-    );
-  }
-
   return (
-    <div className={`inline-flex items-center gap-2 bg-slate-50 border border-slate-200/90 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 shadow-2xs ${className}`}>
-      {showIcon && <Clock className="w-3.5 h-3.5 text-blue-600 animate-pulse shrink-0" />}
-      <span className="font-medium text-slate-600 truncate">{dateStr}</span>
-      <span className="text-slate-300">•</span>
-      <span className="font-bold text-slate-900 font-mono tracking-tight shrink-0">{timeStr}</span>
+    <div className={`inline-flex items-center gap-2 bg-[#ffe600] text-black neo-border neo-shadow-sm px-3 py-1.5 rounded-xl text-xs font-black tracking-tight ${className}`}>
+      {showIcon && <Clock className="w-4 h-4 text-black animate-spin shrink-0" style={{ animationDuration: '6s' }} />}
+      <span className="truncate">{dateStr}</span>
+      <span className="text-black font-black">•</span>
+      <span className="font-mono bg-black text-yellow-300 px-1.5 py-0.5 rounded-md text-[11px] font-black">{timeStr}</span>
     </div>
   );
 }

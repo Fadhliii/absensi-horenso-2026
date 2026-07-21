@@ -27,41 +27,42 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-      <div className="mb-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#f4f4f0] p-4 font-sans">
+      <div className="mb-6">
         <IndonesianClock />
       </div>
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900">Login Absensi LPK</h2>
-          <p className="text-gray-900 mt-2">Masuk ke akun Anda</p>
+      
+      <div className="max-w-md w-full bg-white neo-card neo-shadow-lg p-8">
+        <div className="text-center mb-8 border-b-4 border-black pb-4">
+          <h2 className="text-3xl font-black text-black uppercase tracking-tight">Login Absensi LPK</h2>
+          <p className="text-xs text-black font-bold uppercase mt-1">Masuk ke akun Anda</p>
         </div>
 
         {(error || pendingError) && (
-          <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6 text-sm">
-            {error || pendingError}
+          <div className="bg-[#ff1744] text-white neo-border p-4 mb-6 text-xs font-black uppercase">
+            ⚠️ {error || pendingError}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-xs font-black text-black uppercase mb-1">Email</label>
             <input 
               type="email" 
               name="email" 
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900"
+              className="w-full px-3.5 py-2.5 neo-input"
               placeholder="contoh@email.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label className="block text-xs font-black text-black uppercase mb-1">Password</label>
             <input 
               type="password" 
               name="password" 
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900"
+              className="w-full px-3.5 py-2.5 neo-input"
               placeholder="••••••••"
             />
           </div>
@@ -69,14 +70,14 @@ function LoginForm() {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full bg-[#ffe600] hover:bg-[#ebd300] text-black neo-btn py-3 text-sm"
           >
             {loading ? 'Memproses...' : 'Masuk'}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-600 mt-6">
-          Belum punya akun? <Link href="/register" className="text-blue-600 font-semibold hover:underline">Daftar sekarang</Link>
+        <p className="text-center text-xs font-bold text-black uppercase mt-6">
+          Belum punya akun? <Link href="/register" className="underline font-black hover:text-blue-700">Daftar sekarang</Link>
         </p>
       </div>
     </div>
@@ -86,8 +87,8 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <span className="animate-pulse text-gray-900">Memuat halaman...</span>
+      <div className="min-h-screen flex items-center justify-center bg-[#f4f4f0] p-4 font-sans">
+        <span className="font-black text-black uppercase animate-pulse">Memuat halaman...</span>
       </div>
     }>
       <LoginForm />

@@ -77,15 +77,15 @@ export default function RegisterPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#f4f4f0] p-4 font-sans">
         <div className="mb-6">
           <IndonesianClock />
         </div>
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center border border-gray-100">
-          <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">✓</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Registrasi Berhasil!</h2>
-          <p className="text-gray-600 text-sm mb-6">Akun kamu sedang menunggu persetujuan admin. Kamu baru bisa login setelah akun di-approve.</p>
-          <Link href="/login" className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-xl transition-all shadow-md shadow-blue-500/20">
+        <div className="max-w-md w-full bg-white neo-card neo-shadow-lg p-8 text-center">
+          <div className="w-16 h-16 bg-[#00e676] text-black neo-border neo-shadow-sm flex items-center justify-center mx-auto mb-4 text-2xl font-black">✓</div>
+          <h2 className="text-2xl font-black text-black uppercase mb-2">Registrasi Berhasil!</h2>
+          <p className="text-black font-bold text-sm mb-6">Akun kamu sedang menunggu persetujuan admin. Kamu baru bisa login setelah akun di-approve.</p>
+          <Link href="/login" className="inline-block bg-[#ffe600] text-black neo-btn py-3 px-8 text-sm">
             Kembali ke Login
           </Link>
         </div>
@@ -94,33 +94,33 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4 py-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#f4f4f0] p-4 py-8 font-sans">
       {/* Live Indonesian Clock Standard Header */}
-      <div className="mb-4">
+      <div className="mb-6">
         <IndonesianClock />
       </div>
 
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-black text-gray-900 tracking-tight">Daftar Akun Baru</h2>
-          <p className="text-xs text-gray-500 font-medium mt-1">Lengkapi data diri Anda untuk memulai registrasi</p>
+      <div className="max-w-md w-full bg-white neo-card neo-shadow-lg p-8">
+        <div className="text-center mb-8 border-b-4 border-black pb-4">
+          <h2 className="text-3xl font-black text-black uppercase tracking-tight">Daftar Akun Baru</h2>
+          <p className="text-xs text-black font-bold uppercase mt-1">Sistem Absensi & Penempatan LPK</p>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl mb-6 text-xs font-semibold">
-            {error}
+          <div className="bg-[#ff1744] text-white neo-border p-4 mb-6 text-xs font-black uppercase">
+            ⚠️ {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Daftar Sebagai *</label>
+            <label className="block text-xs font-black text-black uppercase mb-1">Daftar Sebagai *</label>
             <select
               name="role"
               required
               value={role}
               onChange={(e) => setRole(e.target.value as any)}
-              className="w-full px-3.5 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium text-gray-900 bg-white"
+              className="w-full px-3.5 py-2.5 neo-input"
             >
               <option value="siswa">Siswa (Peserta Pelatihan)</option>
               <option value="instruktur">Instruktur (Pengajar)</option>
@@ -128,50 +128,50 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Nama Lengkap *</label>
+            <label className="block text-xs font-black text-black uppercase mb-1">Nama Lengkap *</label>
             <input 
               type="text" 
               name="name" 
               required
               placeholder="Masukkan nama lengkap"
-              className="w-full px-3.5 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium text-gray-900"
+              className="w-full px-3.5 py-2.5 neo-input"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Email *</label>
+            <label className="block text-xs font-black text-black uppercase mb-1">Email *</label>
             <input 
               type="email" 
               name="email" 
               required
               placeholder="contoh@email.com"
-              className="w-full px-3.5 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium text-gray-900"
+              className="w-full px-3.5 py-2.5 neo-input"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-1">No. Handphone *</label>
+            <label className="block text-xs font-black text-black uppercase mb-1">No. Handphone *</label>
             <input 
               type="tel" 
               name="phone" 
               required
               placeholder="08123456789"
-              className="w-full px-3.5 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium text-gray-900"
+              className="w-full px-3.5 py-2.5 neo-input"
             />
           </div>
 
           {/* Opsi Perusahaan & Batch untuk Siswa */}
           {role === 'siswa' && (
-            <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100 space-y-3">
+            <div className="p-4 bg-[#fff59d] neo-border neo-shadow-sm space-y-3">
               <div>
-                <label className="block text-xs font-bold text-blue-900 uppercase mb-1 flex items-center gap-1.5">
-                  <Building2 className="w-3.5 h-3.5 text-blue-600" /> Perusahaan Mitra (Opsional)
+                <label className="block text-xs font-black text-black uppercase mb-1 flex items-center gap-1.5">
+                  <Building2 className="w-4 h-4 text-black" /> Perusahaan Mitra (Opsional)
                 </label>
                 <select
                   name="perusahaan_id"
                   value={selectedPerusahaanId}
                   onChange={handlePerusahaanChange}
-                  className="w-full px-3.5 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium text-gray-900 bg-white"
+                  className="w-full px-3 py-2 neo-input text-xs"
                 >
                   <option value="">-- Belum Memiliki Perusahaan / LPK Only --</option>
                   {perusahaanList.map(p => (
@@ -182,18 +182,18 @@ export default function RegisterPage() {
 
               {selectedPerusahaanId && (
                 <div>
-                  <label className="block text-xs font-bold text-blue-900 uppercase mb-1 flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5 text-blue-600" /> Pilih Batch / Angkatan *
+                  <label className="block text-xs font-black text-black uppercase mb-1 flex items-center gap-1.5">
+                    <Layers className="w-4 h-4 text-black" /> Pilih Batch / Angkatan *
                   </label>
                   <select
                     name="batch_id"
                     value={selectedBatchId}
                     onChange={(e) => setSelectedBatchId(e.target.value)}
                     required={availableBatches.length > 0}
-                    className="w-full px-3.5 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium text-gray-900 bg-white"
+                    className="w-full px-3 py-2 neo-input text-xs"
                   >
                     {availableBatches.length === 0 ? (
-                      <option value="">-- Tidak ada batch tersedia di perusahaan ini --</option>
+                      <option value="">-- Tidak ada batch tersedia --</option>
                     ) : (
                       <>
                         <option value="">-- Pilih Batch --</option>
@@ -211,40 +211,40 @@ export default function RegisterPage() {
           )}
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Password *</label>
+            <label className="block text-xs font-black text-black uppercase mb-1">Password *</label>
             <input 
               type="password" 
               name="password" 
               required
               minLength={6}
               placeholder="Minimal 6 karakter"
-              className="w-full px-3.5 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium text-gray-900"
+              className="w-full px-3.5 py-2.5 neo-input"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Konfirmasi Password *</label>
+            <label className="block text-xs font-black text-black uppercase mb-1">Konfirmasi Password *</label>
             <input 
               type="password" 
               name="confirm_password" 
               required
               minLength={6}
-              placeholder="Ulangi password di atas"
-              className="w-full px-3.5 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium text-gray-900"
+              placeholder="Ulangi password"
+              className="w-full px-3.5 py-2.5 neo-input"
             />
           </div>
 
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-md shadow-blue-500/20 disabled:opacity-70 disabled:cursor-not-allowed mt-2"
+            className="w-full bg-[#00f0ff] hover:bg-[#00e5ff] text-black neo-btn py-3 mt-2 text-sm"
           >
             {loading ? 'Memproses...' : 'Daftar Sekarang'}
           </button>
         </form>
 
-        <p className="text-center text-xs text-gray-600 font-medium mt-6">
-          Sudah punya akun? <Link href="/login" className="text-blue-600 font-bold hover:underline">Masuk di sini</Link>
+        <p className="text-center text-xs font-bold text-black uppercase mt-6">
+          Sudah punya akun? <Link href="/login" className="underline font-black hover:text-blue-700">Masuk di sini</Link>
         </p>
       </div>
     </div>
