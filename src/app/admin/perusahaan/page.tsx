@@ -8,12 +8,14 @@ import {
   deletePerusahaanAction,
   createPerusahaanBatchAction,
   updatePerusahaanBatchAction,
-  deletePerusahaanBatchAction
+  deletePerusahaanBatchAction,
+  getUnassignedSiswaAction,
+  bulkAssignSiswaBatchAction
 } from '@/app/actions/master';
 import { logoutAction } from '@/app/actions/auth';
 import { 
   Plus, Edit2, Trash2, Search, LogOut, ArrowLeft, 
-  ChevronDown, ChevronRight, Layers, User, Calendar, Building2
+  ChevronDown, ChevronRight, Layers, User, Calendar, Building2, UserPlus, CheckSquare, Square
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -58,6 +60,12 @@ export default function PerusahaanPage() {
   // Modal state
   const [modalCompany, setModalCompany] = useState<{ isOpen: boolean; mode: 'create' | 'edit'; data?: PerusahaanHierarchy }>({ isOpen: false, mode: 'create' });
   const [modalBatch, setModalBatch] = useState<{ isOpen: boolean; mode: 'create' | 'edit'; perusahaanId?: string; data?: BatchItem }>({ isOpen: false, mode: 'create' });
+
+  // Assign Siswa State
+  const [modalAssign, setModalAssign] = useState<{ isOpen: boolean; batchId?: string; perusahaanId?: string; batchName?: string }>({ isOpen: false });
+  const [unassignedSiswa, setUnassignedSiswa] = useState<{user_id: string; name: string; email: string}[]>([]);
+  const [selectedSiswaIds, setSelectedSiswaIds] = useState<string[]>([]);
+  const [isAssigning, setIsAssigning] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -130,6 +138,43 @@ export default function PerusahaanPage() {
     await deletePerusahaanBatchAction(id);
     fetchData();
   }
+
+  // Open Assign Modal
+  async function handleOpenAssign(batchId: string, perusahaanId: string, batchName: string) {
+    setModalAssign({ isOpen: true, batchId, perusahaanId, batchName });
+    setSelectedSiswaIds([]);
+    
+    const result = await getUnassignedSiswaAction();
+    if (result.data) {
+      setUnassignedSiswa(result.data);
+    }
+  }
+
+  // Submit Assign
+  async function handleAssignSubmit() {
+    if (selectedSiswaIds.length === 0 || !modalAssign.batchId || !modalAssign.perusahaanId) return;
+    setIsAssigning(true);
+    
+    await bulkAssignSiswaBatchAction(selectedSiswaIds, modalAssign.perusahaanId, modalAssign.batchId);
+    
+    setIsAssigning(false);
+    setModalAssign({ isOpen: false });
+    fetchData();
+  }
+
+  const toggleSiswaSelection = (id: string) => {
+    setSelectedSiswaIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+  
+  const selectAllSiswa = () => {
+    if (selectedSiswaIds.length === unassignedSiswa.length) {
+      setSelectedSiswaIds([]); // unselect all
+    } else {
+      setSelectedSiswaIds(unassignedSiswa.map(s => s.user_id));
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#f8fafc] font-sans">
@@ -305,6 +350,13 @@ export default function PerusahaanPage() {
                                       className="text-xs font-semibold px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
                                     >
                                       {isBatchOpen ? 'Sembunyikan Siswa' : `Tampilkan Siswa (${b.siswa.length})`}
+                                    </button>
+                                    <button
+                                      onClick={() => handleOpenAssign(b.id, p.id, b.nama_batch)}
+                                      className="p-1.5 text-gray-400 hover:text-green-600 rounded-lg transition-colors"
+                                      title="Tambah Siswa ke Batch"
+                                    >
+                                      <UserPlus className="w-3.5 h-3.5" />
                                     </button>
                                     <button
                                       onClick={() => setModalBatch({ isOpen: true, mode: 'edit', data: b })}
@@ -503,6 +555,76 @@ export default function PerusahaanPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Assign Siswa */}
+      {modalAssign.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-xs" onClick={() => setModalAssign({ isOpen: false })}></div>
+          <div className="relative z-50 w-full max-w-lg bg-white rounded-2xl p-6 shadow-xl border border-gray-100 flex flex-col max-h-[90vh]">
+            <h3 className="text-lg font-bold text-gray-900 mb-1">Tambah Siswa ke Batch</h3>
+            <p className="text-sm text-gray-500 mb-4">Pilih siswa untuk dimasukkan ke <span className="font-bold text-gray-900">{modalAssign.batchName}</span></p>
+            
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-xs font-bold text-gray-600 uppercase">
+                {selectedSiswaIds.length} Terpilih
+              </span>
+              <button 
+                onClick={selectAllSiswa}
+                className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline"
+              >
+                {selectedSiswaIds.length === unassignedSiswa.length && unassignedSiswa.length > 0 ? 'Batalkan Semua' : 'Pilih Semua'}
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto min-h-[200px] border border-gray-200 rounded-xl bg-gray-50/50 p-2 space-y-1.5">
+              {unassignedSiswa.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 text-sm py-12">
+                  <User className="w-8 h-8 text-gray-300 mb-2" />
+                  <p>Tidak ada siswa yang belum ditempatkan.</p>
+                </div>
+              ) : (
+                unassignedSiswa.map(s => (
+                  <div 
+                    key={s.user_id} 
+                    onClick={() => toggleSiswaSelection(s.user_id)}
+                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border ${
+                      selectedSiswaIds.includes(s.user_id) 
+                        ? 'bg-blue-50 border-blue-200 shadow-sm' 
+                        : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-xs'
+                    }`}
+                  >
+                    <div className={`text-${selectedSiswaIds.includes(s.user_id) ? 'blue-600' : 'gray-300'}`}>
+                      {selectedSiswaIds.includes(s.user_id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                    </div>
+                    <div className="overflow-hidden">
+                      <p className={`text-sm font-bold truncate ${selectedSiswaIds.includes(s.user_id) ? 'text-blue-900' : 'text-gray-900'}`}>{s.name}</p>
+                      <p className="text-[11px] text-gray-500 font-medium truncate">{s.email}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 mt-2 border-t border-gray-100">
+              <button 
+                type="button" 
+                onClick={() => setModalAssign({ isOpen: false })} 
+                className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                disabled={isAssigning}
+              >
+                Batal
+              </button>
+              <button 
+                onClick={handleAssignSubmit}
+                disabled={selectedSiswaIds.length === 0 || isAssigning}
+                className="inline-flex items-center px-5 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all shadow-md shadow-blue-500/20"
+              >
+                {isAssigning ? 'Menyimpan...' : `Tambahkan ${selectedSiswaIds.length} Siswa`}
+              </button>
+            </div>
           </div>
         </div>
       )}

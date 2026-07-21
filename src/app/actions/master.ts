@@ -477,3 +477,68 @@ export async function updateSiswaProfileAction(id: string, formData: FormData) {
   revalidatePath('/admin/siswa');
   return { success: true };
 }
+
+export async function getUnassignedSiswaAction() {
+  const { data, error } = await supabaseAdmin
+    .from('siswa')
+    .select(`
+      id, status_penempatan,
+      users!inner (id, name, email)
+    `)
+    .eq('users.status_registrasi', 'approved')
+    .eq('users.role', 'siswa')
+    .eq('status_penempatan', 'belum');
+
+  if (error) return { error: error.message };
+  
+  const mappedData = (data || []).map(d => {
+    const user = Array.isArray(d.users) ? d.users[0] : (d.users as any);
+    return {
+      user_id: user?.id || '',
+      name: user?.name || 'Siswa',
+      email: user?.email || ''
+    };
+  });
+  
+  // Urutkan berdasarkan nama di client side atau js saja
+  mappedData.sort((a, b) => a.name.localeCompare(b.name));
+  
+  return { data: mappedData };
+}
+
+export async function bulkAssignSiswaBatchAction(
+  userIds: string[], 
+  perusahaanId: string, 
+  batchId: string
+) {
+  if (!userIds || userIds.length === 0) return { error: 'Tidak ada siswa yang dipilih.' };
+
+  // Ambil data batch
+  const { data: batchData } = await supabaseAdmin
+    .from('perusahaan_batch')
+    .select('nama_batch, tanggal_berangkat')
+    .eq('id', batchId)
+    .single();
+
+  if (!batchData) return { error: 'Batch tidak ditemukan.' };
+
+  const updateData = {
+    status_penempatan: 'sudah',
+    perusahaan_id: perusahaanId,
+    batch_id: batchId,
+    batch: batchData.nama_batch,
+    tanggal_berangkat: batchData.tanggal_berangkat
+  };
+
+  const { error } = await supabaseAdmin
+    .from('siswa')
+    .update(updateData)
+    .in('user_id', userIds);
+
+  if (error) return { error: error.message };
+  
+  revalidatePath('/admin/siswa');
+  revalidatePath('/admin/perusahaan');
+  return { success: true };
+}
+
