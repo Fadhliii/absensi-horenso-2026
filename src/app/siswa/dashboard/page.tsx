@@ -125,19 +125,30 @@ export default function SiswaDashboardPage() {
 
         {/* Scan Action Button */}
         <div className="mb-8 grid grid-cols-2 gap-4">
-          <Link 
-            href="/siswa/scan"
-            className="flex flex-col items-center justify-center w-full bg-[#00f0ff] hover:bg-[#00d8e6] text-black font-black py-4 px-4 neo-btn"
-          >
-            <QrCode className="w-8 h-8 mb-2 text-black" />
-            <span className="text-xs uppercase">Scan QR Absensi</span>
-          </Link>
+          {data?.isSesiAktif ? (
+            <Link 
+              href="/siswa/scan"
+              className="flex flex-col items-center justify-center w-full bg-[#00f0ff] hover:bg-[#00d8e6] text-black font-black py-4 px-4 neo-btn"
+            >
+              <QrCode className="w-8 h-8 mb-2 text-black" />
+              <span className="text-xs uppercase">Scan QR Absensi</span>
+            </Link>
+          ) : (
+            <button 
+              disabled
+              className="flex flex-col items-center justify-center w-full bg-gray-300 text-gray-500 font-black py-4 px-4 border-3 border-gray-400 opacity-70 cursor-not-allowed"
+              title="Tidak ada sesi absensi yang aktif saat ini"
+            >
+              <QrCode className="w-8 h-8 mb-2 text-gray-500" />
+              <span className="text-xs uppercase">Scan QR Absensi</span>
+            </button>
+          )}
 
           <button 
             onClick={() => setIsIzinModalOpen(true)}
-            className="flex flex-col items-center justify-center w-full bg-[#ffe600] hover:bg-[#ebd300] text-black font-black py-4 px-4 neo-btn"
+            className="flex flex-col items-center justify-center w-full bg-[#ff007f] hover:bg-[#d8006b] text-white font-black py-4 px-4 neo-btn"
           >
-            <Calendar className="w-8 h-8 mb-2 text-black" />
+            <Calendar className="w-8 h-8 mb-2 text-white" />
             <span className="text-xs uppercase">Ajukan Izin/Sakit</span>
           </button>
         </div>

@@ -63,6 +63,18 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
 
     if (riwayatError) throw riwayatError;
 
+    // 3. Cek Sesi Aktif
+    const { data: activeSession } = await supabase
+      .from('sesi_absensi')
+      .select('id')
+      .eq('status', 'aktif')
+      .limit(1)
+      .single();
+    
+    const isSesiAktif = !!activeSession;
+
+    if (riwayatError) throw riwayatError;
+
     const siswaObj = Array.isArray(profile.siswa) ? profile.siswa[0] : (profile.siswa as any);
     const perusahaanObj = siswaObj?.perusahaan;
     const namaPerusahaan = Array.isArray(perusahaanObj) ? perusahaanObj[0]?.nama : (perusahaanObj as any)?.nama;
@@ -74,6 +86,7 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
         statusPenempatan: siswaObj?.status_penempatan || 'belum',
         namaPerusahaan: namaPerusahaan || null
       },
+      isSesiAktif,
       riwayat 
     };
 
