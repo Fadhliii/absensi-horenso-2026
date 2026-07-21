@@ -65,6 +65,7 @@ export default function PerusahaanPage() {
   const [modalAssign, setModalAssign] = useState<{ isOpen: boolean; batchId?: string; perusahaanId?: string; batchName?: string }>({ isOpen: false });
   const [unassignedSiswa, setUnassignedSiswa] = useState<{user_id: string; name: string; email: string}[]>([]);
   const [selectedSiswaIds, setSelectedSiswaIds] = useState<string[]>([]);
+  const [siswaSearchQuery, setSiswaSearchQuery] = useState('');
   const [isAssigning, setIsAssigning] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -143,6 +144,7 @@ export default function PerusahaanPage() {
   async function handleOpenAssign(batchId: string, perusahaanId: string, batchName: string) {
     setModalAssign({ isOpen: true, batchId, perusahaanId, batchName });
     setSelectedSiswaIds([]);
+    setSiswaSearchQuery('');
     
     const result = await getUnassignedSiswaAction();
     if (result.data) {
@@ -168,11 +170,18 @@ export default function PerusahaanPage() {
     );
   };
   
-  const selectAllSiswa = () => {
-    if (selectedSiswaIds.length === unassignedSiswa.length) {
-      setSelectedSiswaIds([]); // unselect all
+  const filteredUnassignedSiswa = unassignedSiswa.filter(s => 
+    s.name.toLowerCase().includes(siswaSearchQuery.toLowerCase()) || 
+    s.email.toLowerCase().includes(siswaSearchQuery.toLowerCase())
+  );
+
+  const selectAllFilteredSiswa = () => {
+    const filteredIds = filteredUnassignedSiswa.map(s => s.user_id);
+    const allSelected = filteredIds.every(id => selectedSiswaIds.includes(id));
+    if (allSelected) {
+      setSelectedSiswaIds(prev => prev.filter(id => !filteredIds.includes(id)));
     } else {
-      setSelectedSiswaIds(unassignedSiswa.map(s => s.user_id));
+      setSelectedSiswaIds(prev => Array.from(new Set([...prev, ...filteredIds])));
     }
   };
 
@@ -344,19 +353,19 @@ export default function PerusahaanPage() {
                                     </div>
                                   </div>
 
-                                  <div className="flex items-center gap-2 self-end sm:self-center">
+                                  <div className="flex items-center gap-2 self-end sm:self-center flex-wrap">
+                                    <button
+                                      onClick={() => handleOpenAssign(b.id, p.id, b.nama_batch)}
+                                      className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors shadow-2xs"
+                                      title="Tambah Siswa ke Batch Ini"
+                                    >
+                                      <Plus className="w-3.5 h-3.5 mr-1" /> Tambah Siswa
+                                    </button>
                                     <button
                                       onClick={() => toggleBatch(b.id)}
                                       className="text-xs font-semibold px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
                                     >
                                       {isBatchOpen ? 'Sembunyikan Siswa' : `Tampilkan Siswa (${b.siswa.length})`}
-                                    </button>
-                                    <button
-                                      onClick={() => handleOpenAssign(b.id, p.id, b.nama_batch)}
-                                      className="p-1.5 text-gray-400 hover:text-green-600 rounded-lg transition-colors"
-                                      title="Tambah Siswa ke Batch"
-                                    >
-                                      <UserPlus className="w-3.5 h-3.5" />
                                     </button>
                                     <button
                                       onClick={() => setModalBatch({ isOpen: true, mode: 'edit', data: b })}
@@ -379,20 +388,42 @@ export default function PerusahaanPage() {
                                 {isBatchOpen && (
                                   <div className="border-t border-gray-100 bg-slate-50 p-4">
                                     {b.siswa.length === 0 ? (
-                                      <p className="text-xs text-gray-400 italic text-center py-2">Belum ada siswa yang dimasukkan ke {b.nama_batch}.</p>
+                                      <div className="text-center py-6 border-2 border-dashed border-gray-200 rounded-xl bg-white">
+                                        <User className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                        <p className="text-xs font-semibold text-gray-500 mb-2">Belum ada siswa yang dimasukkan ke {b.nama_batch}.</p>
+                                        <button
+                                          onClick={() => handleOpenAssign(b.id, p.id, b.nama_batch)}
+                                          className="inline-flex items-center px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all shadow-2xs"
+                                        >
+                                          <Plus className="w-3.5 h-3.5 mr-1.5" /> Tambah Siswa Pertama
+                                        </button>
+                                      </div>
                                     ) : (
-                                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                                        {b.siswa.map((s) => (
-                                          <div key={s.id} className="bg-white p-3 rounded-lg border border-gray-200 shadow-2xs flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
-                                              <User className="w-4 h-4" />
+                                      <div>
+                                        <div className="flex justify-between items-center mb-3">
+                                          <span className="text-xs font-bold text-gray-600 uppercase tracking-wide">
+                                            Daftar Siswa ({b.siswa.length})
+                                          </span>
+                                          <button
+                                            onClick={() => handleOpenAssign(b.id, p.id, b.nama_batch)}
+                                            className="inline-flex items-center text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:underline"
+                                          >
+                                            <Plus className="w-3.5 h-3.5 mr-1" /> Tambah Siswa Lagi
+                                          </button>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                                          {b.siswa.map((s) => (
+                                            <div key={s.id} className="bg-white p-3 rounded-lg border border-gray-200 shadow-2xs flex items-center gap-3">
+                                              <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
+                                                <User className="w-4 h-4" />
+                                              </div>
+                                              <div className="overflow-hidden">
+                                                <p className="text-xs font-bold text-gray-900 truncate">{s.name}</p>
+                                                <p className="text-[11px] text-gray-500 font-medium truncate">{s.email}</p>
+                                              </div>
                                             </div>
-                                            <div className="overflow-hidden">
-                                              <p className="text-xs font-bold text-gray-900 truncate">{s.name}</p>
-                                              <p className="text-[11px] text-gray-500 font-medium truncate">{s.email}</p>
-                                            </div>
-                                          </div>
-                                        ))}
+                                          ))}
+                                        </div>
                                       </div>
                                     )}
                                   </div>
@@ -567,40 +598,58 @@ export default function PerusahaanPage() {
             <h3 className="text-lg font-bold text-gray-900 mb-1">Tambah Siswa ke Batch</h3>
             <p className="text-sm text-gray-500 mb-4">Pilih siswa untuk dimasukkan ke <span className="font-bold text-gray-900">{modalAssign.batchName}</span></p>
             
-            <div className="flex justify-between items-center mb-3">
+            {/* Search Bar Input */}
+            <div className="relative mb-3">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Cari nama atau email siswa..."
+                value={siswaSearchQuery}
+                onChange={(e) => setSiswaSearchQuery(e.target.value)}
+                className="block w-full pl-9 pr-3 py-2 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs font-medium transition-all"
+              />
+            </div>
+
+            <div className="flex justify-between items-center mb-2">
               <span className="text-xs font-bold text-gray-600 uppercase">
-                {selectedSiswaIds.length} Terpilih
+                {selectedSiswaIds.length} Terpilih (dari {filteredUnassignedSiswa.length} ditampilkan)
               </span>
               <button 
-                onClick={selectAllSiswa}
+                onClick={selectAllFilteredSiswa}
                 className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline"
               >
-                {selectedSiswaIds.length === unassignedSiswa.length && unassignedSiswa.length > 0 ? 'Batalkan Semua' : 'Pilih Semua'}
+                {filteredUnassignedSiswa.length > 0 && filteredUnassignedSiswa.every(s => selectedSiswaIds.includes(s.user_id))
+                  ? 'Batalkan Pilih Hasil'
+                  : 'Pilih Semua Hasil'}
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto min-h-[200px] border border-gray-200 rounded-xl bg-gray-50/50 p-2 space-y-1.5">
-              {unassignedSiswa.length === 0 ? (
+            <div className="flex-1 overflow-y-auto min-h-[220px] max-h-[350px] border border-gray-200 rounded-xl bg-gray-50/50 p-2 space-y-1.5">
+              {filteredUnassignedSiswa.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 text-sm py-12">
                   <User className="w-8 h-8 text-gray-300 mb-2" />
-                  <p>Tidak ada siswa yang belum ditempatkan.</p>
+                  <p className="text-xs text-gray-500">
+                    {siswaSearchQuery ? 'Tidak ada siswa yang cocok dengan pencarian.' : 'Tidak ada siswa yang belum ditempatkan.'}
+                  </p>
                 </div>
               ) : (
-                unassignedSiswa.map(s => (
+                filteredUnassignedSiswa.map(s => (
                   <div 
                     key={s.user_id} 
                     onClick={() => toggleSiswaSelection(s.user_id)}
                     className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border ${
                       selectedSiswaIds.includes(s.user_id) 
-                        ? 'bg-blue-50 border-blue-200 shadow-sm' 
-                        : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-xs'
+                        ? 'bg-blue-50 border-blue-200 shadow-xs' 
+                        : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-2xs'
                     }`}
                   >
-                    <div className={`text-${selectedSiswaIds.includes(s.user_id) ? 'blue-600' : 'gray-300'}`}>
+                    <div className={selectedSiswaIds.includes(s.user_id) ? 'text-blue-600' : 'text-gray-300'}>
                       {selectedSiswaIds.includes(s.user_id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
                     </div>
                     <div className="overflow-hidden">
-                      <p className={`text-sm font-bold truncate ${selectedSiswaIds.includes(s.user_id) ? 'text-blue-900' : 'text-gray-900'}`}>{s.name}</p>
+                      <p className={`text-xs font-bold truncate ${selectedSiswaIds.includes(s.user_id) ? 'text-blue-900' : 'text-gray-900'}`}>{s.name}</p>
                       <p className="text-[11px] text-gray-500 font-medium truncate">{s.email}</p>
                     </div>
                   </div>
