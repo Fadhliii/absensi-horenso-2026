@@ -74,6 +74,160 @@ export async function deletePerusahaanAction(id: string) {
   return { success: true };
 }
 
+// ================= PERUSAHAAN BATCH ACTIONS ================= //
+
+export async function getBatchesByPerusahaanAction(perusahaanId: string) {
+  const { data, error } = await supabaseAdmin
+    .from('perusahaan_batch')
+    .select('*')
+    .eq('perusahaan_id', perusahaanId)
+    .order('created_at', { ascending: true });
+
+  if (error) return { error: error.message };
+  return { data };
+}
+
+export async function createPerusahaanBatchAction(formData: FormData) {
+  const perusahaan_id = formData.get('perusahaan_id') as string;
+  const nama_batch = formData.get('nama_batch') as string;
+  const tanggal_berangkat = (formData.get('tanggal_berangkat') as string) || null;
+  const kuota = parseInt((formData.get('kuota') as string) || '0', 10);
+  const keterangan = (formData.get('keterangan') as string) || '';
+
+  if (!perusahaan_id || !nama_batch) {
+    return { error: 'Perusahaan dan Nama Batch wajib diisi.' };
+  }
+
+  const { error } = await supabaseAdmin.from('perusahaan_batch').insert([{
+    perusahaan_id,
+    nama_batch,
+    tanggal_berangkat,
+    kuota,
+    keterangan
+  }]);
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/admin/perusahaan');
+  revalidatePath('/admin/siswa');
+  return { success: true };
+}
+
+export async function updatePerusahaanBatchAction(id: string, formData: FormData) {
+  const nama_batch = formData.get('nama_batch') as string;
+  const tanggal_berangkat = (formData.get('tanggal_berangkat') as string) || null;
+  const kuota = parseInt((formData.get('kuota') as string) || '0', 10);
+  const keterangan = (formData.get('keterangan') as string) || '';
+
+  if (!nama_batch) return { error: 'Nama Batch wajib diisi.' };
+
+  const { error } = await supabaseAdmin.from('perusahaan_batch').update({
+    nama_batch,
+    tanggal_berangkat,
+    kuota,
+    keterangan
+  }).eq('id', id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/admin/perusahaan');
+  revalidatePath('/admin/siswa');
+  return { success: true };
+}
+
+export async function deletePerusahaanBatchAction(id: string) {
+  // Set batch_id siswa yang ada di batch ini menjadi null
+  await supabaseAdmin.from('siswa').update({ batch_id: null }).eq('batch_id', id);
+
+  const { error } = await supabaseAdmin.from('perusahaan_batch').delete().eq('id', id);
+  if (error) return { error: error.message };
+
+  revalidatePath('/admin/perusahaan');
+  revalidatePath('/admin/siswa');
+  return { success: true };
+}
+
+export async function getPerusahaanHierarchyAction(search: string = '') {
+  let pQuery = supabaseAdmin.from('perusahaan').select(`
+    id, nama, alamat, kontak, created_at
+  `).order('nama');
+
+  if (search) {
+    pQuery = pQuery.ilike('nama', `%${search}%`);
+  }
+
+  const { data: perusahaanList, error: pError } = await pQuery;
+  if (pError) return { error: pError.message };
+
+  if (!perusahaanList || perusahaanList.length === 0) {
+    return { data: [] };
+  }
+
+  const perusahaanIds = perusahaanList.map(p => p.id);
+
+  // Fetch all batches for these companies
+  const { data: batchList } = await supabaseAdmin
+    .from('perusahaan_batch')
+    .select('*')
+    .in('perusahaan_id', perusahaanIds)
+    .order('created_at', { ascending: true });
+
+  // Fetch all students assigned to these companies
+  const { data: siswaList } = await supabaseAdmin
+    .from('siswa')
+    .select(`
+      id, user_id, perusahaan_id, batch_id, batch, tanggal_berangkat, status_penempatan,
+      users ( id, name, email, phone )
+    `)
+    .in('perusahaan_id', perusahaanIds);
+
+  // Structure into hierarchy
+  const hierarchy = perusahaanList.map(p => {
+    const pBatches = (batchList || []).filter(b => b.perusahaan_id === p.id);
+    const pSiswa = (siswaList || []).filter(s => s.perusahaan_id === p.id);
+
+    const batchesWithSiswa = pBatches.map(b => {
+      const bSiswa = pSiswa.filter(s => s.batch_id === b.id || s.batch === b.nama_batch);
+      return {
+        ...b,
+        siswa: bSiswa.map(s => {
+          const u = Array.isArray(s.users) ? s.users[0] : (s.users as any);
+          return {
+            id: s.id,
+            user_id: s.user_id,
+            name: u?.name || 'Siswa',
+            email: u?.email || '',
+            phone: u?.phone || '',
+            tanggal_berangkat: s.tanggal_berangkat || b.tanggal_berangkat
+          };
+        })
+      };
+    });
+
+    // Siswa assigned to company but no batch
+    const unbatchedSiswa = pSiswa.filter(s => !s.batch_id && !pBatches.some(b => b.nama_batch === s.batch));
+
+    return {
+      ...p,
+      batches: batchesWithSiswa,
+      unbatchedSiswa: unbatchedSiswa.map(s => {
+        const u = Array.isArray(s.users) ? s.users[0] : (s.users as any);
+        return {
+          id: s.id,
+          user_id: s.user_id,
+          name: u?.name || 'Siswa',
+          email: u?.email || '',
+          phone: u?.phone || '',
+          tanggal_berangkat: s.tanggal_berangkat
+        };
+      }),
+      totalSiswa: pSiswa.length
+    };
+  });
+
+  return { data: hierarchy };
+}
+
 // ================= SISWA ACTIONS ================= //
 
 export async function getSiswaApprovedAction(page: number, search: string, statusFilter: string, perusahaanFilter: string = '') {
@@ -180,25 +334,51 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
   return { data: mappedData, total: count || 0, limit };
 }
 
-export async function assignSiswaPerusahaanAction(userId: string, status: 'belum' | 'sudah', perusahaanId?: string, batch?: string, tanggal_berangkat?: string) {
+export async function assignSiswaPerusahaanAction(
+  userId: string, 
+  status: 'belum' | 'sudah', 
+  perusahaanId?: string, 
+  batchIdOrName?: string, 
+  tanggal_berangkat?: string
+) {
   const updateData: any = { status_penempatan: status };
   
   if (status === 'sudah' && perusahaanId) {
     updateData.perusahaan_id = perusahaanId;
   } else {
     updateData.perusahaan_id = null;
-  }
-  
-  if (batch) {
-    updateData.batch = batch;
-  } else {
+    updateData.batch_id = null;
     updateData.batch = null;
-  }
-  
-  if (tanggal_berangkat) {
-    updateData.tanggal_berangkat = tanggal_berangkat;
-  } else {
     updateData.tanggal_berangkat = null;
+  }
+
+  if (status === 'sudah' && batchIdOrName) {
+    // Cek apakah batchIdOrName ini UUID (batch_id) atau nama_batch biasa
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(batchIdOrName);
+    
+    if (isUuid) {
+      updateData.batch_id = batchIdOrName;
+      // Ambil nama batch dan tgl berangkat dari perusahaan_batch jika ada
+      const { data: batchData } = await supabaseAdmin
+        .from('perusahaan_batch')
+        .select('nama_batch, tanggal_berangkat')
+        .eq('id', batchIdOrName)
+        .single();
+
+      if (batchData) {
+        updateData.batch = batchData.nama_batch;
+        if (!tanggal_berangkat && batchData.tanggal_berangkat) {
+          updateData.tanggal_berangkat = batchData.tanggal_berangkat;
+        }
+      }
+    } else {
+      updateData.batch = batchIdOrName;
+      updateData.batch_id = null;
+    }
+  }
+
+  if (status === 'sudah' && tanggal_berangkat) {
+    updateData.tanggal_berangkat = tanggal_berangkat;
   }
 
   const { error } = await supabaseAdmin
@@ -209,6 +389,7 @@ export async function assignSiswaPerusahaanAction(userId: string, status: 'belum
   if (error) return { error: error.message };
   
   revalidatePath('/admin/siswa');
+  revalidatePath('/admin/perusahaan');
   return { success: true };
 }
 

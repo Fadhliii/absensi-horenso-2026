@@ -36,15 +36,18 @@ export default function DashboardChart({ data }: { data: any[] }) {
             axisLine={false} 
             tickLine={false} 
             tick={{ fontSize: 12, fill: '#1f2937', fontWeight: 600 }} 
+            tickFormatter={(value) => `${value}%`}
+            domain={[0, 100]}
             allowDecimals={false}
           />
           <Tooltip 
             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
             labelStyle={{ fontWeight: 'bold', color: '#374151' }}
+            formatter={(value) => [`${value}%`, 'Kehadiran']}
           />
           <Area 
             type="monotone" 
-            dataKey="Hadir" 
+            dataKey="Persentase" 
             stroke="#2563eb" 
             strokeWidth={3}
             fillOpacity={1} 

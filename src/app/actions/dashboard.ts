@@ -76,10 +76,16 @@ export async function getDashboardStatsAction() {
       }
     });
 
-    const chartData = Object.keys(chartMap).map(key => ({
-      name: key,
-      Hadir: chartMap[key]
-    }));
+    const chartData = Object.keys(chartMap).map(key => {
+      const hadirCount = chartMap[key];
+      const rawPercent = totalSiswa ? Math.round((hadirCount / totalSiswa) * 100) : 0;
+      const persentase = rawPercent > 100 ? 100 : rawPercent;
+      return {
+        name: key,
+        Hadir: hadirCount,
+        Persentase: persentase
+      };
+    });
 
     const isSesiAktif = sesiAktif && sesiAktif.length > 0;
 

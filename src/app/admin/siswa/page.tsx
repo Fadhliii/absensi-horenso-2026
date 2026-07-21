@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { getSiswaApprovedAction, assignSiswaPerusahaanAction, getAllPerusahaanAction } from '@/app/actions/master';
+import { getSiswaApprovedAction, assignSiswaPerusahaanAction, getAllPerusahaanAction, getBatchesByPerusahaanAction } from '@/app/actions/master';
 import { logoutAction } from '@/app/actions/auth';
 import { Search, ChevronLeft, ChevronRight, Briefcase, LogOut, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -33,11 +33,24 @@ export default function SiswaPage() {
   const [total, setTotal] = useState(0);
   
   const [perusahaanList, setPerusahaanList] = useState<{id: string, nama: string}[]>([]);
+  const [modalBatchList, setModalBatchList] = useState<{id: string, nama_batch: string, tanggal_berangkat?: string | null}[]>([]);
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
 
   const [assignModal, setAssignModal] = useState<{ isOpen: boolean; userId: string; name: string; currentStatus: string; currentCompanyId?: string; currentBatch?: string; currentTanggalBerangkat?: string }>({ isOpen: false, userId: '', name: '', currentStatus: 'belum' });
+
+  // Load batches when company selected in modal
+  useEffect(() => {
+    if (assignModal.isOpen && assignModal.currentCompanyId) {
+      getBatchesByPerusahaanAction(assignModal.currentCompanyId).then(res => {
+        if (res.data) setModalBatchList(res.data);
+        else setModalBatchList([]);
+      });
+    } else {
+      setModalBatchList([]);
+    }
+  }, [assignModal.isOpen, assignModal.currentCompanyId]);
 
   const fetchPerusahaan = useCallback(async () => {
     try {
@@ -355,7 +368,8 @@ export default function SiswaPage() {
                           <select 
                             name="perusahaan_id" 
                             required 
-                            defaultValue={assignModal.currentCompanyId || ''}
+                            value={assignModal.currentCompanyId || ''}
+                            onChange={(e) => setAssignModal({...assignModal, currentCompanyId: e.target.value})}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                           >
                             <option value="" disabled>-- Pilih Perusahaan --</option>
@@ -365,21 +379,41 @@ export default function SiswaPage() {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Batch (Opsional)</label>
-                          <input 
-                            type="text"
-                            name="batch"
-                            defaultValue={assignModal.currentBatch || ''}
-                            placeholder="Contoh: 1, 2, 2024A"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                          />
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Batch / Angkatan (Opsional)</label>
+                          {modalBatchList.length > 0 ? (
+                            <select
+                              name="batch"
+                              defaultValue={assignModal.currentBatch || ''}
+                              onChange={(e) => {
+                                const selectedBatchObj = modalBatchList.find(b => b.id === e.target.value || b.nama_batch === e.target.value);
+                                if (selectedBatchObj?.tanggal_berangkat && !assignModal.currentTanggalBerangkat) {
+                                  setAssignModal(prev => ({ ...prev, currentTanggalBerangkat: selectedBatchObj.tanggal_berangkat || '' }));
+                                }
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                            >
+                              <option value="">-- Tanpa Batch --</option>
+                              {modalBatchList.map(b => (
+                                <option key={b.id} value={b.id}>{b.nama_batch} {b.tanggal_berangkat ? `(Berangkat: ${b.tanggal_berangkat})` : ''}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <input 
+                              type="text"
+                              name="batch"
+                              defaultValue={assignModal.currentBatch || ''}
+                              placeholder="Contoh: Batch 1"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          )}
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Keberangkatan ✈️ (Opsional)</label>
                           <input 
                             type="date"
                             name="tanggal_berangkat"
-                            defaultValue={assignModal.currentTanggalBerangkat || ''}
+                            value={assignModal.currentTanggalBerangkat || ''}
+                            onChange={(e) => setAssignModal({ ...assignModal, currentTanggalBerangkat: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                           />
                         </div>

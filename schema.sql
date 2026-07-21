@@ -40,13 +40,26 @@ CREATE TABLE perusahaan (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 4. Tabel siswa (Data Spesifik Siswa)
+-- 4. Tabel perusahaan_batch (Master Batch/Angkatan Perusahaan)
+CREATE TABLE perusahaan_batch (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    perusahaan_id UUID NOT NULL REFERENCES perusahaan(id) ON DELETE CASCADE,
+    nama_batch VARCHAR(100) NOT NULL,
+    tanggal_berangkat DATE,
+    kuota INTEGER DEFAULT 0,
+    keterangan TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 5. Tabel siswa (Data Spesifik Siswa)
 CREATE TABLE siswa (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE UNIQUE, -- Relasi 1-to-1
     status_penempatan status_penempatan NOT NULL DEFAULT 'belum',
     perusahaan_id UUID REFERENCES perusahaan(id) ON DELETE SET NULL,
+    batch_id UUID REFERENCES perusahaan_batch(id) ON DELETE SET NULL,
     batch VARCHAR(50),
+    tanggal_berangkat DATE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
