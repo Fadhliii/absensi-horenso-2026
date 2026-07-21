@@ -78,6 +78,7 @@ export default function DaftarIzinPage() {
                     <th className="p-3 border-r-4 border-black font-black uppercase text-sm">Tanggal Izin</th>
                     <th className="p-3 border-r-4 border-black font-black uppercase text-sm">Jenis</th>
                     <th className="p-3 border-r-4 border-black font-black uppercase text-sm">Alasan</th>
+                    <th className="p-3 border-r-4 border-black font-black uppercase text-sm">Laporan Ke</th>
                     <th className="p-3 border-r-4 border-black font-black uppercase text-sm">Status</th>
                     <th className="p-3 font-black uppercase text-sm">Aksi</th>
                   </tr>
@@ -102,6 +103,9 @@ export default function DaftarIzinPage() {
                       </td>
                       <td className="p-3 border-r-4 border-black max-w-xs truncate font-medium" title={item.alasan}>
                         {item.alasan}
+                      </td>
+                      <td className="p-3 border-r-4 border-black font-bold text-sm">
+                        {item.instruktur?.name || '-'}
                       </td>
                       <td className="p-3 border-r-4 border-black">
                         {item.status === 'pending' && <span className="bg-yellow-200 text-yellow-800 px-2 py-1 text-xs font-black uppercase neo-border">Pending</span>}

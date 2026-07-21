@@ -25,6 +25,7 @@ export async function ajukanIzinAction(formData: FormData) {
     const tanggal = formData.get('tanggal') as string;
     const tipe = formData.get('tipe') as 'izin' | 'sakit';
     const alasan = formData.get('alasan') as string;
+    const dilaporkan_ke = formData.get('dilaporkan_ke') as string;
 
     if (!tanggal || !tipe || !alasan) {
       return { error: 'Semua field harus diisi.' };
@@ -39,7 +40,8 @@ export async function ajukanIzinAction(formData: FormData) {
           tanggal,
           tipe,
           alasan,
-          status: 'pending'
+          status: 'pending',
+          dilaporkan_ke: dilaporkan_ke || null
         }
       ]);
 
@@ -95,7 +97,8 @@ export async function getSemuaIzinAction() {
       .from('izin_absen')
       .select(`
         *,
-        users (name, email)
+        users!izin_absen_siswa_id_fkey (name, email),
+        instruktur:users!izin_absen_dilaporkan_ke_fkey (name)
       `)
       .order('created_at', { ascending: false });
 
@@ -121,5 +124,62 @@ export async function setStatusIzinAction(id: string, status: 'approved' | 'reje
     return { success: true };
   } catch (err: any) {
     return { error: err.message || 'Terjadi kesalahan' };
+  }
+}
+
+export async function getInstrukturAction() {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name')
+      .in('role', ['instruktur', 'admin'])
+      .eq('status_registrasi', 'approved')
+      .order('name');
+      
+    if (error) throw error;
+    return { success: true, data: data || [] };
+  } catch (err: any) {
+    return { error: err.message, data: [] };
+  }
+}
+
+export async function inputIzinManualAction(formData: FormData) {
+  try {
+    const session = await verifyAdminOrInstruktur();
+
+    const siswa_id = formData.get('siswa_id') as string;
+    const tanggal = formData.get('tanggal') as string;
+    const tipe = formData.get('tipe') as 'izin' | 'sakit';
+    const alasan = formData.get('alasan') as string;
+
+    if (!siswa_id || !tanggal || !tipe || !alasan) {
+      return { error: 'Semua field harus diisi.' };
+    }
+
+    // Insert to DB dengan status otomatis approved
+    const { error } = await supabase
+      .from('izin_absen')
+      .insert([
+        {
+          siswa_id,
+          tanggal,
+          tipe,
+          alasan: `[Input Manual Admin] ${alasan}`,
+          status: 'approved',
+          dilaporkan_ke: session.userId
+        }
+      ]);
+
+    if (error) {
+      if (error.code === '23505') {
+        return { error: 'Siswa sudah memiliki data izin/sakit pada tanggal tersebut.' };
+      }
+      throw error;
+    }
+
+    revalidatePath('/admin/rekap');
+    return { success: true };
+  } catch (err: any) {
+    return { error: err.message || 'Terjadi kesalahan sistem' };
   }
 }

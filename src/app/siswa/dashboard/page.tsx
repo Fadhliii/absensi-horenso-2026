@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getStudentDashboardDataAction } from '@/app/actions/siswa';
-import { ajukanIzinAction } from '@/app/actions/izin';
+import { ajukanIzinAction, getInstrukturAction } from '@/app/actions/izin';
 import { logoutAction } from '@/app/actions/auth';
 import { QrCode, LogOut, Calendar, Clock, MapPin, CheckCircle, XCircle, AlertCircle, Building2 } from 'lucide-react';
 import Link from 'next/link';
@@ -21,8 +21,10 @@ export default function SiswaDashboardPage() {
   const [izinTanggal, setIzinTanggal] = useState('');
   const [izinTipe, setIzinTipe] = useState<'izin' | 'sakit'>('izin');
   const [izinAlasan, setIzinAlasan] = useState('');
+  const [izinDilaporkanKe, setIzinDilaporkanKe] = useState('');
   const [izinLoading, setIzinLoading] = useState(false);
   const [izinError, setIzinError] = useState('');
+  const [instrukturList, setInstrukturList] = useState<{id: string, name: string}[]>([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -32,6 +34,13 @@ export default function SiswaDashboardPage() {
     } else {
       setData(result);
     }
+    
+    // Fetch Instrukturs
+    const insRes = await getInstrukturAction();
+    if (insRes.data) {
+      setInstrukturList(insRes.data);
+    }
+    
     setLoading(false);
   }, [monthFilter]);
 
@@ -59,6 +68,7 @@ export default function SiswaDashboardPage() {
     formData.append('tanggal', izinTanggal);
     formData.append('tipe', izinTipe);
     formData.append('alasan', izinAlasan);
+    if (izinDilaporkanKe) formData.append('dilaporkan_ke', izinDilaporkanKe);
 
     const result = await ajukanIzinAction(formData);
     if (result.error) {
@@ -235,6 +245,20 @@ export default function SiswaDashboardPage() {
                 >
                   <option value="izin">Izin</option>
                   <option value="sakit">Sakit</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Laporan Ke (Instruktur)</label>
+                <select 
+                  value={izinDilaporkanKe}
+                  onChange={(e) => setIzinDilaporkanKe(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                >
+                  <option value="">-- Pilih Instruktur / Admin --</option>
+                  {instrukturList.map(ins => (
+                    <option key={ins.id} value={ins.id}>{ins.name}</option>
+                  ))}
                 </select>
               </div>
 

@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { getRekapAbsensiAction } from '@/app/actions/rekap';
+import { inputIzinManualAction } from '@/app/actions/izin';
 import { getAllPerusahaanAction } from '@/app/actions/master';
 import { logoutAction } from '@/app/actions/auth';
-import { LogOut, ArrowLeft, Loader2, CalendarDays } from 'lucide-react';
+import { LogOut, ArrowLeft, Loader2, CalendarDays, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function RekapGridPage() {
@@ -18,6 +19,43 @@ export default function RekapGridPage() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedPerusahaan, setSelectedPerusahaan] = useState('');
   const [showDeparted, setShowDeparted] = useState(false);
+
+  // Modal Input Manual
+  const [isInputModalOpen, setIsInputModalOpen] = useState(false);
+  const [inputSiswaId, setInputSiswaId] = useState('');
+  const [inputTanggal, setInputTanggal] = useState('');
+  const [inputTipe, setInputTipe] = useState<'izin' | 'sakit'>('izin');
+  const [inputAlasan, setInputAlasan] = useState('');
+  const [inputLoading, setInputLoading] = useState(false);
+  const [inputError, setInputError] = useState('');
+
+  const handleInputManual = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputSiswaId || !inputTanggal || !inputAlasan) return;
+
+    setInputError('');
+    setInputLoading(true);
+
+    const formData = new FormData();
+    formData.append('siswa_id', inputSiswaId);
+    formData.append('tanggal', inputTanggal);
+    formData.append('tipe', inputTipe);
+    formData.append('alasan', inputAlasan);
+
+    const result = await inputIzinManualAction(formData);
+    
+    if (result.error) {
+      setInputError(result.error);
+    } else {
+      setIsInputModalOpen(false);
+      setInputSiswaId('');
+      setInputTanggal('');
+      setInputAlasan('');
+      alert('Berhasil menginput absen manual.');
+      fetchData(); // Refresh grid
+    }
+    setInputLoading(false);
+  };
 
   const fetchFilters = useCallback(async () => {
     const res = await getAllPerusahaanAction();
@@ -170,7 +208,7 @@ export default function RekapGridPage() {
             </select>
           </div>
           
-          <div className="flex items-center ml-auto">
+          <div className="flex items-center ml-auto gap-4">
             <label className="flex items-center cursor-pointer">
               <input 
                 type="checkbox" 
@@ -182,6 +220,13 @@ export default function RekapGridPage() {
                 Tampilkan Alumni (Selesai/Berangkat)
               </span>
             </label>
+            <button
+              onClick={() => setIsInputModalOpen(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center transition-colors"
+            >
+              <PlusCircle className="w-4 h-4 mr-2" />
+              Input Manual
+            </button>
           </div>
 
           {loading && <Loader2 className="w-5 h-5 animate-spin text-blue-600 mb-2 ml-2" />}
@@ -342,6 +387,99 @@ export default function RekapGridPage() {
           </div>
           )}
         </div>
+
+        {/* Modal Input Manual */}
+        {isInputModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+              <div className="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                <h3 className="font-bold text-gray-900 flex items-center">
+                  <PlusCircle className="w-5 h-5 mr-2 text-blue-600" />
+                  Input Izin/Sakit Manual
+                </h3>
+                <button onClick={() => setIsInputModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                  <span className="sr-only">Close</span>
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+              <div className="p-4 flex-1 overflow-y-auto">
+                {inputError && (
+                  <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100">
+                    {inputError}
+                  </div>
+                )}
+                <form id="form-input-manual" onSubmit={handleInputManual} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Pilih Siswa</label>
+                    <select 
+                      required
+                      value={inputSiswaId}
+                      onChange={(e) => setInputSiswaId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="" disabled>-- Pilih Siswa --</option>
+                      {rekapData.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
+                    <input 
+                      type="date" 
+                      required
+                      value={inputTanggal}
+                      onChange={(e) => setInputTanggal(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tipe</label>
+                    <select 
+                      required
+                      value={inputTipe}
+                      onChange={(e) => setInputTipe(e.target.value as 'izin' | 'sakit')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="izin">Izin</option>
+                      <option value="sakit">Sakit</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Keterangan / Alasan</label>
+                    <textarea 
+                      required
+                      value={inputAlasan}
+                      onChange={(e) => setInputAlasan(e.target.value)}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Contoh: Sakit demam, Izin urusan keluarga..."
+                    />
+                  </div>
+                </form>
+              </div>
+              <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsInputModalOpen(false)}
+                  disabled={inputLoading}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  form="form-input-manual"
+                  disabled={inputLoading}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  {inputLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Simpan Data
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </main>
     </div>
