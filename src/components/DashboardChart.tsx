@@ -5,8 +5,8 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tool
 export default function DashboardChart({ data }: { data: any[] }) {
   if (!data || data.length === 0) {
     return (
-      <div className="h-64 w-full flex items-center justify-center bg-gray-50 rounded-xl border border-gray-100">
-        <span className="text-gray-800 font-semibold">Belum ada data grafik</span>
+      <div className="h-64 w-full flex items-center justify-center bg-[#fffde7] neo-border">
+        <span className="text-black font-black uppercase text-xs">Belum ada data grafik</span>
       </div>
     );
   }
@@ -20,8 +20,8 @@ export default function DashboardChart({ data }: { data: any[] }) {
         >
           <defs>
             <linearGradient id="colorHadir" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3}/>
-              <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+              <stop offset="5%" stopColor="#000000" stopOpacity={0.8}/>
+              <stop offset="95%" stopColor="#000000" stopOpacity={0.1}/>
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
@@ -29,30 +29,45 @@ export default function DashboardChart({ data }: { data: any[] }) {
             dataKey="name" 
             axisLine={false} 
             tickLine={false} 
-            tick={{ fontSize: 12, fill: '#1f2937', fontWeight: 600 }} 
+            tick={{ fontSize: 12, fill: '#000000', fontWeight: 900 }} 
             dy={10}
           />
           <YAxis 
             axisLine={false} 
             tickLine={false} 
-            tick={{ fontSize: 12, fill: '#1f2937', fontWeight: 600 }} 
+            tick={{ fontSize: 12, fill: '#000000', fontWeight: 900 }} 
             tickFormatter={(value) => `${value}%`}
             domain={[0, 100]}
             allowDecimals={false}
           />
           <Tooltip 
-            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-            labelStyle={{ fontWeight: 'bold', color: '#374151' }}
-            formatter={(value) => [`${value}%`, 'Kehadiran']}
+            content={({ active, payload, label }) => {
+              if (active && payload && payload.length) {
+                const dataPoint = payload[0].payload;
+                return (
+                  <div className="bg-white p-3 border-3 border-black box-shadow-4px">
+                    <p className="text-xs font-black text-black uppercase mb-2 border-b-2 border-black pb-1">{label}</p>
+                    <p className="text-sm font-black text-black">Persentase: {dataPoint.Persentase}%</p>
+                    <div className="mt-2 space-y-1">
+                      <p className="text-xs font-bold text-gray-700">✅ Hadir: {dataPoint.Hadir || 0}</p>
+                      <p className="text-xs font-bold text-gray-700">✉️ Izin: {dataPoint.Izin || 0}</p>
+                      <p className="text-xs font-bold text-gray-700">🤒 Sakit: {dataPoint.Sakit || 0}</p>
+                      <p className="text-xs font-bold text-gray-700">❌ Bolos/Alpha: {dataPoint.Bolos || 0}</p>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            }}
           />
           <Area 
             type="monotone" 
             dataKey="Persentase" 
-            stroke="#2563eb" 
-            strokeWidth={3}
+            stroke="#000000" 
+            strokeWidth={4}
             fillOpacity={1} 
             fill="url(#colorHadir)" 
-            activeDot={{ r: 6, strokeWidth: 0, fill: '#1d4ed8' }}
+            activeDot={{ r: 6, strokeWidth: 2, stroke: '#000', fill: '#00f0ff' }}
           />
         </AreaChart>
       </ResponsiveContainer>

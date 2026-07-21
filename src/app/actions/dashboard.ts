@@ -29,7 +29,8 @@ export async function getDashboardStatsAction() {
       { count: pendingApproval },
       { count: hadirHariIni },
       { data: logAbsensi },
-      { data: rawChartData },
+      { data: rawAbsensiData },
+      { data: rawIzinData },
       { data: sesiAktif }
     ] = await Promise.all([
       // 1. Total Siswa Aktif
@@ -50,39 +51,65 @@ export async function getDashboardStatsAction() {
         users (name)
       `).order('waktu_scan', { ascending: false }).limit(10),
       
-      // 5. Data Grafik (7 Hari Terakhir)
-      supabase.from('absensi').select('waktu_scan, status').eq('status', 'hadir').gte('waktu_scan', sevenDaysAgo.toISOString()),
+      // 5. Data Absensi Grafik (7 Hari Terakhir)
+      supabase.from('absensi')
+        .select('waktu_scan, status')
+        .in('status', ['hadir', 'telat'])
+        .gte('waktu_scan', sevenDaysAgo.toISOString()),
+
+      // 6. Data Izin Grafik (7 Hari Terakhir)
+      supabase.from('izin_absen')
+        .select('tanggal, tipe')
+        .eq('status', 'approved')
+        .gte('tanggal', sevenDaysAgo.toISOString().split('T')[0]),
       
-      // 6. Cek Sesi Aktif
+      // 7. Cek Sesi Aktif
       supabase.from('sesi_absensi').select('id').eq('status', 'aktif').limit(1)
     ]);
 
     // Agregasi manual di Node.js (cepat & ringan untuk skala kecil-menengah)
-    const chartMap: Record<string, number> = {};
+    const chartMap: Record<string, { hadir: number, izin: number, sakit: number }> = {};
     
-    // Inisialisasi 7 hari dengan nilai 0
     for (let i = 0; i < 7; i++) {
       const d = new Date(sevenDaysAgo);
       d.setDate(d.getDate() + i);
       const dateString = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
-      chartMap[dateString] = 0;
+      chartMap[dateString] = { hadir: 0, izin: 0, sakit: 0 };
     }
 
-    // Isi dengan data aktual
-    rawChartData?.forEach((row) => {
+    // Isi dengan data aktual absensi
+    rawAbsensiData?.forEach((row) => {
       const rowDate = new Date(row.waktu_scan).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
       if (chartMap[rowDate] !== undefined) {
-        chartMap[rowDate] += 1;
+        chartMap[rowDate].hadir += 1;
       }
     });
 
+    // Isi dengan data aktual izin/sakit
+    rawIzinData?.forEach((row) => {
+      const rowDate = new Date(row.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+      if (chartMap[rowDate] !== undefined) {
+        if (row.tipe === 'izin') chartMap[rowDate].izin += 1;
+        if (row.tipe === 'sakit') chartMap[rowDate].sakit += 1;
+      }
+    });
+
+    const activeTotalSiswa = totalSiswa || 0;
+
     const chartData = Object.keys(chartMap).map(key => {
-      const hadirCount = chartMap[key];
-      const rawPercent = totalSiswa ? Math.round((hadirCount / totalSiswa) * 100) : 0;
+      const { hadir: hadirCount, izin: izinCount, sakit: sakitCount } = chartMap[key];
+      let bolosCount = activeTotalSiswa - (hadirCount + izinCount + sakitCount);
+      if (bolosCount < 0) bolosCount = 0; // fallback if somehow negative
+      
+      const rawPercent = activeTotalSiswa > 0 ? Math.round((hadirCount / activeTotalSiswa) * 100) : 0;
       const persentase = rawPercent > 100 ? 100 : rawPercent;
+      
       return {
         name: key,
         Hadir: hadirCount,
+        Izin: izinCount,
+        Sakit: sakitCount,
+        Bolos: bolosCount,
         Persentase: persentase
       };
     });
