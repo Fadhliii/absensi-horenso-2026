@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { getSemuaIzinAction, setStatusIzinAction } from '@/app/actions/izin';
 import Link from 'next/link';
 import { ArrowLeft, Check, X, FileText, Calendar } from 'lucide-react';
+import IndonesianClock from '@/components/IndonesianClock';
+import { formatIndonesianDate } from '@/lib/date';
 
 export default function DaftarIzinPage() {
   const [data, setData] = useState<any[]>([]);
@@ -36,23 +38,19 @@ export default function DaftarIzinPage() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('id-ID', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-  };
+  const formatDate = (dateString: string) => formatIndonesianDate(dateString);
 
   return (
     <div className="min-h-screen bg-[#f4f4f0] font-sans">
       <header className="bg-white border-b-4 border-black mb-8">
-        <div className="max-w-7xl mx-auto px-4 py-6 flex items-center">
-          <Link href="/admin/dashboard" className="mr-4 hover:-translate-x-1 transition-transform">
-            <ArrowLeft className="w-8 h-8 text-black" />
-          </Link>
-          <h1 className="text-2xl font-black text-black tracking-tight uppercase">Persetujuan Izin/Sakit</h1>
+        <div className="max-w-7xl mx-auto px-4 py-6 flex items-center justify-between">
+          <div className="flex items-center">
+            <Link href="/admin/dashboard" className="mr-4 hover:-translate-x-1 transition-transform">
+              <ArrowLeft className="w-8 h-8 text-black" />
+            </Link>
+            <h1 className="text-2xl font-black text-black tracking-tight uppercase">Persetujuan Izin/Sakit</h1>
+          </div>
+          <IndonesianClock className="hidden sm:inline-flex" />
         </div>
       </header>
 

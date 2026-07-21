@@ -9,6 +9,8 @@ import {
   logoutAction
 } from '@/app/actions/auth';
 import { Check, X, Key, LogOut } from 'lucide-react';
+import IndonesianClock from '@/components/IndonesianClock';
+import { formatIndonesianDateTime } from '@/lib/date';
 
 type PendingStudent = {
   id: string;
@@ -64,11 +66,14 @@ export default function AdminApprovalPage() {
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <h1 className="text-xl font-bold text-gray-900">Dashboard Admin</h1>
-          <form action={logoutAction}>
-            <button className="flex items-center text-gray-600 hover:text-red-600 text-sm font-medium transition-colors">
-              <LogOut className="w-4 h-4 mr-1" /> Logout
-            </button>
-          </form>
+          <div className="flex items-center gap-4">
+            <IndonesianClock className="hidden sm:inline-flex" />
+            <form action={logoutAction}>
+              <button className="flex items-center text-gray-600 hover:text-red-600 text-sm font-medium transition-colors">
+                <LogOut className="w-4 h-4 mr-1" /> Logout
+              </button>
+            </form>
+          </div>
         </div>
       </header>
 
@@ -98,7 +103,7 @@ export default function AdminApprovalPage() {
                         {student.email} • {student.phone || '-'}
                       </p>
                       <p className="text-xs text-gray-700 mt-1 font-medium">
-                        Terdaftar: {new Date(student.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        Terdaftar: {formatIndonesianDateTime(student.created_at)}
                       </p>
                     </div>
                     

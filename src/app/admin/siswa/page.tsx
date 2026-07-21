@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getSiswaApprovedAction, assignSiswaPerusahaanAction, getAllPerusahaanAction, getBatchesByPerusahaanAction } from '@/app/actions/master';
 import { logoutAction } from '@/app/actions/auth';
+import IndonesianClock from '@/components/IndonesianClock';
 import { Search, ChevronLeft, ChevronRight, Briefcase, LogOut, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
@@ -156,11 +157,14 @@ export default function SiswaPage() {
             </Link>
             <h1 className="text-xl font-bold text-gray-900">Data Siswa Aktif</h1>
           </div>
-          <form action={logoutAction}>
-            <button className="flex items-center text-gray-600 hover:text-red-600 text-sm font-medium transition-colors">
-              <LogOut className="w-4 h-4 mr-1" /> Logout
-            </button>
-          </form>
+          <div className="flex items-center gap-4">
+            <IndonesianClock className="hidden sm:inline-flex" />
+            <form action={logoutAction}>
+              <button className="flex items-center text-gray-600 hover:text-red-600 text-sm font-medium transition-colors">
+                <LogOut className="w-4 h-4 mr-1" /> Logout
+              </button>
+            </form>
+          </div>
         </div>
       </header>
 

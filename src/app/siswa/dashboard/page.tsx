@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { getStudentDashboardDataAction } from '@/app/actions/siswa';
 import { ajukanIzinAction, getInstrukturAction } from '@/app/actions/izin';
 import { logoutAction } from '@/app/actions/auth';
+import IndonesianClock from '@/components/IndonesianClock';
+import { formatIndonesianDate, formatIndonesianTime } from '@/lib/date';
 import { QrCode, LogOut, Calendar, Clock, MapPin, CheckCircle, XCircle, AlertCircle, Building2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -49,15 +51,8 @@ export default function SiswaDashboardPage() {
   }, [fetchData]);
 
   // Helper untuk format tanggal & jam
-  const formatDate = (isoString: string) => {
-    const date = new Date(isoString);
-    return date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  };
-  
-  const formatTime = (isoString: string) => {
-    const date = new Date(isoString);
-    return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-  };
+  const formatDate = (isoString: string) => formatIndonesianDate(isoString);
+  const formatTime = (isoString: string) => formatIndonesianTime(isoString);
 
   const handleAjukanIzin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,11 +84,14 @@ export default function SiswaDashboardPage() {
       <header className="bg-blue-600 text-white shadow-md">
         <div className="max-w-3xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-xl font-bold">Portal Siswa</h1>
-          <form action={logoutAction}>
-            <button className="flex items-center text-blue-100 hover:text-white transition-colors">
-              <LogOut className="w-5 h-5" />
-            </button>
-          </form>
+          <div className="flex items-center gap-3">
+            <IndonesianClock className="bg-blue-700/60 border-blue-500/50 text-white" />
+            <form action={logoutAction}>
+              <button className="flex items-center text-blue-100 hover:text-white transition-colors">
+                <LogOut className="w-5 h-5" />
+              </button>
+            </form>
+          </div>
         </div>
       </header>
 

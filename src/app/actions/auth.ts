@@ -22,9 +22,11 @@ export async function registerAction(formData: FormData) {
 
   try {
     const passwordHash = await hashPassword(password);
+    const perusahaan_id = (formData.get('perusahaan_id') as string) || null;
+    const batch_id = (formData.get('batch_id') as string) || null;
     
     // Status 'pending' until approved by admin
-    const { error } = await supabase
+    const { data: newUser, error } = await supabase
       .from('users')
       .insert([
         {
@@ -36,13 +38,43 @@ export async function registerAction(formData: FormData) {
           status_registrasi: 'pending',
           force_change_password: false,
         }
-      ]);
+      ])
+      .select('id')
+      .single();
 
     if (error) {
       if (error.code === '23505') {
         return { error: 'Email sudah terdaftar!' };
       }
       throw error;
+    }
+
+    if (role === 'siswa' && newUser?.id) {
+      let batchName = null;
+      let tglBerangkat = null;
+
+      if (batch_id) {
+        const { data: bData } = await supabase
+          .from('perusahaan_batch')
+          .select('nama_batch, tanggal_berangkat')
+          .eq('id', batch_id)
+          .single();
+        if (bData) {
+          batchName = bData.nama_batch;
+          tglBerangkat = bData.tanggal_berangkat;
+        }
+      }
+
+      await supabase.from('siswa').insert([
+        {
+          user_id: newUser.id,
+          status_penempatan: perusahaan_id ? 'sudah' : 'belum',
+          perusahaan_id: perusahaan_id,
+          batch_id: batch_id,
+          batch: batchName,
+          tanggal_berangkat: tglBerangkat,
+        }
+      ]);
     }
 
     return { success: true };
@@ -172,11 +204,19 @@ export async function approveStudentAction(id: string) {
   if (userError) return { error: userError.message };
 
   // 2. Insert ke tabel siswa jika belum ada
-  const { error: siswaError } = await supabase
+  const { data: existingSiswa } = await supabase
     .from('siswa')
-    .upsert({ user_id: id, status_penempatan: 'belum' }, { onConflict: 'user_id' });
+    .select('id')
+    .eq('user_id', id)
+    .single();
 
-  if (siswaError) return { error: siswaError.message };
+  if (!existingSiswa) {
+    const { error: siswaError } = await supabase
+      .from('siswa')
+      .insert({ user_id: id, status_penempatan: 'belum' });
+
+    if (siswaError) return { error: siswaError.message };
+  }
 
   return { success: true };
 }

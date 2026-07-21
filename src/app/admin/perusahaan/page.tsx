@@ -13,6 +13,7 @@ import {
   bulkAssignSiswaBatchAction
 } from '@/app/actions/master';
 import { logoutAction } from '@/app/actions/auth';
+import IndonesianClock from '@/components/IndonesianClock';
 import { 
   Plus, Edit2, Trash2, Search, LogOut, ArrowLeft, 
   ChevronDown, ChevronRight, Layers, User, Calendar, Building2, UserPlus, CheckSquare, Square
@@ -198,11 +199,14 @@ export default function PerusahaanPage() {
               <p className="text-xs text-gray-500 font-medium">Struktur Mitra, Angkatan (Batch), dan Daftar Penempatan Siswa</p>
             </div>
           </div>
-          <form action={logoutAction}>
-            <button className="flex items-center text-gray-600 hover:text-red-600 px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-semibold transition-colors">
-              <LogOut className="w-4 h-4 mr-1.5" /> Logout
-            </button>
-          </form>
+          <div className="flex items-center gap-3">
+            <IndonesianClock className="hidden sm:inline-flex" />
+            <form action={logoutAction}>
+              <button className="flex items-center text-gray-600 hover:text-red-600 px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-semibold transition-colors">
+                <LogOut className="w-4 h-4 mr-1.5" /> Logout
+              </button>
+            </form>
+          </div>
         </div>
       </header>
 

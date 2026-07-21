@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getDashboardStatsAction } from '@/app/actions/dashboard';
 import { logoutAction } from '@/app/actions/auth';
+import IndonesianClock from '@/components/IndonesianClock';
 import { Users, UserCheck, UserPlus, LogOut, ExternalLink, MapPin, CheckCircle, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -57,12 +58,17 @@ export default function AdminDashboardPage() {
       {/* Header */}
       <header className="bg-white border-b-4 border-black mb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex justify-between items-center">
-          <h1 className="text-2xl font-black text-black tracking-tight uppercase">Dashboard Admin</h1>
-          <form action={logoutAction}>
-            <button className="flex items-center text-black hover:bg-black hover:text-white px-3 py-1 neo-border text-sm font-black transition-colors uppercase">
-              <LogOut className="w-4 h-4 mr-1" /> Logout
-            </button>
-          </form>
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-black text-black tracking-tight uppercase">Dashboard Admin</h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <IndonesianClock className="hidden sm:inline-flex" />
+            <form action={logoutAction}>
+              <button className="flex items-center text-black hover:bg-black hover:text-white px-3 py-1 neo-border text-sm font-black transition-colors uppercase">
+                <LogOut className="w-4 h-4 mr-1" /> Logout
+              </button>
+            </form>
+          </div>
         </div>
       </header>
 

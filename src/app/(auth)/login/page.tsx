@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react';
 import { loginAction } from '@/app/actions/auth';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import IndonesianClock from '@/components/IndonesianClock';
 
 function LoginForm() {
   const [error, setError] = useState('');
@@ -26,8 +27,11 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+      <div className="mb-4">
+        <IndonesianClock />
+      </div>
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-gray-900">Login Absensi LPK</h2>
           <p className="text-gray-900 mt-2">Masuk ke akun Anda</p>

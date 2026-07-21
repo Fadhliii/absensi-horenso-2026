@@ -542,3 +542,23 @@ export async function bulkAssignSiswaBatchAction(
   return { success: true };
 }
 
+export async function getPublicPerusahaanWithBatchesAction() {
+  const { data: perusahaanList, error: pError } = await supabaseAdmin
+    .from('perusahaan')
+    .select('id, nama')
+    .order('nama');
+
+  if (pError) return { error: pError.message };
+
+  const { data: batchList } = await supabaseAdmin
+    .from('perusahaan_batch')
+    .select('id, perusahaan_id, nama_batch, tanggal_berangkat')
+    .order('created_at', { ascending: true });
+
+  return { 
+    perusahaan: perusahaanList || [],
+    batches: batchList || []
+  };
+}
+
+

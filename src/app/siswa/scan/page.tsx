@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { submitAbsensiAction } from '@/app/actions/absensi';
 import { Camera, MapPin, CheckCircle, XCircle, Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import IndonesianClock from '@/components/IndonesianClock';
 
 type ScanState = 'idle' | 'request_camera' | 'scanning' | 'getting_location' | 'submitting' | 'success' | 'error';
 
@@ -118,6 +119,7 @@ export default function ScanAbsensiPage() {
           </Link>
           <h1 className="text-lg font-bold">Scan Absensi</h1>
         </div>
+        <IndonesianClock className="bg-gray-900 border-gray-700 text-gray-200" />
       </header>
 
       {/* Main Scanner Area */}
