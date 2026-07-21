@@ -147,32 +147,40 @@ export async function inputIzinManualAction(formData: FormData) {
   try {
     const session = await verifyAdminOrInstruktur();
 
-    const siswa_id = formData.get('siswa_id') as string;
+    const siswa_ids_json = formData.get('siswa_ids') as string;
     const tanggal = formData.get('tanggal') as string;
     const tipe = formData.get('tipe') as 'izin' | 'sakit';
     const alasan = formData.get('alasan') as string;
 
-    if (!siswa_id || !tanggal || !tipe || !alasan) {
+    if (!siswa_ids_json || !tanggal || !tipe || !alasan) {
       return { error: 'Semua field harus diisi.' };
     }
+
+    let siswa_ids: string[] = [];
+    try {
+      siswa_ids = JSON.parse(siswa_ids_json);
+      if (!Array.isArray(siswa_ids) || siswa_ids.length === 0) throw new Error();
+    } catch {
+      return { error: 'Daftar siswa tidak valid.' };
+    }
+
+    const payload = siswa_ids.map(id => ({
+      siswa_id: id,
+      tanggal,
+      tipe,
+      alasan: `[Input Manual Admin] ${alasan}`,
+      status: 'approved',
+      dilaporkan_ke: session.userId
+    }));
 
     // Insert to DB dengan status otomatis approved
     const { error } = await supabase
       .from('izin_absen')
-      .insert([
-        {
-          siswa_id,
-          tanggal,
-          tipe,
-          alasan: `[Input Manual Admin] ${alasan}`,
-          status: 'approved',
-          dilaporkan_ke: session.userId
-        }
-      ]);
+      .insert(payload);
 
     if (error) {
       if (error.code === '23505') {
-        return { error: 'Siswa sudah memiliki data izin/sakit pada tanggal tersebut.' };
+        return { error: 'Satu atau lebih siswa sudah memiliki data izin/sakit pada tanggal tersebut.' };
       }
       throw error;
     }

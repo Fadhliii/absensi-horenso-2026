@@ -10,7 +10,7 @@ import Link from 'next/link';
 
 export default function RekapGridPage() {
   const [loading, setLoading] = useState(true);
-  const [rekapData, setRekapData] = useState<{id: string, name: string, tanggal_berangkat: string | null, attendance: Record<number, string>}[]>([]);
+  const [rekapData, setRekapData] = useState<{id: string, name: string, tanggal_berangkat: string | null, attendance: Record<number, {status: string, alasan?: string}>}[]>([]);
   const [perusahaanList, setPerusahaanList] = useState<{id: string, nama: string}[]>([]);
   const [holidays, setHolidays] = useState<Record<string, string>>({}); // date string (YYYY-MM-DD) -> Holiday Name
   
@@ -22,7 +22,7 @@ export default function RekapGridPage() {
 
   // Modal Input Manual
   const [isInputModalOpen, setIsInputModalOpen] = useState(false);
-  const [inputSiswaId, setInputSiswaId] = useState('');
+  const [inputSiswaIds, setInputSiswaIds] = useState<string[]>([]);
   const [inputTanggal, setInputTanggal] = useState('');
   const [inputTipe, setInputTipe] = useState<'izin' | 'sakit'>('izin');
   const [inputAlasan, setInputAlasan] = useState('');
@@ -31,13 +31,13 @@ export default function RekapGridPage() {
 
   const handleInputManual = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputSiswaId || !inputTanggal || !inputAlasan) return;
+    if (inputSiswaIds.length === 0 || !inputTanggal || !inputAlasan) return;
 
     setInputError('');
     setInputLoading(true);
 
     const formData = new FormData();
-    formData.append('siswa_id', inputSiswaId);
+    formData.append('siswa_ids', JSON.stringify(inputSiswaIds));
     formData.append('tanggal', inputTanggal);
     formData.append('tipe', inputTipe);
     formData.append('alasan', inputAlasan);
@@ -48,7 +48,7 @@ export default function RekapGridPage() {
       setInputError(result.error);
     } else {
       setIsInputModalOpen(false);
-      setInputSiswaId('');
+      setInputSiswaIds([]);
       setInputTanggal('');
       setInputAlasan('');
       alert('Berhasil menginput absen manual.');
@@ -276,7 +276,9 @@ export default function RekapGridPage() {
                       </td>
                       
                       {daysArray.map(day => {
-                        const status = siswa.attendance[day];
+                        const statusObj = siswa.attendance[day];
+                        const status = statusObj?.status;
+                        const alasan = statusObj?.alasan;
                         const hadir = status === 'H';
                         const izin = status === 'I';
                         const sakit = status === 'S';
@@ -313,8 +315,8 @@ export default function RekapGridPage() {
                         }
 
                         let titleStr = isDeparted ? 'Sudah Berangkat' : (isHoliday ? holidayName : '');
-                        if (izin) titleStr = 'Izin';
-                        if (sakit) titleStr = 'Sakit';
+                        if (izin) titleStr = `Izin${alasan ? ' - ' + alasan : ''}`;
+                        if (sakit) titleStr = `Sakit${alasan ? ' - ' + alasan : ''}`;
 
                         return (
                           <td key={day} className={cellClass} title={titleStr}>
@@ -410,18 +412,37 @@ export default function RekapGridPage() {
                 )}
                 <form id="form-input-manual" onSubmit={handleInputManual} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Pilih Siswa</label>
-                    <select 
-                      required
-                      value={inputSiswaId}
-                      onChange={(e) => setInputSiswaId(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="" disabled>-- Pilih Siswa --</option>
-                      {rekapData.map(s => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </select>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="block text-sm font-medium text-gray-700">Pilih Siswa</label>
+                      <button 
+                        type="button" 
+                        onClick={() => setInputSiswaIds(inputSiswaIds.length === rekapData.length ? [] : rekapData.map(s => s.id))}
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        {inputSiswaIds.length === rekapData.length ? 'Batal Pilih Semua' : 'Pilih Semua'}
+                      </button>
+                    </div>
+                    <div className="w-full h-40 overflow-y-auto border border-gray-300 rounded-lg p-2 bg-white space-y-1">
+                      {rekapData.length === 0 ? (
+                        <div className="text-sm text-gray-500 text-center p-2">Tidak ada siswa yang ditampilkan di tabel</div>
+                      ) : (
+                        rekapData.map(s => (
+                          <label key={s.id} className="flex items-center p-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                            <input 
+                              type="checkbox" 
+                              checked={inputSiswaIds.includes(s.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) setInputSiswaIds([...inputSiswaIds, s.id]);
+                                else setInputSiswaIds(inputSiswaIds.filter(id => id !== s.id));
+                              }}
+                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-2"
+                            />
+                            <span className="text-sm text-gray-700 truncate">{s.name}</span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                    {inputSiswaIds.length === 0 && <p className="text-xs text-red-500 mt-1">Pilih minimal 1 siswa</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>

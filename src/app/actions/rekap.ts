@@ -55,15 +55,15 @@ export async function getRekapAbsensiAction(year: number, month: number, perusah
     // Fetch approved leaves
     const { data: izin, error: izinError } = await supabase
       .from('izin_absen')
-      .select('siswa_id, tanggal, tipe')
+      .select('siswa_id, tanggal, tipe, alasan')
       .gte('tanggal', startDate.substring(0, 10))
       .lt('tanggal', endDate.substring(0, 10))
       .eq('status', 'approved');
 
     if (izinError) throw izinError;
 
-    // Process data to a map: student_id -> { date (1-31): status (H, I, S) }
-    const attendanceMap: Record<string, Record<number, string>> = {};
+    // Process data to a map: student_id -> { date (1-31): { status: (H, I, S), alasan?: string } }
+    const attendanceMap: Record<string, Record<number, { status: string, alasan?: string }>> = {};
     
     students.forEach(s => {
       attendanceMap[s.id] = {};
@@ -74,7 +74,7 @@ export async function getRekapAbsensiAction(year: number, month: number, perusah
         // Parse date
         const dateObj = new Date(a.waktu_scan);
         const day = dateObj.getDate();
-        attendanceMap[a.siswa_id][day] = 'H';
+        attendanceMap[a.siswa_id][day] = { status: 'H' };
       }
     });
 
@@ -82,7 +82,10 @@ export async function getRekapAbsensiAction(year: number, month: number, perusah
       if (attendanceMap[i.siswa_id]) {
         const dateObj = new Date(i.tanggal);
         const day = dateObj.getDate();
-        attendanceMap[i.siswa_id][day] = i.tipe === 'izin' ? 'I' : 'S';
+        attendanceMap[i.siswa_id][day] = { 
+          status: i.tipe === 'izin' ? 'I' : 'S',
+          alasan: i.alasan
+        };
       }
     });
 
