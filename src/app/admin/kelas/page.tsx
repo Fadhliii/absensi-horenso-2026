@@ -116,7 +116,7 @@ export default function MasterKelasPage() {
                   <tr><td colSpan={3} className="px-6 py-10 text-center font-bold">Belum ada data kelas.</td></tr>
                 ) : (
                   data.map(item => (
-                    <tr key={item.id} className="hover:bg-gray-50">
+                    <tr key={item.id} className="hover:bg-[#ffe600] hover:text-black font-black">
                       <td className="px-6 py-4 whitespace-nowrap font-bold">{item.nama_kelas}</td>
                       <td className="px-6 py-4 font-medium text-gray-700">{item.deskripsi || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">

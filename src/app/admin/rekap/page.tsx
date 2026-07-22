@@ -399,9 +399,9 @@ export default function RekapGridPage() {
                     </tr>
                   ) : (
                     filteredData.map((siswa) => (
-                      <tr key={siswa.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                      <tr key={siswa.id} className="border-b border-gray-100 hover:bg-[#ffe600] hover:text-black font-black transition-colors">
                         {/* Clickable Student Name */}
-                        <td className="px-4 py-2 font-medium text-gray-900 sticky left-0 bg-white z-10 border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] group-hover:bg-gray-50">
+                        <td className="px-4 py-2 font-medium text-gray-900 sticky left-0 bg-white z-10 border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] group-hover:bg-[#ffe600] hover:text-black font-black">
                           <button
                             onClick={() => handleOpenStudentDetail(siswa.id)}
                             className="font-black text-blue-600 hover:text-blue-800 hover:underline text-left truncate max-w-[200px] flex items-center gap-1"
@@ -544,7 +544,7 @@ export default function RekapGridPage() {
                     </tr>
                   ) : (
                     filteredSoftSkillStudents.map((siswa) => (
-                      <tr key={siswa.id} className="hover:bg-gray-50 transition-colors">
+                      <tr key={siswa.id} className="hover:bg-[#ffe600] hover:text-black font-black transition-colors">
                         {/* Clickable Student Name */}
                         <td className="px-4 py-2 font-medium text-gray-900 sticky left-0 bg-white z-10 border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                           <button
@@ -741,7 +741,7 @@ export default function RekapGridPage() {
                             {studentDetail.softSkillHistory.map((item: any, idx: number) => {
                               const cls = item.kelas_soft_skill;
                               return (
-                                <li key={idx} className="p-3 flex justify-between items-center hover:bg-gray-50">
+                                <li key={idx} className="p-3 flex justify-between items-center hover:bg-[#ffe600] hover:text-black font-black">
                                   <div>
                                     <p className="font-black text-black">{cls?.judul_materi || 'Materi Soft Skill'}</p>
                                     <p className="text-[10px] text-gray-600 font-medium">
@@ -836,7 +836,7 @@ export default function RekapGridPage() {
                         <div className="text-sm text-gray-500 text-center p-2">Tidak ada siswa yang ditampilkan di tabel</div>
                       ) : (
                         rekapData.map(s => (
-                          <label key={s.id} className="flex items-center p-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                          <label key={s.id} className="flex items-center p-1.5 hover:bg-[#ffe600] hover:text-black font-black rounded cursor-pointer">
                             <input 
                               type="checkbox" 
                               checked={inputSiswaIds.includes(s.id)}
@@ -893,7 +893,7 @@ export default function RekapGridPage() {
                   type="button"
                   onClick={() => setIsInputModalOpen(false)}
                   disabled={inputLoading}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-[#ffe600] hover:text-black font-black"
                 >
                   Batal
                 </button>

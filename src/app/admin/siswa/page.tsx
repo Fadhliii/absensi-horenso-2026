@@ -332,7 +332,7 @@ export default function SiswaPage() {
                   <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-800 font-medium">Tidak ada data siswa ditemukan.</td></tr>
                 ) : (
                   data.map((s) => (
-                    <tr key={s.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={s.id} className="hover:bg-[#ffe600] hover:text-black font-black transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <input 
                           type="checkbox"
@@ -416,17 +416,17 @@ export default function SiswaPage() {
               </div>
               <div>
                 <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"><ChevronLeft className="h-5 w-5" /></button>
+                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-[#ffe600] hover:text-black font-black disabled:opacity-50"><ChevronLeft className="h-5 w-5" /></button>
                   <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">Hal {page} / {totalPages || 1}</span>
-                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"><ChevronRight className="h-5 w-5" /></button>
+                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-[#ffe600] hover:text-black font-black disabled:opacity-50"><ChevronRight className="h-5 w-5" /></button>
                 </nav>
               </div>
             </div>
             
             <div className="flex items-center justify-between w-full sm:hidden">
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50">Seb</button>
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-[#ffe600] hover:text-black font-black disabled:opacity-50">Seb</button>
               <span className="text-sm text-gray-700">{page} / {totalPages || 1}</span>
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50">Beri</button>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-[#ffe600] hover:text-black font-black disabled:opacity-50">Beri</button>
             </div>
           </div>
         </div>
@@ -535,7 +535,7 @@ export default function SiswaPage() {
                   <button type="submit" className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:ml-3 sm:w-auto sm:text-sm">
                     Simpan Perubahan
                   </button>
-                  <button type="button" onClick={() => setAssignModal({ ...assignModal, isOpen: false })} className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                  <button type="button" onClick={() => setAssignModal({ ...assignModal, isOpen: false })} className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-[#ffe600] hover:text-black font-black sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                     Batal
                   </button>
                 </div>
@@ -571,7 +571,7 @@ export default function SiswaPage() {
                 <button type="submit" className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 sm:ml-3 sm:w-auto sm:text-sm">
                   Simpan Perubahan
                 </button>
-                <button type="button" onClick={() => setIsBulkModalOpen(false)} className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                <button type="button" onClick={() => setIsBulkModalOpen(false)} className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-[#ffe600] hover:text-black font-black sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                   Batal
                 </button>
               </div>

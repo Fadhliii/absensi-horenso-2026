@@ -217,7 +217,7 @@ export default function SiswaDashboardPage() {
               return (
                 <ul className="divide-y divide-gray-200 bg-white">
                   {filteredRiwayat.map((absen: any) => (
-                    <li key={absen.id} className="p-3 hover:bg-gray-50 transition-colors">
+                    <li key={absen.id} className="p-3 hover:bg-[#ffe600] transition-colors">
                       <div className="flex justify-between items-start gap-2">
                         <div>
                           <p className="text-xs font-black text-gray-900 mb-0.5">{formatDate(absen.waktu_scan)}</p>
@@ -360,7 +360,7 @@ export default function SiswaDashboardPage() {
                 <button 
                   type="button" 
                   onClick={() => setIsIzinModalOpen(false)}
-                  className="flex-1 py-2 px-4 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-gray-50"
+                  className="flex-1 py-2 px-4 border border-gray-300 rounded-xl text-gray-700 font-bold hover:bg-[#ffe600]"
                   disabled={izinLoading}
                 >
                   Batal

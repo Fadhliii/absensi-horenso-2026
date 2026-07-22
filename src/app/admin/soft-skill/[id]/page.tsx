@@ -422,7 +422,7 @@ export default function SoftSkillDetailPage() {
                   {filteredStudents.map((s) => {
                     const isSaving = savingMap[s.siswa_id];
                     return (
-                      <tr key={s.siswa_id} className="hover:bg-gray-50 transition-colors">
+                      <tr key={s.siswa_id} className="hover:bg-[#ffe600] hover:text-black font-black transition-colors">
                         <td className="px-4 py-3 whitespace-nowrap">
                           <input
                             type="checkbox"

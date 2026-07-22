@@ -213,7 +213,7 @@ export default function EditSiswaPage({ params }: { params: Promise<{ id: string
               <div className="pt-4 flex justify-end gap-3 border-t mt-6">
                 <Link 
                   href="/admin/siswa" 
-                  className="px-5 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="px-5 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-[#ffe600] hover:text-black font-black transition-colors"
                 >
                   Batal
                 </Link>

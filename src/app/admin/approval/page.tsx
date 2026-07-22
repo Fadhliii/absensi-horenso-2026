@@ -95,7 +95,7 @@ export default function AdminApprovalPage() {
           <div className="bg-white shadow rounded-lg overflow-hidden">
             <ul className="divide-y divide-gray-200">
               {students.map((student) => (
-                <li key={student.id} className="p-4 sm:px-6 hover:bg-gray-50 transition-colors">
+                <li key={student.id} className="p-4 sm:px-6 hover:bg-[#ffe600] hover:text-black font-black transition-colors">
                   <div className="flex items-center justify-between flex-wrap gap-4">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-blue-700 truncate">{student.name}</p>
@@ -110,7 +110,7 @@ export default function AdminApprovalPage() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleResetPassword(student.id, student.name)}
-                        className="inline-flex items-center p-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-800 bg-white hover:bg-gray-50"
+                        className="inline-flex items-center p-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-800 bg-white hover:bg-[#ffe600] hover:text-black font-black"
                         title="Reset Password"
                       >
                         <Key className="w-4 h-4 text-gray-800" />
