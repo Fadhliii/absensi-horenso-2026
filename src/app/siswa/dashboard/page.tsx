@@ -100,7 +100,7 @@ export default function SiswaDashboardPage() {
         
         {/* Profile & Placement Badge */}
         {data && (
-          <div className="bg-white neo-card p-5 mb-6">
+          <div className="bg-[#ffe600] neo-card p-5 mb-6">
             <h2 className="text-black text-xs font-black uppercase">Selamat datang,</h2>
             <p className="text-2xl font-black text-black uppercase tracking-tight mb-4">{data.profile.name}</p>
             
@@ -147,7 +147,7 @@ export default function SiswaDashboardPage() {
         </div>
 
         {/* Attendance History Section */}
-        <div className="bg-white neo-card overflow-hidden">
+        <div className="bg-[#00f0ff] neo-card overflow-hidden">
           <div className="p-4 border-b-3 border-black flex items-center justify-between bg-[#fffde7]">
             <h3 className="font-black text-black uppercase flex items-center text-sm">
               <Calendar className="w-4 h-4 mr-2 text-black" />

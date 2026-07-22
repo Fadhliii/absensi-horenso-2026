@@ -47,19 +47,34 @@ body {
 
 .neo-card {
   border: 3px solid #000000;
-  box-shadow: 5px 5px 0px 0px #000000;
-  border-radius: 12px;
+  box-shadow: 6px 6px 0px 0px #000000;
+  border-radius: 0px;
   background-color: #ffffff;
+}
+
+.neo-card-yellow {
+  background-color: #ffe600;
+}
+
+.neo-card-cyan {
+  background-color: #00f0ff;
+}
+
+.neo-card-pink {
+  background-color: #ff00c8;
+  color: #ffffff;
 }
 
 .neo-btn {
   border: 3px solid #000000;
   box-shadow: 4px 4px 0px 0px #000000;
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 10px;
+  border-radius: 0px;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+  background-color: #00f0ff; /* Pop color cyan */
+  color: #000000;
 }
 
 .neo-btn:hover {
@@ -75,7 +90,7 @@ body {
 .neo-input {
   border: 3px solid #000000;
   box-shadow: 3px 3px 0px 0px #000000;
-  border-radius: 10px;
+  border-radius: 0px;
   transition: all 0.1s ease-in-out;
   background-color: #ffffff;
   color: #000000;
@@ -93,5 +108,5 @@ body {
   border: 2px solid #000000;
   box-shadow: 2px 2px 0px 0px #000000;
   font-weight: 900;
-  border-radius: 8px;
+  border-radius: 0px;
 }

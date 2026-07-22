@@ -32,7 +32,7 @@ function LoginForm() {
         <IndonesianClock />
       </div>
       
-      <div className="max-w-md w-full bg-white neo-card neo-shadow-lg p-8">
+      <div className="max-w-md w-full bg-[#ffe600] neo-card neo-shadow-lg p-8">
         <div className="text-center mb-8 border-b-4 border-black pb-4">
           <h2 className="text-3xl font-black text-black uppercase tracking-tight">Login Absensi LPK</h2>
           <p className="text-xs text-black font-bold uppercase mt-1">Masuk ke akun Anda</p>

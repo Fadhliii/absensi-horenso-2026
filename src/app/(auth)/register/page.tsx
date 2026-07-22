@@ -81,7 +81,7 @@ export default function RegisterPage() {
         <div className="mb-6">
           <IndonesianClock />
         </div>
-        <div className="max-w-md w-full bg-white neo-card neo-shadow-lg p-8 text-center">
+        <div className="max-w-md w-full bg-[#00f0ff] neo-card neo-shadow-lg p-8 text-center">
           <div className="w-16 h-16 bg-[#00e676] text-black neo-border neo-shadow-sm flex items-center justify-center mx-auto mb-4 text-2xl font-black">✓</div>
           <h2 className="text-2xl font-black text-black uppercase mb-2">Registrasi Berhasil!</h2>
           <p className="text-black font-bold text-sm mb-6">Akun kamu sedang menunggu persetujuan admin. Kamu baru bisa login setelah akun di-approve.</p>
@@ -100,7 +100,7 @@ export default function RegisterPage() {
         <IndonesianClock />
       </div>
 
-      <div className="max-w-md w-full bg-white neo-card neo-shadow-lg p-8">
+      <div className="max-w-md w-full bg-[#00f0ff] neo-card neo-shadow-lg p-8">
         <div className="text-center mb-8 border-b-4 border-black pb-4">
           <h2 className="text-3xl font-black text-black uppercase tracking-tight">Daftar Akun Baru</h2>
           <p className="text-xs text-black font-bold uppercase mt-1">Sistem Absensi & Penempatan LPK</p>

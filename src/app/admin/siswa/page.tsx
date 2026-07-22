@@ -245,7 +245,7 @@ export default function SiswaPage() {
           </div>
         )}
 
-        <div className="bg-white neo-card overflow-hidden">
+        <div className="bg-[#ffe600] neo-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y-3 divide-black">
               <thead className="bg-gray-100 border-b border-gray-200">
