@@ -31,7 +31,8 @@ export async function getDashboardStatsAction() {
       { data: logAbsensi },
       { data: rawAbsensiData },
       { data: rawIzinData },
-      { data: sesiAktif }
+      { data: sesiAktif },
+      { count: pendingIzin }
     ] = await Promise.all([
       // 1. Total Siswa Aktif
       supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'siswa').eq('status_registrasi', 'approved'),
@@ -64,7 +65,10 @@ export async function getDashboardStatsAction() {
         .gte('tanggal', sevenDaysAgo.toISOString().split('T')[0]),
       
       // 7. Cek Sesi Aktif
-      supabase.from('sesi_absensi').select('id').eq('status', 'aktif').limit(1)
+      supabase.from('sesi_absensi').select('id').eq('status', 'aktif').limit(1),
+
+      // 8. Pending Izin
+      supabase.from('izin_absen').select('*', { count: 'exact', head: true }).eq('status', 'pending')
     ]);
 
     // Agregasi manual di Node.js (cepat & ringan untuk skala kecil-menengah)
@@ -122,6 +126,7 @@ export async function getDashboardStatsAction() {
         totalSiswa: totalSiswa || 0,
         pendingApproval: pendingApproval || 0,
         hadirHariIni: hadirHariIni || 0,
+        pendingIzin: pendingIzin || 0,
       },
       logAbsensi: logAbsensi || [],
       chartData,

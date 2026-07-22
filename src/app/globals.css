@@ -73,8 +73,6 @@ body {
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  background-color: #00f0ff; /* Pop color cyan */
-  color: #000000;
 }
 
 .neo-btn:hover {

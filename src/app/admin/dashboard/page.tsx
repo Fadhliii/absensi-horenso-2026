@@ -91,9 +91,9 @@ export default function AdminDashboardPage() {
             <div className="flex flex-wrap gap-4 mb-6">
               {data.role === 'admin' && (
                 <>
-                  <Link href="/admin/approval" className="bg-white text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Menu Approval</Link>
-                  <Link href="/admin/siswa" className="bg-white text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Data Siswa</Link>
-                  <Link href="/admin/perusahaan" className="bg-white text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Data Perusahaan</Link>
+                  <Link href="/admin/approval" className="bg-[#ffe600] text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Menu Approval</Link>
+                  <Link href="/admin/siswa" className="bg-[#ff00c8] text-white px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Data Siswa</Link>
+                  <Link href="/admin/perusahaan" className="bg-[#00f0ff] text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Data Perusahaan</Link>
                 </>
               )}
               <Link href="/admin/sesi" className="bg-[#4deeea] text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Buka Sesi Kelas</Link>
@@ -110,8 +110,13 @@ export default function AdminDashboardPage() {
               <Link href="/admin/rekap" className="bg-[#ffe700] text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1 flex items-center">
                 Rekap Grid
               </Link>
-              <Link href="/admin/izin" className="bg-[#f000ff] text-white px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1 flex items-center">
+              <Link href="/admin/izin" className="bg-[#f000ff] text-white px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1 flex items-center relative">
                 Permohonan Izin
+                {data.stats.pendingIzin > 0 && (
+                  <span className="absolute -top-3 -right-3 bg-[#ff003c] text-white text-[10px] font-black w-6 h-6 flex items-center justify-center rounded-full neo-border animate-bounce">
+                    {data.stats.pendingIzin}
+                  </span>
+                )}
               </Link>
             </div>
 
