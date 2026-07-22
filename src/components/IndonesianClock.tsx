@@ -45,11 +45,11 @@ export default function IndonesianClock({
   if (!dateStr) return null;
 
   return (
-    <div className={`inline-flex items-center gap-2 bg-[#ffe600] text-black neo-border neo-shadow-sm px-3 py-1.5 rounded-xl text-xs font-black tracking-tight ${className}`}>
+    <div className={`inline-flex items-center gap-2 bg-[#ffe600] text-black neo-border neo-shadow-sm px-3 py-1.5 text-xs font-black tracking-tight ${className}`}>
       {showIcon && <Clock className="w-4 h-4 text-black animate-spin shrink-0" style={{ animationDuration: '6s' }} />}
-      <span className="truncate">{dateStr}</span>
+      <span className="truncate uppercase">{dateStr}</span>
       <span className="text-black font-black">•</span>
-      <span className="font-mono bg-black text-yellow-300 px-1.5 py-0.5 rounded-md text-[11px] font-black">{timeStr}</span>
+      <span className="bg-black text-white px-2 py-0.5 text-xs font-bold uppercase">{timeStr}</span>
     </div>
   );
 }
