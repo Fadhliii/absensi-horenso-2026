@@ -5,7 +5,7 @@ import { getRekapAbsensiAction } from '@/app/actions/rekap';
 import { inputIzinManualAction } from '@/app/actions/izin';
 import { getAllPerusahaanAction } from '@/app/actions/master';
 import { logoutAction } from '@/app/actions/auth';
-import { LogOut, ArrowLeft, Loader2, CalendarDays, PlusCircle } from 'lucide-react';
+import { LogOut, ArrowLeft, Loader2, CalendarDays, PlusCircle, Download } from 'lucide-react';
 import Link from 'next/link';
 
 export default function RekapGridPage() {
@@ -143,6 +143,58 @@ export default function RekapGridPage() {
     });
   }, [rekapData, showDeparted, selectedYear, selectedMonth]);
 
+  const exportToExcel = async () => {
+    try {
+      const ExcelJS = await import('exceljs');
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Rekap Absensi');
+
+      // Add Headers
+      const headerRow = ['Nama Siswa'];
+      daysArray.forEach(day => headerRow.push(day.toString()));
+      worksheet.addRow(headerRow);
+
+      // Set Header Style
+      worksheet.getRow(1).font = { bold: true };
+
+      // Add Data
+      filteredData.forEach(siswa => {
+        const rowData: any[] = [siswa.name];
+        daysArray.forEach(day => {
+          const statusObj = siswa.attendance[day];
+          if (statusObj) {
+            if (statusObj.status === 'H') rowData.push('1');
+            else if (statusObj.status === 'I') rowData.push('I');
+            else if (statusObj.status === 'S') rowData.push('S');
+            else rowData.push('0');
+          } else {
+            const weekend = isWeekend(day);
+            const holidayName = getHolidayName(day);
+            if (weekend || holidayName) {
+              rowData.push(''); // Libur
+            } else {
+              rowData.push('0'); // Alpa
+            }
+          }
+        });
+        worksheet.addRow(rowData);
+      });
+
+      // Export
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Rekap_Absensi_${selectedYear}_${selectedMonth}.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting to Excel', error);
+      alert('Gagal mengekspor ke Excel');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white shadow-sm border-b border-gray-200">
@@ -220,6 +272,13 @@ export default function RekapGridPage() {
                 Tampilkan Alumni (Selesai/Berangkat)
               </span>
             </label>
+            <button
+              onClick={exportToExcel}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center transition-colors"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export Excel
+            </button>
             <button
               onClick={() => setIsInputModalOpen(true)}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center transition-colors"
