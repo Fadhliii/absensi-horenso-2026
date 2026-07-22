@@ -230,7 +230,7 @@ export async function getPerusahaanHierarchyAction(search: string = '') {
 
 // ================= SISWA ACTIONS ================= //
 
-export async function getSiswaApprovedAction(page: number, search: string, statusFilter: string, perusahaanFilter: string = '', keberangkatanFilter: string = 'semua', sortOrder: string = 'desc') {
+export async function getSiswaApprovedAction(page: number, search: string, statusFilter: string, perusahaanFilter: string = '', keberangkatanFilter: string = 'semua', sortOrder: string = 'desc', batchFilter: string = '') {
   const limit = 10;
   const from = (page - 1) * limit;
   const to = from + limit - 1;
@@ -239,7 +239,7 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
     .from('users')
     .select(`
       id, name, email, phone, created_at,
-      siswa ( id, status_penempatan, perusahaan_id, batch, tanggal_berangkat, perusahaan (nama) )
+      siswa ( id, status_penempatan, perusahaan_id, batch_id, batch, tanggal_berangkat, kelas_id, master_kelas (nama_kelas), perusahaan (nama) )
     `, { count: 'exact' })
     .eq('role', 'siswa')
     .eq('status_registrasi', 'approved');
@@ -252,11 +252,11 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
   // However, Supabase (PostgREST) doesn't support easy nested filtering that affects the main row return.
   // Instead, if statusFilter is used OR perusahaanFilter is used, we can query `siswa` table directly and join `users`.
   
-  if ((statusFilter && statusFilter !== 'semua') || perusahaanFilter || (keberangkatanFilter && keberangkatanFilter !== 'semua')) {
+  if ((statusFilter && statusFilter !== 'semua') || perusahaanFilter || batchFilter || (keberangkatanFilter && keberangkatanFilter !== 'semua')) {
     let siswaQuery = supabaseAdmin
     .from('siswa')
       .select(`
-        id, status_penempatan, perusahaan_id, batch, tanggal_berangkat, perusahaan (nama),
+        id, status_penempatan, perusahaan_id, batch_id, batch, tanggal_berangkat, kelas_id, master_kelas (nama_kelas), perusahaan (nama),
         users!inner (id, name, email, phone, status_registrasi, role, created_at)
       `, { count: 'exact' })
       .eq('users.status_registrasi', 'approved')
@@ -272,6 +272,10 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
 
     if (perusahaanFilter) {
       siswaQuery = siswaQuery.eq('perusahaan_id', perusahaanFilter);
+    }
+
+    if (batchFilter) {
+      siswaQuery = siswaQuery.eq('batch_id', batchFilter);
     }
 
     if (keberangkatanFilter === 'sudah') {
@@ -308,8 +312,11 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
           id: d.id || '',
           status_penempatan: d.status_penempatan || 'belum',
           perusahaan_id: d.perusahaan_id || null,
+          batch_id: d.batch_id || null,
           batch: d.batch || null,
           tanggal_berangkat: d.tanggal_berangkat || null,
+          kelas_id: d.kelas_id || null,
+          master_kelas: d.master_kelas || null,
           perusahaan: perusahaanObj ? { nama: perusahaanObj.nama || '' } : null
         }
       };
@@ -339,8 +346,11 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
         id: siswaObj.id || '',
         status_penempatan: siswaObj.status_penempatan || 'belum',
         perusahaan_id: siswaObj.perusahaan_id || null,
+        batch_id: siswaObj.batch_id || null,
         batch: siswaObj.batch || null,
         tanggal_berangkat: siswaObj.tanggal_berangkat || null,
+        kelas_id: siswaObj.kelas_id || null,
+        master_kelas: siswaObj.master_kelas || null,
         perusahaan: perusahaanObj ? { nama: perusahaanObj.nama || '' } : null
       } : null
     };
@@ -354,9 +364,14 @@ export async function assignSiswaPerusahaanAction(
   status: 'belum' | 'sudah', 
   perusahaanId?: string, 
   batchIdOrName?: string, 
-  tanggal_berangkat?: string
+  tanggal_berangkat?: string,
+  kelas_id?: string
 ) {
   const updateData: any = { status_penempatan: status };
+  
+  if (kelas_id !== undefined) {
+    updateData.kelas_id = kelas_id || null;
+  }
   
   if (status === 'sudah' && perusahaanId) {
     updateData.perusahaan_id = perusahaanId;
@@ -414,6 +429,20 @@ export async function bulkSetKeberangkatanAction(userIds: string[], tanggal_bera
   const { error } = await supabaseAdmin
     .from('siswa')
     .update({ tanggal_berangkat: tanggal_berangkat || null })
+    .in('user_id', userIds);
+
+  if (error) return { error: error.message };
+  
+  revalidatePath('/admin/siswa');
+  return { success: true };
+}
+
+export async function bulkSetKelasAction(userIds: string[], kelas_id: string | null) {
+  if (!userIds || userIds.length === 0) return { error: 'Tidak ada siswa yang dipilih.' };
+
+  const { error } = await supabaseAdmin
+    .from('siswa')
+    .update({ kelas_id: kelas_id || null })
     .in('user_id', userIds);
 
   if (error) return { error: error.message };

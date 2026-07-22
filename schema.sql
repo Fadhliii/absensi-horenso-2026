@@ -139,3 +139,13 @@ CREATE INDEX IF NOT EXISTS idx_absensi_sesi_id ON absensi(sesi_id);
 CREATE INDEX IF NOT EXISTS idx_siswa_perusahaan_id ON siswa(perusahaan_id);
 CREATE INDEX IF NOT EXISTS idx_users_status_role ON users(status_registrasi, role);
 
+-- 10. Tabel master_kelas (Master Data Kelas)
+CREATE TABLE IF NOT EXISTS master_kelas (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    nama_kelas VARCHAR(100) UNIQUE NOT NULL,
+    deskripsi TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tambah relasi kelas di tabel siswa
+ALTER TABLE siswa ADD COLUMN IF NOT EXISTS kelas_id UUID REFERENCES master_kelas(id) ON DELETE SET NULL;

@@ -105,12 +105,22 @@ export default function SiswaDashboardPage() {
             <p className="text-2xl font-black text-black uppercase tracking-tight mb-4">{data.profile.name}</p>
             
             {data.profile.statusPenempatan === 'sudah' ? (
-              <div className="flex items-start bg-[#00e676] neo-border p-3">
-                <Building2 className="w-5 h-5 text-black mr-3 mt-0.5" />
-                <div>
-                  <p className="text-xs text-black font-black uppercase tracking-wider">Status Penempatan</p>
-                  <p className="text-xs font-black text-black mt-0.5">Sudah ditempatkan di <span className="underline">{data.profile.namaPerusahaan}</span></p>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-start bg-[#00e676] neo-border p-3">
+                  <Building2 className="w-5 h-5 text-black mr-3 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-black font-black uppercase tracking-wider">Status Penempatan</p>
+                    <p className="text-xs font-black text-black mt-0.5">Sudah ditempatkan di <span className="underline">{data.profile.namaPerusahaan}</span></p>
+                  </div>
                 </div>
+                {data.profile.namaKelas && (
+                  <div className="flex items-start bg-[#ff00c8] text-white neo-border p-3">
+                    <div className="flex items-center">
+                      <p className="text-xs font-black uppercase tracking-wider mr-2">Kelas:</p>
+                      <span className="text-xs font-black bg-white text-black px-2 py-0.5">{data.profile.namaKelas}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-start bg-[#ffe600] neo-border p-3">

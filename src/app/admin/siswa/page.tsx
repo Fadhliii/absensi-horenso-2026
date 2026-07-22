@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getSiswaApprovedAction, assignSiswaPerusahaanAction, getAllPerusahaanAction, getBatchesByPerusahaanAction } from '@/app/actions/master';
+import { getAllKelasAction } from '@/app/actions/kelas';
 import { logoutAction } from '@/app/actions/auth';
 import IndonesianClock from '@/components/IndonesianClock';
 import { Search, ChevronLeft, ChevronRight, Briefcase, LogOut, ArrowLeft } from 'lucide-react';
@@ -32,17 +33,21 @@ export default function SiswaPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('semua');
   const [perusahaanFilter, setPerusahaanFilter] = useState('');
+  const [batchFilter, setBatchFilter] = useState('');
   const [keberangkatanFilter, setKeberangkatanFilter] = useState('semua');
   const [sortOrder, setSortOrder] = useState('desc');
   const [total, setTotal] = useState(0);
   
   const [perusahaanList, setPerusahaanList] = useState<{id: string, nama: string}[]>([]);
   const [modalBatchList, setModalBatchList] = useState<{id: string, nama_batch: string, tanggal_berangkat?: string | null}[]>([]);
+  const [filterBatchList, setFilterBatchList] = useState<{id: string, nama_batch: string}[]>([]);
+  const [kelasList, setKelasList] = useState<{id: string, nama_kelas: string}[]>([]);
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [isBulkKelasModalOpen, setIsBulkKelasModalOpen] = useState(false);
 
-  const [assignModal, setAssignModal] = useState<{ isOpen: boolean; userId: string; name: string; currentStatus: string; currentCompanyId?: string; currentBatch?: string; currentTanggalBerangkat?: string }>({ isOpen: false, userId: '', name: '', currentStatus: 'belum' });
+  const [assignModal, setAssignModal] = useState<{ isOpen: boolean; userId: string; name: string; currentStatus: string; currentCompanyId?: string; currentBatch?: string; currentTanggalBerangkat?: string; currentKelasId?: string }>({ isOpen: false, userId: '', name: '', currentStatus: 'belum' });
 
   // Load batches when company selected in modal
   useEffect(() => {
@@ -65,11 +70,27 @@ export default function SiswaPage() {
     }
   }, []);
 
+  const fetchKelas = useCallback(async () => {
+    const res = await getAllKelasAction();
+    if (res.success && res.data) setKelasList(res.data);
+  }, []);
+
+  useEffect(() => {
+    if (perusahaanFilter) {
+      getBatchesByPerusahaanAction(perusahaanFilter).then(res => {
+        if (res.data) setFilterBatchList(res.data);
+      });
+    } else {
+      setFilterBatchList([]);
+      setBatchFilter('');
+    }
+  }, [perusahaanFilter]);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     setPageError('');
     try {
-      const result = await getSiswaApprovedAction(page, search, statusFilter, perusahaanFilter, keberangkatanFilter, sortOrder);
+      const result = await getSiswaApprovedAction(page, search, statusFilter, perusahaanFilter, keberangkatanFilter, sortOrder, batchFilter);
       if (result?.data) {
         setData(result.data as any);
         setTotal(result.total || 0);
@@ -81,11 +102,12 @@ export default function SiswaPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, statusFilter, perusahaanFilter, keberangkatanFilter, sortOrder]);
+  }, [page, search, statusFilter, perusahaanFilter, keberangkatanFilter, sortOrder, batchFilter]);
 
   useEffect(() => {
     fetchPerusahaan();
-  }, [fetchPerusahaan]);
+    fetchKelas();
+  }, [fetchPerusahaan, fetchKelas]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -113,8 +135,9 @@ export default function SiswaPage() {
     const perusahaanId = formData.get('perusahaan_id') as string;
     const batch = formData.get('batch') as string;
     const tanggal_berangkat = formData.get('tanggal_berangkat') as string;
+    const kelas_id = formData.get('kelas_id') as string;
 
-    await assignSiswaPerusahaanAction(assignModal.userId, status, status === 'sudah' ? perusahaanId : undefined, status === 'sudah' ? batch : undefined, status === 'sudah' ? tanggal_berangkat : undefined);
+    await assignSiswaPerusahaanAction(assignModal.userId, status, status === 'sudah' ? perusahaanId : undefined, status === 'sudah' ? batch : undefined, status === 'sudah' ? tanggal_berangkat : undefined, kelas_id || undefined);
     setAssignModal({ isOpen: false, userId: '', name: '', currentStatus: 'belum' });
     fetchData();
   }
@@ -129,6 +152,19 @@ export default function SiswaPage() {
     await bulkSetKeberangkatanAction(selectedIds, tanggal_berangkat || null);
     
     setIsBulkModalOpen(false);
+    setSelectedIds([]);
+    fetchData();
+  }
+
+  async function handleBulkKelasSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const kelas_id = formData.get('kelas_id') as string;
+    
+    const { bulkSetKelasAction } = await import('@/app/actions/master');
+    await bulkSetKelasAction(selectedIds, kelas_id || null);
+    
+    setIsBulkKelasModalOpen(false);
     setSelectedIds([]);
     fetchData();
   }
@@ -219,6 +255,18 @@ export default function SiswaPage() {
                 <option key={p.id} value={p.id}>{p.nama}</option>
               ))}
             </select>
+            {perusahaanFilter && (
+              <select
+                value={batchFilter}
+                onChange={(e) => { setBatchFilter(e.target.value); setPage(1); }}
+                className="block w-full sm:w-48 px-3 py-2 neo-input text-xs font-bold"
+              >
+                <option value="">Semua Batch</option>
+                {filterBatchList.map(b => (
+                  <option key={b.id} value={b.id}>{b.nama_batch}</option>
+                ))}
+              </select>
+            )}
             <select
               value={statusFilter}
               onChange={handleFilter}
@@ -232,16 +280,24 @@ export default function SiswaPage() {
         </div>
 
         {selectedIds.length > 0 && (
-          <div className="bg-[#ffe600] neo-card p-4 mb-6 flex items-center justify-between">
+          <div className="bg-[#ffe600] neo-card p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
             <span className="text-xs font-black text-black uppercase">
               {selectedIds.length} siswa dipilih
             </span>
-            <button 
-              onClick={() => setIsBulkModalOpen(true)}
-              className="px-4 py-2 text-xs text-black bg-[#00f0ff] hover:bg-[#00d8e6] neo-btn"
-            >
-              Set Keberangkatan Massal
-            </button>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setIsBulkKelasModalOpen(true)}
+                className="px-4 py-2 text-xs text-white bg-[#ff00c8] hover:bg-[#d000a3] neo-btn"
+              >
+                Set Kelas Massal
+              </button>
+              <button 
+                onClick={() => setIsBulkModalOpen(true)}
+                className="px-4 py-2 text-xs text-black bg-[#00f0ff] hover:bg-[#00d8e6] neo-btn"
+              >
+                Set Keberangkatan Massal
+              </button>
+            </div>
           </div>
         )}
 
@@ -261,6 +317,7 @@ export default function SiswaPage() {
                   <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">Nama Siswa</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider hidden lg:table-cell">Kontak</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider hidden sm:table-cell">Tgl Daftar</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">Kelas</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">Penempatan & Batch</th>
                   <th scope="col" className="relative px-6 py-3"><span className="sr-only">Aksi</span></th>
                 </tr>
@@ -296,6 +353,11 @@ export default function SiswaPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-xs font-black uppercase text-black bg-yellow-300 px-2 py-1 rounded">
+                          {s.siswa?.master_kelas?.nama_kelas || '-'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         {s.siswa?.status_penempatan === 'sudah' ? (
                           <div className="flex flex-col gap-1 items-start">
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-900">
@@ -327,7 +389,7 @@ export default function SiswaPage() {
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-1 hidden sm:inline"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg> Edit
                         </Link>
                         <button 
-                          onClick={() => setAssignModal({ isOpen: true, userId: s.id, name: s.name, currentStatus: s.siswa?.status_penempatan || 'belum', currentCompanyId: s.siswa?.perusahaan_id || undefined, currentBatch: s.siswa?.batch || undefined, currentTanggalBerangkat: s.siswa?.tanggal_berangkat || undefined })} 
+                          onClick={() => setAssignModal({ isOpen: true, userId: s.id, name: s.name, currentStatus: s.siswa?.status_penempatan || 'belum', currentCompanyId: s.siswa?.perusahaan_id || undefined, currentBatch: s.siswa?.batch_id || s.siswa?.batch || undefined, currentTanggalBerangkat: s.siswa?.tanggal_berangkat || undefined, currentKelasId: s.siswa?.kelas_id || undefined })} 
                           className="inline-flex items-center text-blue-600 hover:text-blue-900 mr-3"
                           title="Ubah Penempatan"
                         >
@@ -391,6 +453,21 @@ export default function SiswaPage() {
                         <option value="sudah">Sudah Ditempatkan</option>
                       </select>
                     </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Kelas (Opsional)</label>
+                      <select 
+                        name="kelas_id" 
+                        defaultValue={assignModal.currentKelasId || ''}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">-- Tanpa Kelas --</option>
+                        {kelasList.map(k => (
+                          <option key={k.id} value={k.id}>{k.nama_kelas}</option>
+                        ))}
+                      </select>
+                    </div>
+
                     {assignModal.currentStatus === 'sudah' && (
                       <div className="space-y-4">
                         <div>
@@ -492,6 +569,46 @@ export default function SiswaPage() {
                   Simpan Perubahan
                 </button>
                 <button type="button" onClick={() => setIsBulkModalOpen(false)} className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                  Batal
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Bulk Set Kelas */}
+      {isBulkKelasModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="fixed inset-0 z-40 bg-gray-900/60" 
+            onClick={() => setIsBulkKelasModalOpen(false)}
+          ></div>
+          <div className="relative z-50 w-full max-w-md bg-white rounded-lg text-left shadow-xl overflow-hidden">
+            <form onSubmit={handleBulkKelasSubmit}>
+              <div className="bg-[#ff00c8] px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <h3 className="text-lg font-black text-white uppercase mb-4">Set Kelas ({selectedIds.length} Siswa)</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-black text-white mb-1 uppercase">Pilih Kelas</label>
+                    <select 
+                      name="kelas_id"
+                      className="w-full px-3 py-2 border-2 border-black font-bold focus:ring-0 focus:outline-none"
+                    >
+                      <option value="">-- Tanpa Kelas --</option>
+                      {kelasList.map(k => (
+                        <option key={k.id} value={k.id}>{k.nama_kelas}</option>
+                      ))}
+                    </select>
+                    <p className="mt-2 text-xs font-bold text-white">Kosongkan jika ingin menghapus kelas dari siswa-siswa ini.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 flex gap-4">
+                <button type="submit" className="flex-1 bg-[#ffe600] text-black neo-btn py-2">
+                  Simpan Perubahan
+                </button>
+                <button type="button" onClick={() => setIsBulkKelasModalOpen(false)} className="flex-1 bg-white text-black neo-btn py-2">
                   Batal
                 </button>
               </div>

@@ -25,7 +25,8 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
         name,
         siswa (
           status_penempatan,
-          perusahaan (nama)
+          perusahaan (nama),
+          master_kelas (nama_kelas)
         )
       `)
       .eq('id', userId)
@@ -78,13 +79,17 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
     const siswaObj = Array.isArray(profile.siswa) ? profile.siswa[0] : (profile.siswa as any);
     const perusahaanObj = siswaObj?.perusahaan;
     const namaPerusahaan = Array.isArray(perusahaanObj) ? perusahaanObj[0]?.nama : (perusahaanObj as any)?.nama;
+    
+    const kelasObj = siswaObj?.master_kelas;
+    const namaKelas = Array.isArray(kelasObj) ? kelasObj[0]?.nama_kelas : (kelasObj as any)?.nama_kelas;
 
     return { 
       success: true, 
       profile: {
         name: profile.name,
         statusPenempatan: siswaObj?.status_penempatan || 'belum',
-        namaPerusahaan: namaPerusahaan || null
+        namaPerusahaan: namaPerusahaan || null,
+        namaKelas: namaKelas || null
       },
       isSesiAktif,
       riwayat 
