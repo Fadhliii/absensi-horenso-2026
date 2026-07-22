@@ -1,15 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, Clock, User, Check, X, AlertCircle, Search, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, RefreshCw, CheckCircle2, Filter, Zap, CheckSquare, XSquare } from 'lucide-react';
+import { getAllKelasAction } from '@/app/actions/kelas';
+import { getAllPerusahaanAction } from '@/app/actions/master';
 
 interface StudentAttendance {
   siswa_id: string;
   name: string;
-  batch?: string;
+  kelas_id?: string | null;
+  nama_kelas?: string | null;
+  perusahaan_id?: string | null;
+  nama_perusahaan?: string | null;
+  batch?: string | null;
   status_absensi: 'hadir' | 'tidak_hadir' | 'izin' | 'sakit' | 'belum_diabsen';
+  status_pagi?: string;
   waktu_absen?: string;
 }
 
@@ -30,15 +37,35 @@ export default function SoftSkillDetailPage() {
   const [students, setStudents] = useState<StudentAttendance[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [bulkLoading, setBulkLoading] = useState(false);
   const [savingMap, setSavingMap] = useState<{ [key: string]: boolean }>({});
   const [error, setError] = useState('');
+
+  // Master lists for filters
+  const [kelasList, setKelasList] = useState<{id: string, nama_kelas: string}[]>([]);
+  const [perusahaanList, setPerusahaanList] = useState<{id: string, nama: string}[]>([]);
+
+  // Filter selections
+  const [filterKelas, setFilterKelas] = useState('');
+  const [filterPerusahaan, setFilterPerusahaan] = useState('');
+
+  // Selected Checkboxes
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  const fetchFilters = useCallback(async () => {
+    const [resK, resP] = await Promise.all([
+      getAllKelasAction(),
+      getAllPerusahaanAction()
+    ]);
+    if (resK.success && resK.data) setKelasList(resK.data);
+    if (resP.data) setPerusahaanList(resP.data);
+  }, []);
 
   const fetchDetailAndAttendance = async () => {
     try {
       setLoading(true);
       setError('');
 
-      // Fetch class info
       const resClass = await fetch(`/api/soft-skill/${classId}`);
       const jsonClass = await resClass.json();
       if (resClass.ok) {
@@ -49,7 +76,6 @@ export default function SoftSkillDetailPage() {
         return;
       }
 
-      // Fetch active students and attendance
       const resAttendance = await fetch(`/api/soft-skill/${classId}/absensi`);
       const jsonAttendance = await resAttendance.json();
       if (resAttendance.ok) {
@@ -63,6 +89,10 @@ export default function SoftSkillDetailPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchFilters();
+  }, [fetchFilters]);
 
   useEffect(() => {
     if (classId) {
@@ -98,11 +128,64 @@ export default function SoftSkillDetailPage() {
     }
   };
 
-  const filteredStudents = students.filter(
-    (s) =>
+  // Bulk update status
+  const handleBulkUpdateStatus = async (targetIds: string[], status: 'hadir' | 'tidak_hadir' | 'izin' | 'sakit') => {
+    if (targetIds.length === 0) return;
+    setBulkLoading(true);
+
+    try {
+      const res = await fetch(`/api/soft-skill/${classId}/absensi`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ siswa_ids: targetIds, status }),
+      });
+
+      if (res.ok) {
+        setStudents((prev) =>
+          prev.map((s) =>
+            targetIds.includes(s.siswa_id)
+              ? { ...s, status_absensi: status, waktu_absen: new Date().toISOString() }
+              : s
+          )
+        );
+        setSelectedIds([]);
+      } else {
+        const json = await res.json();
+        alert(json.error || 'Gagal memperbarui presensi massal');
+      }
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  // Derived filtered students
+  const filteredStudents = students.filter((s) => {
+    const matchSearch =
       s.name?.toLowerCase().includes(search.toLowerCase()) ||
-      s.batch?.toLowerCase().includes(search.toLowerCase())
-  );
+      s.batch?.toLowerCase().includes(search.toLowerCase()) ||
+      s.nama_kelas?.toLowerCase().includes(search.toLowerCase());
+
+    const matchKelas = filterKelas ? s.kelas_id === filterKelas : true;
+    const matchPerusahaan = filterPerusahaan ? s.perusahaan_id === filterPerusahaan : true;
+
+    return matchSearch && matchKelas && matchPerusahaan;
+  });
+
+  const handleSelectAllFiltered = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedIds(filteredStudents.map((s) => s.siswa_id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectOne = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
 
   const totalHadir = students.filter((s) => s.status_absensi === 'hadir').length;
   const totalTidakHadir = students.filter((s) => s.status_absensi === 'tidak_hadir').length;
@@ -111,45 +194,50 @@ export default function SoftSkillDetailPage() {
   return (
     <div className="min-h-screen bg-[#f4f4f0] font-sans pb-12">
       {/* Header */}
-      <header className="bg-white border-b-4 border-black mb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex justify-between items-center flex-wrap gap-4">
+      <header className="bg-white border-b-4 border-black mb-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex justify-between items-center flex-wrap gap-4">
           <div className="flex items-center gap-4">
-            <Link href="/admin/soft-skill" className="text-black hover:text-gray-700">
-              <ArrowLeft className="w-6 h-6 stroke-[3]" />
+            <Link href="/admin/soft-skill" className="p-2 text-black hover:bg-black hover:text-white neo-border transition-colors">
+              <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
               <h1 className="text-xl sm:text-2xl font-black text-black tracking-tight uppercase">
-                {classDetail ? classDetail.judul_materi : 'Detail Kelas Soft Skill'}
+                {classDetail ? classDetail.judul_materi : 'Detail Presensi Soft Skill'}
               </h1>
               {classDetail && (
-                <p className="text-xs sm:text-sm font-bold text-gray-600">
-                  Pemateri: <span className="text-black">{classDetail.pengisi_acara}</span>
+                <p className="text-xs sm:text-sm font-bold text-gray-700 mt-0.5">
+                  Pemateri: <span className="text-black font-black underline">{classDetail.pengisi_acara}</span>
                 </p>
               )}
             </div>
           </div>
 
-          <button
-            onClick={fetchDetailAndAttendance}
-            className="bg-white text-black px-3 py-2 neo-btn text-xs font-black uppercase flex items-center gap-1.5"
-          >
-            <RefreshCw className="w-4 h-4 stroke-[3]" /> Refresh Data
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchDetailAndAttendance}
+              className="bg-[#00f0ff] hover:bg-[#00d8e6] text-black px-3.5 py-2 neo-btn text-xs font-black uppercase flex items-center gap-1.5"
+              title="Tarik & Sync ulang data absen pagi"
+            >
+              <Zap className="w-4 h-4 text-black fill-yellow-300" /> Auto-Sync Absen Pagi (Jam 7)
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        
+        {/* Detail Sesi Info Card */}
         {classDetail && (
-          <div className="bg-white border-4 border-black p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+          <div className="bg-[#ffe600] neo-card p-5 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
             <div className="flex items-center gap-3">
-              <Calendar className="w-8 h-8 text-black stroke-[2.5]" />
+              <Calendar className="w-7 h-7 text-black shrink-0" />
               <div>
-                <span className="text-xs font-bold text-gray-500 uppercase block">Tanggal</span>
-                <span className="font-black text-sm text-black">
+                <span className="text-[10px] font-black text-black uppercase block">Tanggal Sesi</span>
+                <span className="font-black text-sm text-black uppercase">
                   {new Date(classDetail.tanggal).toLocaleDateString('id-ID', {
-                    weekday: 'long',
+                    weekday: 'short',
                     day: 'numeric',
-                    month: 'long',
+                    month: 'short',
                     year: 'numeric',
                   })}
                 </span>
@@ -157,159 +245,286 @@ export default function SoftSkillDetailPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <Clock className="w-8 h-8 text-black stroke-[2.5]" />
+              <Clock className="w-7 h-7 text-black shrink-0" />
               <div>
-                <span className="text-xs font-bold text-gray-500 uppercase block">Waktu Sesi</span>
-                <span className="font-black text-sm text-black">
+                <span className="text-[10px] font-black text-black uppercase block">Waktu Sesi</span>
+                <span className="font-black text-sm text-black uppercase">
                   {classDetail.waktu_mulai.slice(0, 5)}{' '}
                   {classDetail.waktu_selesai ? `- ${classDetail.waktu_selesai.slice(0, 5)}` : ''} WIB
                 </span>
               </div>
             </div>
 
-            <div className="md:col-span-2 flex items-center justify-around bg-[#ffe700] p-4 border-3 border-black">
+            <div className="md:col-span-2 flex items-center justify-around bg-white p-3 neo-border text-black">
               <div className="text-center">
-                <span className="block text-2xl font-black text-black">{students.length}</span>
-                <span className="text-xs font-black uppercase text-black">Total Siswa Aktif</span>
+                <span className="block text-xl font-black">{students.length}</span>
+                <span className="text-[10px] font-black uppercase">Total Siswa</span>
               </div>
-              <div className="text-center border-l-2 border-black pl-4">
-                <span className="block text-2xl font-black text-green-700">{totalHadir}</span>
-                <span className="text-xs font-black uppercase text-black">Hadir</span>
+              <div className="text-center border-l-2 border-black pl-3">
+                <span className="block text-xl font-black text-green-600">{totalHadir}</span>
+                <span className="text-[10px] font-black uppercase">Hadir</span>
               </div>
-              <div className="text-center border-l-2 border-black pl-4">
-                <span className="block text-2xl font-black text-red-600">{totalTidakHadir}</span>
-                <span className="text-xs font-black uppercase text-black">Tdk Hadir</span>
+              <div className="text-center border-l-2 border-black pl-3">
+                <span className="block text-xl font-black text-red-600">{totalTidakHadir}</span>
+                <span className="text-[10px] font-black uppercase">Tdk Hadir</span>
               </div>
-              <div className="text-center border-l-2 border-black pl-4">
-                <span className="block text-2xl font-black text-blue-700">{totalIzinSakit}</span>
-                <span className="text-xs font-black uppercase text-black">Izin/Sakit</span>
+              <div className="text-center border-l-2 border-black pl-3">
+                <span className="block text-xl font-black text-blue-600">{totalIzinSakit}</span>
+                <span className="text-[10px] font-black uppercase">Izin/Sakit</span>
               </div>
             </div>
           </div>
         )}
 
-        {/* Search Bar & Table */}
-        <div className="bg-white border-4 border-black p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
-          <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-            <h2 className="text-lg font-black text-black uppercase">
-              Absensi Manual Siswa Hari Ini (Sinkron Real-time)
+        {/* Filter Bar & Bulk Actions Panel */}
+        <div className="bg-white neo-card p-5 space-y-4">
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <h2 className="text-base font-black text-black uppercase flex items-center gap-2">
+              <Filter className="w-4 h-4" /> Filter & Presensi Massal
             </h2>
 
-            <div className="relative w-full sm:w-72">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 stroke-[2.5]" />
+            {/* Quick Bulk Action Button for Current Filter */}
+            <button
+              onClick={() => handleBulkUpdateStatus(filteredStudents.map((s) => s.siswa_id), 'hadir')}
+              disabled={bulkLoading || filteredStudents.length === 0}
+              className="bg-[#00e676] hover:bg-[#00c853] text-black font-black px-4 py-2 neo-btn text-xs uppercase flex items-center justify-center gap-1.5 disabled:opacity-50"
+            >
+              <CheckCircle2 className="w-4 h-4" /> Tandai HADIR Semua Siswa Terfilter ({filteredStudents.length})
+            </button>
+          </div>
+
+          {/* Filter Dropdowns */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-black text-black uppercase mb-1">Filter Kelas</label>
+              <select
+                value={filterKelas}
+                onChange={(e) => setFilterKelas(e.target.value)}
+                className="w-full px-3 py-2 neo-input text-xs font-bold"
+              >
+                <option value="">Semua Kelas</option>
+                {kelasList.map((k) => (
+                  <option key={k.id} value={k.id}>
+                    {k.nama_kelas}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-black text-black uppercase mb-1">Filter Perusahaan</label>
+              <select
+                value={filterPerusahaan}
+                onChange={(e) => setFilterPerusahaan(e.target.value)}
+                className="w-full px-3 py-2 neo-input text-xs font-bold"
+              >
+                <option value="">Semua Perusahaan Mitra</option>
+                {perusahaanList.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nama}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-black text-black uppercase mb-1">Cari Nama / Batch</label>
               <input
                 type="text"
-                placeholder="Cari Nama / Batch..."
+                placeholder="Cari..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border-3 border-black font-bold text-sm focus:outline-none focus:bg-[#ffe700]/20"
+                className="w-full px-3 py-2 neo-input text-xs font-bold"
               />
             </div>
           </div>
 
+          {/* Selected Checkboxes Panel */}
+          {selectedIds.length > 0 && (
+            <div className="bg-[#ff00c8] text-white p-3 neo-card flex flex-wrap items-center justify-between gap-3">
+              <span className="text-xs font-black uppercase">
+                {selectedIds.length} Siswa Tercentang Massal
+              </span>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => handleBulkUpdateStatus(selectedIds, 'hadir')}
+                  disabled={bulkLoading}
+                  className="bg-[#00e676] text-black font-black px-3 py-1 neo-btn text-xs uppercase"
+                >
+                  Set Hadir
+                </button>
+                <button
+                  onClick={() => handleBulkUpdateStatus(selectedIds, 'tidak_hadir')}
+                  disabled={bulkLoading}
+                  className="bg-[#ff1744] text-white font-black px-3 py-1 neo-btn text-xs uppercase"
+                >
+                  Set Tdk Hadir
+                </button>
+                <button
+                  onClick={() => handleBulkUpdateStatus(selectedIds, 'izin')}
+                  disabled={bulkLoading}
+                  className="bg-[#ffe600] text-black font-black px-3 py-1 neo-btn text-xs uppercase"
+                >
+                  Set Izin
+                </button>
+                <button
+                  onClick={() => handleBulkUpdateStatus(selectedIds, 'sakit')}
+                  disabled={bulkLoading}
+                  className="bg-[#4deeea] text-black font-black px-3 py-1 neo-btn text-xs uppercase"
+                >
+                  Set Sakit
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Attendance Table */}
+        <div className="bg-white neo-card overflow-hidden">
           {loading ? (
-            <div className="text-center py-12 font-bold text-gray-600 animate-pulse">
-              Memuat Presensi Siswa...
+            <div className="p-10 text-center font-bold text-gray-600 animate-pulse text-sm">
+              Memuat Presensi Soft Skill...
             </div>
           ) : error ? (
-            <div className="bg-[#ff003c] text-white p-4 font-bold text-center neo-card">{error}</div>
+            <div className="bg-[#ff1744] text-white p-4 font-black text-center neo-border text-xs uppercase">
+              ⚠️ {error}
+            </div>
           ) : filteredStudents.length === 0 ? (
-            <div className="text-center py-12 text-gray-500 font-bold border-2 border-dashed border-gray-300">
-              Tidak ada siswa ditemukan.
+            <div className="p-10 text-center text-gray-700 font-bold text-xs">
+              Tidak ada data siswa ditemukan untuk kriteria filter ini.
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse border-3 border-black">
-                <thead>
-                  <tr className="bg-black text-white text-xs font-black uppercase tracking-wider">
-                    <th className="p-3 border-r-2 border-white">No</th>
-                    <th className="p-3 border-r-2 border-white">Nama Siswa</th>
-                    <th className="p-3 border-r-2 border-white">Batch / Angkatan</th>
-                    <th className="p-3 border-r-2 border-white text-center">Status Kehadiran</th>
-                    <th className="p-3 text-center">Aksi Presensi Hari Ini</th>
+              <table className="min-w-full divide-y-3 divide-black">
+                <thead className="bg-[#fffde7] border-b-3 border-black">
+                  <tr className="text-xs font-black text-black uppercase tracking-wider">
+                    <th scope="col" className="px-4 py-3 text-left w-10">
+                      <input
+                        type="checkbox"
+                        onChange={handleSelectAllFiltered}
+                        checked={
+                          filteredStudents.length > 0 &&
+                          filteredStudents.every((s) => selectedIds.includes(s.siswa_id))
+                        }
+                        className="w-4 h-4 text-blue-600 border-2 border-black rounded focus:ring-0"
+                      />
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-left">Nama Siswa</th>
+                    <th scope="col" className="px-4 py-3 text-left">Kelas</th>
+                    <th scope="col" className="px-4 py-3 text-left">Perusahaan & Batch</th>
+                    <th scope="col" className="px-4 py-3 text-center">Status Absen Pagi (Jam 7)</th>
+                    <th scope="col" className="px-4 py-3 text-center">Status Presensi Soft Skill</th>
+                    <th scope="col" className="px-4 py-3 text-center">Aksi Cepat</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y-2 divide-black font-bold text-sm">
-                  {filteredStudents.map((s, idx) => {
+                <tbody className="bg-white divide-y-2 divide-black text-xs font-bold text-black">
+                  {filteredStudents.map((s) => {
                     const isSaving = savingMap[s.siswa_id];
                     return (
-                      <tr key={s.siswa_id} className="hover:bg-[#f4f4f0] transition-colors">
-                        <td className="p-3 border-r-2 border-black text-center">{idx + 1}</td>
-                        <td className="p-3 border-r-2 border-black font-black text-black">
-                          {s.name || 'Siswa Tanpa Nama'}
+                      <tr key={s.siswa_id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(s.siswa_id)}
+                            onChange={() => handleSelectOne(s.siswa_id)}
+                            className="w-4 h-4 text-blue-600 border-2 border-black rounded focus:ring-0"
+                          />
                         </td>
-                        <td className="p-3 border-r-2 border-black text-gray-700">
-                          {s.batch || '-'}
+                        <td className="px-4 py-3 whitespace-nowrap font-black">
+                          {s.name}
                         </td>
-                        <td className="p-3 border-r-2 border-black text-center">
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {s.nama_kelas ? (
+                            <span className="bg-yellow-300 text-black px-2 py-0.5 rounded text-[11px] font-black uppercase">
+                              {s.nama_kelas}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 font-normal">-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {s.nama_perusahaan ? (
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-green-800 font-bold">{s.nama_perusahaan}</span>
+                              {s.batch && <span className="text-[10px] text-gray-600">Batch {s.batch}</span>}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 font-normal">-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-center">
+                          {s.status_pagi === 'hadir' || s.status_pagi === 'telat' ? (
+                            <span className="bg-green-100 text-green-900 border border-green-300 px-2 py-0.5 rounded text-[10px] font-bold">
+                              ✓ Hadir Pagi
+                            </span>
+                          ) : (
+                            <span className="bg-gray-100 text-gray-600 border border-gray-300 px-2 py-0.5 rounded text-[10px] font-bold">
+                              - Belum/Alpha
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-center">
                           {s.status_absensi === 'hadir' && (
-                            <span className="bg-[#74ee15] text-black px-2.5 py-1 border border-black font-black text-xs uppercase inline-block">
+                            <span className="bg-[#00e676] text-black px-2.5 py-1 neo-border font-black text-[11px] uppercase inline-block">
                               Hadir
                             </span>
                           )}
                           {s.status_absensi === 'tidak_hadir' && (
-                            <span className="bg-[#ff003c] text-white px-2.5 py-1 border border-black font-black text-xs uppercase inline-block">
+                            <span className="bg-[#ff1744] text-white px-2.5 py-1 neo-border font-black text-[11px] uppercase inline-block">
                               Tidak Hadir
                             </span>
                           )}
                           {s.status_absensi === 'izin' && (
-                            <span className="bg-[#ffe700] text-black px-2.5 py-1 border border-black font-black text-xs uppercase inline-block">
+                            <span className="bg-[#ffe600] text-black px-2.5 py-1 neo-border font-black text-[11px] uppercase inline-block">
                               Izin
                             </span>
                           )}
                           {s.status_absensi === 'sakit' && (
-                            <span className="bg-[#4deeea] text-black px-2.5 py-1 border border-black font-black text-xs uppercase inline-block">
+                            <span className="bg-[#4deeea] text-black px-2.5 py-1 neo-border font-black text-[11px] uppercase inline-block">
                               Sakit
                             </span>
                           )}
                           {s.status_absensi === 'belum_diabsen' && (
-                            <span className="bg-gray-200 text-gray-700 px-2.5 py-1 border border-black font-bold text-xs uppercase inline-block">
-                              Belum Absen
+                            <span className="bg-gray-200 text-gray-700 px-2.5 py-1 border border-black font-bold text-[11px] uppercase inline-block">
+                              Belum Presensi
                             </span>
                           )}
                         </td>
-                        <td className="p-3 text-center">
-                          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                        <td className="px-4 py-3 whitespace-nowrap text-center">
+                          <div className="flex items-center justify-center gap-1">
                             <button
-                              disabled={isSaving}
+                              disabled={isSaving || bulkLoading}
                               onClick={() => handleUpdateStatus(s.siswa_id, 'hadir')}
-                              className={`px-3 py-1 text-xs font-black uppercase border-2 border-black transition-transform ${
-                                s.status_absensi === 'hadir'
-                                  ? 'bg-[#74ee15] text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                                  : 'bg-white hover:bg-green-100 text-gray-800'
+                              className={`px-2.5 py-1 text-[11px] font-black uppercase neo-btn ${
+                                s.status_absensi === 'hadir' ? 'bg-[#00e676] text-black' : 'bg-white text-gray-800'
                               }`}
                             >
                               Hadir
                             </button>
                             <button
-                              disabled={isSaving}
+                              disabled={isSaving || bulkLoading}
                               onClick={() => handleUpdateStatus(s.siswa_id, 'tidak_hadir')}
-                              className={`px-3 py-1 text-xs font-black uppercase border-2 border-black transition-transform ${
-                                s.status_absensi === 'tidak_hadir'
-                                  ? 'bg-[#ff003c] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                                  : 'bg-white hover:bg-red-100 text-gray-800'
+                              className={`px-2.5 py-1 text-[11px] font-black uppercase neo-btn ${
+                                s.status_absensi === 'tidak_hadir' ? 'bg-[#ff1744] text-white' : 'bg-white text-gray-800'
                               }`}
                             >
                               Tdk Hadir
                             </button>
                             <button
-                              disabled={isSaving}
+                              disabled={isSaving || bulkLoading}
                               onClick={() => handleUpdateStatus(s.siswa_id, 'izin')}
-                              className={`px-3 py-1 text-xs font-black uppercase border-2 border-black transition-transform ${
-                                s.status_absensi === 'izin'
-                                  ? 'bg-[#ffe700] text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                                  : 'bg-white hover:bg-yellow-100 text-gray-800'
+                              className={`px-2.5 py-1 text-[11px] font-black uppercase neo-btn ${
+                                s.status_absensi === 'izin' ? 'bg-[#ffe600] text-black' : 'bg-white text-gray-800'
                               }`}
                             >
                               Izin
                             </button>
                             <button
-                              disabled={isSaving}
+                              disabled={isSaving || bulkLoading}
                               onClick={() => handleUpdateStatus(s.siswa_id, 'sakit')}
-                              className={`px-3 py-1 text-xs font-black uppercase border-2 border-black transition-transform ${
-                                s.status_absensi === 'sakit'
-                                  ? 'bg-[#4deeea] text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                                  : 'bg-white hover:bg-cyan-100 text-gray-800'
+                              className={`px-2.5 py-1 text-[11px] font-black uppercase neo-btn ${
+                                s.status_absensi === 'sakit' ? 'bg-[#4deeea] text-black' : 'bg-white text-gray-800'
                               }`}
                             >
                               Sakit

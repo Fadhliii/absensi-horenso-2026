@@ -10,7 +10,7 @@ import Link from 'next/link';
 
 export default function RekapGridPage() {
   const [loading, setLoading] = useState(true);
-  const [rekapData, setRekapData] = useState<{id: string, name: string, created_at: string, tanggal_berangkat: string | null, attendance: Record<number, {status: string, alasan?: string}>}[]>([]);
+  const [rekapData, setRekapData] = useState<{id: string, name: string, created_at: string, tanggal_berangkat: string | null, attendance: Record<number, {status: string, alasan?: string, softSkill?: {judul: string, pemateri: string, waktu: string}}>}[]>([]);
   const [perusahaanList, setPerusahaanList] = useState<{id: string, nama: string}[]>([]);
   const [holidays, setHolidays] = useState<Record<string, string>>({}); // date string (YYYY-MM-DD) -> Holiday Name
   
@@ -161,9 +161,10 @@ export default function RekapGridPage() {
       filteredData.forEach(siswa => {
         const rowData: any[] = [siswa.name];
         daysArray.forEach(day => {
-          const statusObj = siswa.attendance[day];
+            const statusObj = siswa.attendance[day];
           if (statusObj) {
             if (statusObj.status === 'H') rowData.push('1');
+            else if (statusObj.status === 'SS') rowData.push('SS');
             else if (statusObj.status === 'I') rowData.push('I');
             else if (statusObj.status === 'S') rowData.push('S');
             else rowData.push('0');
@@ -338,6 +339,9 @@ export default function RekapGridPage() {
                         const statusObj = siswa.attendance[day];
                         const status = statusObj?.status;
                         const alasan = statusObj?.alasan;
+                        const softSkill = statusObj?.softSkill;
+
+                        const isSoftSkill = status === 'SS';
                         const hadir = status === 'H';
                         const izin = status === 'I';
                         const sakit = status === 'S';
@@ -364,6 +368,9 @@ export default function RekapGridPage() {
                         } else if (isNotJoinedYet) {
                           innerClass += "bg-gray-100 text-gray-400";
                           content = '-';
+                        } else if (isSoftSkill) {
+                          innerClass += "bg-[#6b21a8] text-white font-black shadow-md scale-110 border border-purple-900 cursor-pointer";
+                          content = 'SS';
                         } else if (hadir) {
                           innerClass += "bg-green-500 text-white shadow-sm scale-110";
                           content = '1';
@@ -381,8 +388,13 @@ export default function RekapGridPage() {
                         }
 
                         let titleStr = isDeparted ? 'Sudah Berangkat' : (isNotJoinedYet ? 'Belum Bergabung (Akun belum dibuat)' : (isHoliday ? holidayName : ''));
-                        if (izin) titleStr = `Izin${alasan ? ' - ' + alasan : ''}`;
-                        if (sakit) titleStr = `Sakit${alasan ? ' - ' + alasan : ''}`;
+                        if (isSoftSkill && softSkill) {
+                          titleStr = `Soft Skill: ${softSkill.judul} | Pemateri: ${softSkill.pemateri} | Jam: ${softSkill.waktu}`;
+                        } else if (izin) {
+                          titleStr = `Izin${alasan ? ' - ' + alasan : ''}`;
+                        } else if (sakit) {
+                          titleStr = `Sakit${alasan ? ' - ' + alasan : ''}`;
+                        }
 
                         return (
                           <td key={day} className={cellClass} title={titleStr}>
@@ -409,7 +421,8 @@ export default function RekapGridPage() {
               Legenda Tabel
             </h3>
             <div className="flex flex-wrap gap-4 text-sm text-gray-700">
-              <div className="flex items-center"><div className="w-6 h-6 rounded bg-green-500 text-white flex items-center justify-center font-bold text-xs mr-2">1</div> Hadir</div>
+              <div className="flex items-center"><div className="w-6 h-6 rounded bg-green-500 text-white flex items-center justify-center font-bold text-xs mr-2">1</div> Hadir Pagi</div>
+              <div className="flex items-center"><div className="w-6 h-6 rounded bg-[#6b21a8] text-white flex items-center justify-center font-bold text-xs mr-2">SS</div> Hadir Soft Skill (Hover untuk detail)</div>
               <div className="flex items-center"><div className="w-6 h-6 rounded bg-[#ffe700] text-black flex items-center justify-center font-bold text-xs mr-2">I</div> Izin</div>
               <div className="flex items-center"><div className="w-6 h-6 rounded bg-[#ff003c] text-white flex items-center justify-center font-bold text-xs mr-2">S</div> Sakit</div>
               <div className="flex items-center"><div className="w-6 h-6 rounded bg-red-100 text-red-500 flex items-center justify-center font-bold text-xs mr-2">0</div> Tidak Hadir / Alpa</div>

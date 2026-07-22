@@ -63,22 +63,49 @@ export async function getRekapAbsensiAction(year: number, month: number, perusah
 
     if (izinError) throw izinError;
 
-    // Process data to a map: student_id -> { date (1-31): { status: (H, I, S), alasan?: string } }
-    const attendanceMap: Record<string, Record<number, { status: string, alasan?: string }>> = {};
+    // Fetch Soft Skill attendance for the month
+    const { data: softSkillList, error: softSkillError } = await supabase
+      .from('absensi_soft_skill')
+      .select(`
+        siswa_id,
+        status,
+        kelas_soft_skill!inner (
+          judul_materi,
+          pengisi_acara,
+          tanggal,
+          waktu_mulai,
+          waktu_selesai
+        )
+      `)
+      .gte('kelas_soft_skill.tanggal', startDate.substring(0, 10))
+      .lt('kelas_soft_skill.tanggal', endDate.substring(0, 10))
+      .eq('status', 'hadir');
+
+    if (softSkillError) {
+      console.warn('Soft skill error in rekap (fallback empty):', softSkillError);
+    }
+
+    // Process data to a map: student_id -> { date (1-31): { status, alasan?, softSkill? } }
+    const attendanceMap: Record<string, Record<number, { 
+      status: string; 
+      alasan?: string; 
+      softSkill?: { judul: string; pemateri: string; waktu: string };
+    }>> = {};
     
     students.forEach(s => {
       attendanceMap[s.id] = {};
     });
 
+    // 1. Absen Pagi (H)
     absensi.forEach(a => {
       if (attendanceMap[a.siswa_id]) {
-        // Parse date
         const dateObj = new Date(a.waktu_scan);
         const day = dateObj.getDate();
         attendanceMap[a.siswa_id][day] = { status: 'H' };
       }
     });
 
+    // 2. Izin / Sakit (I / S)
     izin?.forEach(i => {
       if (attendanceMap[i.siswa_id]) {
         const dateObj = new Date(i.tanggal);
@@ -87,6 +114,30 @@ export async function getRekapAbsensiAction(year: number, month: number, perusah
           status: i.tipe === 'izin' ? 'I' : 'S',
           alasan: i.alasan
         };
+      }
+    });
+
+    // 3. Soft Skill (SS) - Jika hadir di Soft Skill, sertakan objek softSkill & timpa status ke SS jika tidak ada Izin/Sakit
+    softSkillList?.forEach((ss: any) => {
+      if (attendanceMap[ss.siswa_id]) {
+        const dateStr = ss.kelas_soft_skill?.tanggal;
+        if (dateStr) {
+          const dateObj = new Date(dateStr);
+          const day = dateObj.getDate();
+          
+          const currentEntry = attendanceMap[ss.siswa_id][day] || { status: 'H' };
+          const waktuStr = `${ss.kelas_soft_skill.waktu_mulai?.slice(0, 5)} ${ss.kelas_soft_skill.waktu_selesai ? `- ${ss.kelas_soft_skill.waktu_selesai.slice(0, 5)}` : ''} WIB`;
+
+          attendanceMap[ss.siswa_id][day] = {
+            ...currentEntry,
+            status: (currentEntry.status === 'I' || currentEntry.status === 'S') ? currentEntry.status : 'SS',
+            softSkill: {
+              judul: ss.kelas_soft_skill.judul_materi,
+              pemateri: ss.kelas_soft_skill.pengisi_acara,
+              waktu: waktuStr
+            }
+          };
+        }
       }
     });
 
