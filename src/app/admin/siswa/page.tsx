@@ -20,6 +20,7 @@ type SiswaData = {
     tanggal_berangkat: string | null;
     perusahaan: { nama: string } | null;
   };
+  created_at?: string;
 };
 
 export default function SiswaPage() {
@@ -31,6 +32,8 @@ export default function SiswaPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('semua');
   const [perusahaanFilter, setPerusahaanFilter] = useState('');
+  const [keberangkatanFilter, setKeberangkatanFilter] = useState('semua');
+  const [sortOrder, setSortOrder] = useState('desc');
   const [total, setTotal] = useState(0);
   
   const [perusahaanList, setPerusahaanList] = useState<{id: string, nama: string}[]>([]);
@@ -66,7 +69,7 @@ export default function SiswaPage() {
     setLoading(true);
     setPageError('');
     try {
-      const result = await getSiswaApprovedAction(page, search, statusFilter, perusahaanFilter);
+      const result = await getSiswaApprovedAction(page, search, statusFilter, perusahaanFilter, keberangkatanFilter, sortOrder);
       if (result?.data) {
         setData(result.data as any);
         setTotal(result.total || 0);
@@ -78,7 +81,7 @@ export default function SiswaPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, statusFilter, perusahaanFilter]);
+  }, [page, search, statusFilter, perusahaanFilter, keberangkatanFilter, sortOrder]);
 
   useEffect(() => {
     fetchPerusahaan();
@@ -190,6 +193,23 @@ export default function SiswaPage() {
           </div>
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
             <select
+              value={sortOrder}
+              onChange={(e) => { setSortOrder(e.target.value); setPage(1); }}
+              className="block w-full sm:w-36 px-3 py-2 neo-input text-xs font-bold"
+            >
+              <option value="desc">Terbaru</option>
+              <option value="asc">Terlama</option>
+            </select>
+            <select
+              value={keberangkatanFilter}
+              onChange={(e) => { setKeberangkatanFilter(e.target.value); setPage(1); }}
+              className="block w-full sm:w-44 px-3 py-2 neo-input text-xs font-bold"
+            >
+              <option value="semua">Semua Keberangkatan</option>
+              <option value="sudah">Sudah Berangkat</option>
+              <option value="belum">Belum Berangkat</option>
+            </select>
+            <select
               value={perusahaanFilter}
               onChange={(e) => { setPerusahaanFilter(e.target.value); setPage(1); }}
               className="block w-full sm:w-48 px-3 py-2 neo-input text-xs font-bold"
@@ -239,7 +259,8 @@ export default function SiswaPage() {
                     />
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">Nama Siswa</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider hidden sm:table-cell">Kontak</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider hidden lg:table-cell">Kontak</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider hidden sm:table-cell">Tgl Daftar</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">Penempatan & Batch</th>
                   <th scope="col" className="relative px-6 py-3"><span className="sr-only">Aksi</span></th>
                 </tr>
@@ -263,11 +284,16 @@ export default function SiswaPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-bold text-gray-900">{s.name}</div>
-                        <div className="text-sm text-gray-800 font-medium sm:hidden">{s.phone || s.email}</div>
+                        <div className="text-sm text-gray-800 font-medium lg:hidden">{s.phone || s.email}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
+                      <td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
                         <div className="text-sm font-bold text-gray-900">{s.email}</div>
                         <div className="text-sm text-gray-800 font-medium">{s.phone || '-'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
+                        <div className="text-sm text-gray-800 font-medium">
+                          {s.created_at ? new Date(s.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {s.siswa?.status_penempatan === 'sudah' ? (

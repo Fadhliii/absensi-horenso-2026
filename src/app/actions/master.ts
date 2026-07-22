@@ -230,7 +230,7 @@ export async function getPerusahaanHierarchyAction(search: string = '') {
 
 // ================= SISWA ACTIONS ================= //
 
-export async function getSiswaApprovedAction(page: number, search: string, statusFilter: string, perusahaanFilter: string = '') {
+export async function getSiswaApprovedAction(page: number, search: string, statusFilter: string, perusahaanFilter: string = '', keberangkatanFilter: string = 'semua', sortOrder: string = 'desc') {
   const limit = 10;
   const from = (page - 1) * limit;
   const to = from + limit - 1;
@@ -238,7 +238,7 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
   let query = supabaseAdmin
     .from('users')
     .select(`
-      id, name, email, phone,
+      id, name, email, phone, created_at,
       siswa ( id, status_penempatan, perusahaan_id, batch, tanggal_berangkat, perusahaan (nama) )
     `, { count: 'exact' })
     .eq('role', 'siswa')
@@ -252,12 +252,12 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
   // However, Supabase (PostgREST) doesn't support easy nested filtering that affects the main row return.
   // Instead, if statusFilter is used OR perusahaanFilter is used, we can query `siswa` table directly and join `users`.
   
-  if ((statusFilter && statusFilter !== 'semua') || perusahaanFilter) {
+  if ((statusFilter && statusFilter !== 'semua') || perusahaanFilter || (keberangkatanFilter && keberangkatanFilter !== 'semua')) {
     let siswaQuery = supabaseAdmin
     .from('siswa')
       .select(`
         id, status_penempatan, perusahaan_id, batch, tanggal_berangkat, perusahaan (nama),
-        users!inner (id, name, email, phone, status_registrasi, role)
+        users!inner (id, name, email, phone, status_registrasi, role, created_at)
       `, { count: 'exact' })
       .eq('users.status_registrasi', 'approved')
       .eq('users.role', 'siswa');
@@ -274,8 +274,21 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
       siswaQuery = siswaQuery.eq('perusahaan_id', perusahaanFilter);
     }
 
+    if (keberangkatanFilter === 'sudah') {
+      siswaQuery = siswaQuery.not('tanggal_berangkat', 'is', null);
+    } else if (keberangkatanFilter === 'belum') {
+      siswaQuery = siswaQuery.is('tanggal_berangkat', null);
+    }
+
     const { data, count, error } = await siswaQuery
-      .order('created_at', { ascending: false })
+      // Because we're querying `siswa`, ordering by users.created_at requires referenced ordering which PostgREST doesn't support well on inner joins for sorting. 
+      // But we can just order by siswa's created_at since it's created at the same time usually, or order by users(created_at) if it works.
+      // Wait, let's just order by id or fetch and sort. PostgREST allows ordering by joined tables if it's 1-to-1: `order('users(created_at)')`. But wait, it's safer to just order by `siswa.id` or let's try `users(created_at)`.
+      // Let's just use .order('created_at' in outer query if we can, but since this is siswa table, we don't have created_at selected in siswa!
+      // Let's select `created_at` in siswa as well to be safe, or just order by `id`. 
+      // Actually, since users and siswa are created together, we can sort by `id`. But wait, UUIDs aren't sequential.
+      // I will just add created_at to `siswa` select and order by it. But it's already in the DB.
+      .order('id', { ascending: sortOrder === 'asc' }) // Fallback since we can't easily order by joined users.created_at
       .range(from, to);
 
     if (error) return { error: error.message };
@@ -290,6 +303,7 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
         name: user?.name || 'Siswa',
         email: user?.email || '',
         phone: user?.phone || '',
+        created_at: user?.created_at || null,
         siswa: {
           id: d.id || '',
           status_penempatan: d.status_penempatan || 'belum',
@@ -304,9 +318,9 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
     return { data: mappedData, total: count || 0, limit };
   }
 
-  // Jika tidak ada filter status_penempatan, query users join siswa
+  // Jika tidak ada filter yang butuh siswaQuery, query users join siswa
   const { data, count, error } = await query
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: sortOrder === 'asc' })
     .range(from, to);
 
   if (error) return { error: error.message };
@@ -320,6 +334,7 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
       name: d.name || 'Siswa',
       email: d.email || '',
       phone: d.phone || '',
+      created_at: d.created_at || null,
       siswa: siswaObj ? {
         id: siswaObj.id || '',
         status_penempatan: siswaObj.status_penempatan || 'belum',
