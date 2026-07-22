@@ -11,14 +11,18 @@ DROP TYPE IF EXISTS status_penempatan CASCADE;
 DROP TYPE IF EXISTS status_sesi CASCADE;
 DROP TYPE IF EXISTS status_absensi CASCADE;
 DROP TYPE IF EXISTS status_absensi_soft_skill CASCADE;
+DROP TYPE IF EXISTS jenis_izin CASCADE;
+DROP TYPE IF EXISTS status_pengajuan CASCADE;
 
 -- 1. Buat ENUM untuk tipe data
 CREATE TYPE user_role AS ENUM ('admin', 'siswa');
 CREATE TYPE status_registrasi AS ENUM ('pending', 'approved', 'rejected');
 CREATE TYPE status_penempatan AS ENUM ('belum', 'sudah');
 CREATE TYPE status_sesi AS ENUM ('aktif', 'selesai');
-CREATE TYPE status_absensi AS ENUM ('hadir', 'telat', 'ditolak_lokasi', 'ditolak_expired');
+CREATE TYPE status_absensi AS ENUM ('hadir', 'telat', 'ditolak_lokasi', 'ditolak_expired', 'izin', 'sakit');
 CREATE TYPE status_absensi_soft_skill AS ENUM ('hadir', 'tidak_hadir', 'izin', 'sakit');
+CREATE TYPE jenis_izin AS ENUM ('izin', 'sakit');
+CREATE TYPE status_pengajuan AS ENUM ('pending', 'approved', 'rejected');
 
 -- 2. Tabel users (Master Pengguna)
 CREATE TABLE users (
@@ -111,6 +115,19 @@ CREATE TABLE absensi_soft_skill (
     waktu_absen TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     diabsen_oleh UUID REFERENCES users(id) ON DELETE SET NULL, -- Siapa admin yang mencentang
     UNIQUE(kelas_id, siswa_id) -- Mencegah double absen
+);
+
+-- 9. Tabel izin_absen (Izin / Sakit)
+CREATE TABLE izin_absen (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    siswa_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    dilaporkan_ke UUID REFERENCES users(id) ON DELETE SET NULL, -- PIC yang dituju
+    tipe jenis_izin NOT NULL,
+    tanggal DATE NOT NULL,
+    alasan TEXT NOT NULL,
+    status status_pengajuan NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- (Opsional) Tambahkan RLS (Row Level Security) jika dibutuhkan nanti
