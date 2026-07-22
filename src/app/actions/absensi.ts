@@ -103,7 +103,7 @@ export async function submitAbsensiAction(qrToken: string, studentLat: number, s
       return { error: 'Anda sudah tercatat hadir pada sesi ini.' };
     }
 
-    // 6. Validasi Lokasi (Haversine Formula) + Toleransi Buffer GPS (+10 meter)
+    // 6. Validasi Lokasi (Haversine Formula) + Toleransi Buffer GPS Laptop/Mobile (+30 meter / minimal 80 meter)
     const distance = getDistanceFromLatLonInMeters(
       sesiData.lokasi_lat, 
       sesiData.lokasi_lng, 
@@ -111,7 +111,7 @@ export async function submitAbsensiAction(qrToken: string, studentLat: number, s
       studentLng
     );
 
-    const allowedRadius = (sesiData.radius_meter || 50) + 10; // +10m toleransi buffer GPS
+    const allowedRadius = Math.max((sesiData.radius_meter || 50) + 30, 80);
     const isTooFar = distance > allowedRadius;
     
     // 7. Catat Kehadiran (Audit Trail)

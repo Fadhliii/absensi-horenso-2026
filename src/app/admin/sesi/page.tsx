@@ -169,12 +169,22 @@ export default function BukaSesiPage() {
                 <span>Lat: {lat === '' ? '-' : (lat as number).toFixed(6)}</span>
                 <span>Lng: {lng === '' ? '-' : (lng as number).toFixed(6)}</span>
                 {accuracy !== null && (
-                  <span className="font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Akurasi GPS: ±{accuracy} meter
+                  <span className={`font-bold px-2 py-0.5 rounded flex items-center gap-1 ${accuracy > 50 ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-green-100 text-green-700'}`}>
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Akurasi Perangkat: ±{accuracy} meter
                   </span>
                 )}
               </div>
             </div>
+
+            {accuracy !== null && accuracy > 30 && (
+              <div className="bg-[#ffe600] border-2 border-black p-3.5 rounded-lg text-xs font-bold text-black flex items-start gap-2 shadow-[2px_2px_0px_0px_#000]">
+                <span className="text-base leading-none">💡</span>
+                <div>
+                  <p className="uppercase font-black">Petunjuk Presisi Lokasi Laptop/PC:</p>
+                  <p className="mt-0.5 font-medium">Browser PC/Laptop menggunakan lokasi WiFi (akurasi ±{accuracy}m). Silakan <b>KLIK atau GESER PIN MERAH di peta</b> persis ke lokasi ruang kelas Anda agar titik absensi 100% presisi!</p>
+                </div>
+              </div>
+            )}
 
             {/* Interval Refresh QR */}
             <div>

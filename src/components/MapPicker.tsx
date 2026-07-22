@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Circle, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Circle, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -20,12 +20,21 @@ interface MapPickerProps {
   onLocationChange: (lat: number, lng: number) => void;
 }
 
-// Komponen helper untuk menggeser peta secara otomatis saat props lat/lng berubah dari luar (tombol GPS)
 function RecenterAutomatically({lat, lng}: {lat: number, lng: number}) {
   const map = useMap();
   useEffect(() => {
-    map.flyTo([lat, lng], 16, { animate: true });
+    map.flyTo([lat, lng], 17, { animate: true });
   }, [lat, lng, map]);
+  return null;
+}
+
+// Komponen helper agar klik di titik mana pun di peta langsung memindahkan marker
+function MapClickHandler({ onLocationChange }: { onLocationChange: (lat: number, lng: number) => void }) {
+  useMapEvents({
+    click(e) {
+      onLocationChange(e.latlng.lat, e.latlng.lng);
+    },
+  });
   return null;
 }
 
@@ -38,13 +47,14 @@ export default function MapPicker({ lat, lng, radius, onLocationChange }: MapPic
 
   return (
     <div className="h-[400px] w-full rounded-xl overflow-hidden border-2 border-blue-100 shadow-inner relative z-0">
-      <MapContainer center={currentCenter} zoom={16} style={{ height: '100%', width: '100%' }}>
+      <MapContainer center={currentCenter} zoom={17} style={{ height: '100%', width: '100%' }}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         
-        {/* Jika lokasi valid, render helper recenter dan circle radius */}
+        <MapClickHandler onLocationChange={onLocationChange} />
+
         {(lat !== '' && lng !== '') && (
           <>
             <RecenterAutomatically lat={lat as number} lng={lng as number} />
@@ -52,10 +62,10 @@ export default function MapPicker({ lat, lng, radius, onLocationChange }: MapPic
               center={currentCenter} 
               radius={radius} 
               pathOptions={{ 
-                color: '#3b82f6', 
-                fillColor: '#3b82f6', 
-                fillOpacity: 0.2, 
-                weight: 2 
+                color: '#ff007f', 
+                fillColor: '#ff007f', 
+                fillOpacity: 0.25, 
+                weight: 3 
               }} 
             />
           </>
@@ -78,7 +88,6 @@ export default function MapPicker({ lat, lng, radius, onLocationChange }: MapPic
         </Marker>
       </MapContainer>
       
-      {/* Overlay petunjuk jika belum ambil lokasi GPS */}
       {(lat === '' || lng === '') && (
         <div className="absolute inset-0 z-[1000] bg-white/70 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center">
           <div className="bg-blue-600 text-white p-3 rounded-full mb-3 shadow-lg animate-bounce">
@@ -88,7 +97,7 @@ export default function MapPicker({ lat, lng, radius, onLocationChange }: MapPic
             </svg>
           </div>
           <h3 className="text-lg font-bold text-slate-900 mb-1">Lokasi Belum Ditentukan</h3>
-          <p className="text-sm text-slate-900 font-semibold">Klik tombol <b>Ambil Lokasi Saat Ini</b> di bawah, atau geser pin pada peta.</p>
+          <p className="text-sm text-slate-900 font-semibold">Klik tombol <b>Ambil Lokasi Saat Ini</b> di bawah, atau klik/geser pin pada peta.</p>
         </div>
       )}
     </div>

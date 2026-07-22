@@ -1,7 +1,7 @@
 /**
- * Helper Geolocation dengan Multi-Sampling
- * Menggunakan watchPosition untuk memantau sinyal GPS selama beberapa detik
- * dan memilih titik kordinat dengan tingkat akurasi tertinggi (accuracy meter terkecil).
+ * Helper Geolocation Cepat & Presisi
+ * Menggunakan pendekatan hybrid: coba getCurrentPosition cepat terlebih dahulu (2 detik).
+ * Jika belum cukup akurat, tingkatkan dengan watchPosition berdurasi pendek (maks 3.5 detik).
  */
 
 export interface AccurateLocationResult {
@@ -14,75 +14,106 @@ export function getAccurateLocation(
   onSuccess: (result: AccurateLocationResult) => void,
   onError: (error: { message: string }) => void,
   onProgress?: (currentAccuracy: number) => void,
-  maxWaitMs = 7000
+  maxWaitMs = 3500
 ) {
   if (typeof window === 'undefined' || !navigator.geolocation) {
     onError({ message: 'Browser Anda tidak mendukung deteksi lokasi (GPS).' });
     return;
   }
 
-  let bestPosition: GeolocationPosition | null = null;
-  let watchId: number | null = null;
+  let resolved = false;
 
-  const timer = setTimeout(() => {
-    if (watchId !== null) {
-      navigator.geolocation.clearWatch(watchId);
-    }
-    if (bestPosition) {
-      onSuccess({
-        latitude: bestPosition.coords.latitude,
-        longitude: bestPosition.coords.longitude,
-        accuracy: Math.round(bestPosition.coords.accuracy),
-      });
-    } else {
-      onError({ message: 'Waktu pengambilan GPS habis. Pastikan izin lokasi diberikan dan GPS aktif.' });
-    }
-  }, maxWaitMs);
+  const handleSuccess = (pos: GeolocationPosition) => {
+    if (resolved) return;
+    resolved = true;
+    onSuccess({
+      latitude: pos.coords.latitude,
+      longitude: pos.coords.longitude,
+      accuracy: Math.round(pos.coords.accuracy),
+    });
+  };
 
-  try {
-    watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        const accuracy = Math.round(position.coords.accuracy);
-        if (onProgress) {
-          onProgress(accuracy);
-        }
+  // 1. Coba percakapan cepat dengan getCurrentPosition (MaxAge 5 detik)
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const acc = Math.round(position.coords.accuracy);
+      if (onProgress) onProgress(acc);
 
-        // Catat posisi jika ini pertama kali atau memiliki akurasi lebih presisi (angka meter lebih kecil)
-        if (!bestPosition || position.coords.accuracy < bestPosition.coords.accuracy) {
-          bestPosition = position;
-        }
-
-        // Jika sudah mencapai akurasi sangat presisi (<= 8 meter), hentikan watch lebih cepat
-        if (position.coords.accuracy <= 8) {
-          clearTimeout(timer);
-          if (watchId !== null) {
-            navigator.geolocation.clearWatch(watchId);
-          }
-          onSuccess({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: Math.round(position.coords.accuracy),
-          });
-        }
-      },
-      (err) => {
-        // Jika belum dapat sampel apa pun, kirim error
-        if (!bestPosition) {
-          clearTimeout(timer);
-          if (watchId !== null) {
-            navigator.geolocation.clearWatch(watchId);
-          }
-          onError({ message: err.message || 'Gagal mengambil data GPS dari perangkat.' });
-        }
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: maxWaitMs,
+      // Jika akurasi bawaan sudah sangat bagus (<= 35m), langsung return instan tanpa menunggu!
+      if (acc <= 35) {
+        handleSuccess(position);
+        return;
       }
-    );
-  } catch (err: any) {
-    clearTimeout(timer);
-    onError({ message: err.message || 'Gagal memicu GPS browser.' });
+      
+      // Jika akurasi masih di atas 35m, jalankan watchPosition sebentar untuk perbaikan
+      startWatch(position);
+    },
+    (err) => {
+      // Jika getCurrentPosition gagal, langsung coba watchPosition
+      startWatch(null);
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 5000,
+      timeout: 2000
+    }
+  );
+
+  function startWatch(initialBest: GeolocationPosition | null) {
+    if (resolved) return;
+    let bestPosition: GeolocationPosition | null = initialBest;
+    let watchId: number | null = null;
+
+    const timer = setTimeout(() => {
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      if (bestPosition) {
+        handleSuccess(bestPosition);
+      } else {
+        onError({ message: 'Gagal mendapatkan data GPS dari perangkat dalam batas waktu.' });
+      }
+    }, maxWaitMs);
+
+    try {
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          if (resolved) {
+            if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+            return;
+          }
+
+          const acc = Math.round(position.coords.accuracy);
+          if (onProgress) onProgress(acc);
+
+          if (!bestPosition || position.coords.accuracy < bestPosition.coords.accuracy) {
+            bestPosition = position;
+          }
+
+          if (position.coords.accuracy <= 15) {
+            clearTimeout(timer);
+            if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+            handleSuccess(position);
+          }
+        },
+        (err) => {
+          if (!bestPosition) {
+            clearTimeout(timer);
+            if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+            onError({ message: err.message || 'Gagal mengambil sinyal GPS.' });
+          }
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: maxWaitMs
+        }
+      );
+    } catch (e: any) {
+      clearTimeout(timer);
+      if (bestPosition) {
+        handleSuccess(bestPosition);
+      } else {
+        onError({ message: e.message || 'Gagal menyalakan sensor GPS.' });
+      }
+    }
   }
 }
