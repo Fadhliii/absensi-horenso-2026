@@ -17,9 +17,12 @@ type SiswaData = {
     id: string;
     status_penempatan: 'belum' | 'sudah';
     perusahaan_id: string | null;
+    batch_id?: string | null;
+    kelas_id?: string | null;
     batch: string | null;
     tanggal_berangkat: string | null;
     perusahaan: { nama: string } | null;
+    master_kelas?: { nama_kelas: string } | null;
   };
   created_at?: string;
 };

@@ -3,9 +3,12 @@
 import { supabase } from '@/lib/supabase';
 import { cookies } from 'next/headers';
 import { verifySessionToken } from '@/lib/auth';
+import { closeExpiredSessions } from '@/app/actions/sesi';
 
 export async function getDashboardStatsAction() {
   try {
+    await closeExpiredSessions();
+
     const cookieStore = await cookies();
     const token = cookieStore.get('session')?.value;
     let role = 'admin';

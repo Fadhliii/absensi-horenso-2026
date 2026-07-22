@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { mulaiSesiAction } from '@/app/actions/sesi';
 import { logoutAction } from '@/app/actions/auth';
-import { MapPin, LogOut, ArrowLeft, Loader2 } from 'lucide-react';
+import { getAccurateLocation } from '@/lib/geo';
+import { MapPin, LogOut, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
@@ -24,6 +25,7 @@ export default function BukaSesiPage() {
   const [lng, setLng] = useState<number | ''>('');
   const [locLoading, setLocLoading] = useState(false);
   const [locError, setLocError] = useState('');
+  const [accuracy, setAccuracy] = useState<number | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [radius, setRadius] = useState(50);
@@ -34,23 +36,22 @@ export default function BukaSesiPage() {
   function handleGetLocation() {
     setLocLoading(true);
     setLocError('');
-    if (!navigator.geolocation) {
-      setLocError('Browser Anda tidak mendukung Geolocation.');
-      setLocLoading(false);
-      return;
-    }
+    setAccuracy(null);
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLat(position.coords.latitude);
-        setLng(position.coords.longitude);
+    getAccurateLocation(
+      (res) => {
+        setLat(res.latitude);
+        setLng(res.longitude);
+        setAccuracy(res.accuracy);
         setLocLoading(false);
       },
-      (error) => {
-        setLocError(`Gagal mengambil lokasi: ${error.message}`);
+      (err) => {
+        setLocError(`Gagal mengambil lokasi presisi: ${err.message}`);
         setLocLoading(false);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      (currentAcc) => {
+        setAccuracy(currentAcc);
+      }
     );
   }
 
@@ -163,10 +164,15 @@ export default function BukaSesiPage() {
                 />
               </div>
 
-              {/* Readonly info lat/lng for debugging/transparency */}
-              <div className="px-4 py-3 bg-gray-100 border-t border-gray-200 flex justify-between text-xs text-black">
+              {/* Readonly info lat/lng & accuracy for debugging/transparency */}
+              <div className="px-4 py-3 bg-gray-100 border-t border-gray-200 flex flex-wrap justify-between items-center text-xs text-black gap-2">
                 <span>Lat: {lat === '' ? '-' : (lat as number).toFixed(6)}</span>
                 <span>Lng: {lng === '' ? '-' : (lng as number).toFixed(6)}</span>
+                {accuracy !== null && (
+                  <span className="font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Akurasi GPS: ±{accuracy} meter
+                  </span>
+                )}
               </div>
             </div>
 

@@ -3,8 +3,24 @@
 import { supabase } from '@/lib/supabase';
 import { cookies } from 'next/headers';
 import { verifySessionToken } from '@/lib/auth';
-import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
+
+const MAX_SESSION_DURATION_SECONDS = 30 * 60; // 30 Menit dalam detik
+
+// Helper internal untuk otomatis menutup sesi yang sudah lebih dari 30 menit
+export async function closeExpiredSessions() {
+  try {
+    const limitTime = new Date(Date.now() - MAX_SESSION_DURATION_SECONDS * 1000).toISOString();
+    
+    // Matikan sesi aktif yang dibuat lebih tua dari 30 menit yang lalu
+    await supabase
+      .from('sesi_absensi')
+      .update({ status: 'selesai' })
+      .eq('status', 'aktif')
+      .lt('dibuat_pada', limitTime);
+  } catch (err) {
+    console.error('Gagal menutup sesi kadaluarsa:', err);
+  }
+}
 
 async function getAdminOrInstrukturId() {
   const cookieStore = await cookies();
@@ -22,6 +38,12 @@ export async function mulaiSesiAction(formData: FormData) {
   } catch (e) {
     return { error: 'Anda tidak memiliki akses.' };
   }
+
+  // Tutup dulu semua sesi lama yang menggantung/aktif
+  await supabase
+    .from('sesi_absensi')
+    .update({ status: 'selesai' })
+    .eq('status', 'aktif');
 
   const lat = parseFloat(formData.get('latitude') as string);
   const lng = parseFloat(formData.get('longitude') as string);
@@ -49,13 +71,12 @@ export async function mulaiSesiAction(formData: FormData) {
 
   if (error) return { error: error.message };
 
-  // Kembalikan ID untuk di-redirect oleh client
   return { success: true, sessionId: data.id };
 }
 
 export async function selesaiSesiAction(sessionId: string) {
   try {
-    await getAdminOrInstrukturId(); // Verifikasi admin/instruktur
+    await getAdminOrInstrukturId();
   } catch (e) {
     return { error: 'Hanya Admin/Instruktur yang dapat menutup sesi.' };
   }
@@ -71,23 +92,84 @@ export async function selesaiSesiAction(sessionId: string) {
 }
 
 export async function getDetailSesiAction(sessionId: string) {
+  await closeExpiredSessions();
+
   const { data, error } = await supabase
     .from('sesi_absensi')
     .select('*')
     .eq('id', sessionId)
     .single();
 
-  if (error) return { error: error.message };
-  return { data };
+  if (error || !data) return { error: error?.message || 'Sesi tidak ditemukan' };
+
+  // Hitung sisa waktu
+  const createdAt = new Date(data.dibuat_pada).getTime();
+  const now = Date.now();
+  const elapsedSeconds = Math.floor((now - createdAt) / 1000);
+  const remainingSeconds = Math.max(0, MAX_SESSION_DURATION_SECONDS - elapsedSeconds);
+
+  if (data.status === 'aktif' && remainingSeconds <= 0) {
+    // Sesi sudah kadaluarsa saat di-fetch
+    await supabase.from('sesi_absensi').update({ status: 'selesai' }).eq('id', sessionId);
+    data.status = 'selesai';
+  }
+
+  return { data, remainingSeconds };
 }
 
 export async function getJumlahHadirAction(sessionId: string) {
   const { count, error } = await supabase
     .from('absensi')
-    .select('*', { count: 'exact', head: true }) // head: true hanya mengambil count tanpa row data
+    .select('*', { count: 'exact', head: true })
     .eq('sesi_id', sessionId)
     .eq('status', 'hadir');
 
   if (error) return { error: error.message };
   return { count: count || 0 };
+}
+
+// Action global untuk mengecek sesi aktif saat ini
+export async function getActiveSesiInfoAction() {
+  try {
+    await closeExpiredSessions();
+
+    const cookieStore = await cookies();
+    const token = cookieStore.get('session')?.value;
+    let userRole = 'guest';
+
+    if (token) {
+      const session = await verifySessionToken(token);
+      if (session) userRole = session.role;
+    }
+
+    const { data, error } = await supabase
+      .from('sesi_absensi')
+      .select('id, dibuat_pada, radius_meter, status')
+      .eq('status', 'aktif')
+      .order('dibuat_pada', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error || !data) {
+      return { active: false, userRole };
+    }
+
+    const createdAt = new Date(data.dibuat_pada).getTime();
+    const elapsedSeconds = Math.floor((Date.now() - createdAt) / 1000);
+    const remainingSeconds = MAX_SESSION_DURATION_SECONDS - elapsedSeconds;
+
+    if (remainingSeconds <= 0) {
+      await supabase.from('sesi_absensi').update({ status: 'selesai' }).eq('id', data.id);
+      return { active: false, userRole };
+    }
+
+    return {
+      active: true,
+      sessionId: data.id,
+      remainingSeconds,
+      userRole
+    };
+  } catch (err: any) {
+    return { active: false, userRole: 'guest' };
+  }
 }

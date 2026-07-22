@@ -3,6 +3,7 @@
 import { supabase } from '@/lib/supabase';
 import { cookies } from 'next/headers';
 import { verifySessionToken } from '@/lib/auth';
+import { closeExpiredSessions } from '@/app/actions/sesi';
 
 // Mengambil ID Siswa yang sedang login
 async function getStudentId() {
@@ -16,6 +17,8 @@ async function getStudentId() {
 
 export async function getStudentDashboardDataAction(monthFilter?: string) {
   try {
+    await closeExpiredSessions();
+
     const userId = await getStudentId();
 
     // 1. Ambil Profil & Status Penempatan Siswa

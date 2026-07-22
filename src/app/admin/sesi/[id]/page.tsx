@@ -16,6 +16,7 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ id: st
   const [sessionData, setSessionData] = useState<any>(null);
   const [qrToken, setQrToken] = useState<string>('');
   const [countdown, setCountdown] = useState<number>(0);
+  const [sessionTimeLeft, setSessionTimeLeft] = useState<number>(0);
   const [hadirCount, setHadirCount] = useState<number>(0);
 
   // Refs untuk menghindar dari stale closure di dalam setInterval
@@ -56,20 +57,21 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ id: st
   // Inisialisasi awal
   useEffect(() => {
     async function init() {
-      const { data, error } = await getDetailSesiAction(sessionId);
+      const { data, error, remainingSeconds } = await getDetailSesiAction(sessionId);
       if (error || !data) {
         setError('Sesi tidak ditemukan atau terjadi kesalahan.');
         setLoading(false);
         return;
       }
 
-      if (data.status !== 'aktif') {
-        setError('Sesi ini sudah ditutup.');
+      if (data.status !== 'aktif' || (remainingSeconds !== undefined && remainingSeconds <= 0)) {
+        setError('Sesi ini sudah ditutup / kadaluarsa (30 menit).');
         setLoading(false);
         return;
       }
 
       setSessionData(data);
+      if (remainingSeconds !== undefined) setSessionTimeLeft(remainingSeconds);
       intervalRef.current = data.interval_qr_detik;
       
       // Generate token pertama
@@ -96,12 +98,23 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ id: st
         }
         return prev - 1;
       });
+
+      setSessionTimeLeft((prev) => {
+        if (prev <= 1) {
+          // Automatic 30-min timeout
+          selesaiSesiAction(sessionId).then(() => {
+            router.push('/admin/dashboard');
+          });
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
 
     return () => {
       if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
     };
-  }, [loading, error, sessionData, generateNewToken]);
+  }, [loading, error, sessionData, generateNewToken, sessionId, router]);
 
   // Effect untuk Polling Jumlah Kehadiran (setiap 3 detik)
   useEffect(() => {
@@ -162,9 +175,12 @@ export default function ActiveSessionPage({ params }: { params: Promise<{ id: st
       <div className="bg-gray-800 text-white p-4 shadow-md flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold tracking-wide">Sesi Absensi Aktif</h1>
-          <p className="text-gray-200 text-xs mt-1 flex items-center font-medium">
-            <MapPin className="w-3 h-3 mr-1" />
-            Radius {sessionData.radius_meter}m • Refresh tiap {sessionData.interval_qr_detik} detik
+          <p className="text-gray-200 text-xs mt-1 flex items-center font-medium gap-2">
+            <span className="flex items-center"><MapPin className="w-3 h-3 mr-1" /> Radius {sessionData.radius_meter}m</span>
+            <span>•</span>
+            <span className="font-bold text-yellow-300">
+              Auto-Close 30 mnt: {String(Math.floor(sessionTimeLeft / 60)).padStart(2, '0')}:{String(sessionTimeLeft % 60).padStart(2, '0')}
+            </span>
           </p>
         </div>
         <div className="flex space-x-2">

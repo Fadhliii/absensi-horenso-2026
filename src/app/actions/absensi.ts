@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { cookies } from 'next/headers';
 import { verifySessionToken } from '@/lib/auth';
 import { jwtVerify } from 'jose';
+import { closeExpiredSessions } from '@/app/actions/sesi';
 
 const QR_SECRET = new TextEncoder().encode(
   process.env.QR_SECRET_KEY || 'default_secret_key_for_development_only_123'
@@ -29,6 +30,9 @@ function deg2rad(deg: number) {
 
 export async function submitAbsensiAction(qrToken: string, studentLat: number, studentLng: number) {
   try {
+    // Bersihkan sesi yang sudah kadaluarsa
+    await closeExpiredSessions();
+
     // 1. Verifikasi Siswa yang Login
     const cookieStore = await cookies();
     const sessionToken = cookieStore.get('session')?.value;
@@ -40,7 +44,6 @@ export async function submitAbsensiAction(qrToken: string, studentLat: number, s
     const userId = session.userId;
 
     // 2. RATE LIMITING: Cek jumlah absensi dalam 1 menit terakhir
-    // Kita gunakan tabel absensi untuk melihat seberapa sering user ini mencoba hit endpoint
     const satuMenitLalu = new Date(Date.now() - 60000).toISOString();
     const { count: recentAttempts } = await supabase
       .from('absensi')
@@ -76,6 +79,13 @@ export async function submitAbsensiAction(qrToken: string, studentLat: number, s
 
     if (sesiError || !sesiData) return { error: 'Sesi absensi tidak ditemukan di server.' };
     
+    // Cek batas 30 menit
+    const sessionAgeMs = Date.now() - new Date(sesiData.dibuat_pada).getTime();
+    if (sessionAgeMs > 30 * 60 * 1000) {
+      await supabase.from('sesi_absensi').update({ status: 'selesai' }).eq('id', sessionId);
+      return { error: 'Sesi absensi ini sudah berakhir otomatis (melebihi batas waktu 30 menit).' };
+    }
+
     if (sesiData.status !== 'aktif') {
       return { error: 'Sesi absensi ini sudah ditutup oleh Guru/Admin.' };
     }
@@ -93,7 +103,7 @@ export async function submitAbsensiAction(qrToken: string, studentLat: number, s
       return { error: 'Anda sudah tercatat hadir pada sesi ini.' };
     }
 
-    // 6. Validasi Lokasi (Haversine Formula)
+    // 6. Validasi Lokasi (Haversine Formula) + Toleransi Buffer GPS (+10 meter)
     const distance = getDistanceFromLatLonInMeters(
       sesiData.lokasi_lat, 
       sesiData.lokasi_lng, 
@@ -101,10 +111,10 @@ export async function submitAbsensiAction(qrToken: string, studentLat: number, s
       studentLng
     );
 
-    const isTooFar = distance > sesiData.radius_meter;
+    const allowedRadius = (sesiData.radius_meter || 50) + 10; // +10m toleransi buffer GPS
+    const isTooFar = distance > allowedRadius;
     
     // 7. Catat Kehadiran (Audit Trail)
-    // Walaupun ditolak karena lokasi, kita tetap simpan record-nya
     const finalStatus = isTooFar ? 'ditolak_lokasi' : 'hadir';
 
     const { error: insertError } = await supabase
@@ -123,9 +133,7 @@ export async function submitAbsensiAction(qrToken: string, studentLat: number, s
       );
 
     if (insertError) {
-      // Jika terjadi error unik constraint (siswa mencoba nge-spam saat insert bersamaan)
       if (insertError.code === '23505') {
-         // Coba cek lagi apakah dia sebenarnya sudah sukses
          return { error: 'Data kehadiran sudah diproses sebelumnya.' };
       }
       return { error: insertError.message };
@@ -133,7 +141,7 @@ export async function submitAbsensiAction(qrToken: string, studentLat: number, s
 
     if (isTooFar) {
       return { 
-        error: `Posisi Anda terlalu jauh. Jarak: ${Math.round(distance)}m (Maksimal: ${sesiData.radius_meter}m). Pencatatan ditolak.` 
+        error: `Posisi Anda terlalu jauh. Jarak: ${Math.round(distance)}m (Batas Toleransi: ${allowedRadius}m). Pencatatan ditolak.` 
       };
     }
 

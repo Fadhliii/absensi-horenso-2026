@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { submitAbsensiAction } from '@/app/actions/absensi';
+import { getAccurateLocation } from '@/lib/geo';
 import { Camera, MapPin, CheckCircle, XCircle, Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import IndonesianClock from '@/components/IndonesianClock';
@@ -73,25 +74,17 @@ export default function ScanAbsensiPage() {
       await html5QrCode.stop().catch(console.error);
     }
     
-    // 2. Mulai proses validasi lokasi
+    // 2. Mulai proses validasi lokasi presisi
     setScanState('getting_location');
-    setStatusMessage('Memvalidasi lokasi Anda...');
+    setStatusMessage('Memvalidasi lokasi GPS presisi...');
 
-    if (!navigator.geolocation) {
-      setScanState('error');
-      setErrorMessage('Browser Anda tidak mendukung deteksi lokasi (GPS).');
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        
+    getAccurateLocation(
+      async (res) => {
         // 3. Submit ke server action
         setScanState('submitting');
         setStatusMessage('Mencatat kehadiran...');
 
-        const result = await submitAbsensiAction(qrToken, latitude, longitude);
+        const result = await submitAbsensiAction(qrToken, res.latitude, res.longitude);
 
         if (result?.error) {
           setScanState('error');
@@ -101,11 +94,13 @@ export default function ScanAbsensiPage() {
           setStatusMessage('Absensi Berhasil!');
         }
       },
-      (geoError) => {
+      (err) => {
         setScanState('error');
-        setErrorMessage(`Gagal mengambil lokasi GPS: ${geoError.message}. Pastikan GPS Anda aktif.`);
+        setErrorMessage(`Gagal mengambil lokasi GPS presisi: ${err.message}. Pastikan GPS Anda aktif.`);
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      (acc) => {
+        setStatusMessage(`Mengunci GPS presisi (Akurasi: ±${acc}m)...`);
+      }
     );
   };
 
