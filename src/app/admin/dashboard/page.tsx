@@ -97,6 +97,7 @@ export default function AdminDashboardPage() {
                 </>
               )}
               <Link href="/admin/sesi" className="bg-[#4deeea] text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Buka Sesi Kelas</Link>
+              <Link href="/admin/soft-skill" className="bg-[#74ee15] text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1 font-bold">Kelas Soft Skill</Link>
               {data.isSesiAktif ? (
                 <Link href="/admin/sesi/aktif" target="_blank" className="bg-[#ff003c] text-white px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1 flex items-center" title="Link Dedicated untuk menampilkan QR Sesi Aktif yang bisa digunakan oleh Guru lain">
                   <ExternalLink className="w-4 h-4 mr-1" /> Sesi Aktif (QR)

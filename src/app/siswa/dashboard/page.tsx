@@ -8,6 +8,7 @@ import IndonesianClock from '@/components/IndonesianClock';
 import { formatIndonesianDate, formatIndonesianTime } from '@/lib/date';
 import { QrCode, LogOut, Calendar, Clock, MapPin, CheckCircle, XCircle, AlertCircle, Building2 } from 'lucide-react';
 import Link from 'next/link';
+import SoftSkillHistoryAccordion from '@/components/SoftSkillHistoryAccordion';
 
 export default function SiswaDashboardPage() {
   const [data, setData] = useState<any>(null);
@@ -123,26 +124,18 @@ export default function SiswaDashboardPage() {
           </div>
         )}
 
+        {/* Soft Skill History Accordion */}
+        <SoftSkillHistoryAccordion />
+
         {/* Scan Action Button */}
         <div className="mb-8 grid grid-cols-2 gap-4">
-          {data?.isSesiAktif ? (
-            <Link 
-              href="/siswa/scan"
-              className="flex flex-col items-center justify-center w-full bg-[#00f0ff] hover:bg-[#00d8e6] text-black font-black py-4 px-4 neo-btn"
-            >
-              <QrCode className="w-8 h-8 mb-2 text-black" />
-              <span className="text-xs uppercase">Scan QR Absensi</span>
-            </Link>
-          ) : (
-            <button 
-              disabled
-              className="flex flex-col items-center justify-center w-full bg-gray-300 text-gray-500 font-black py-4 px-4 border-3 border-gray-400 opacity-70 cursor-not-allowed"
-              title="Tidak ada sesi absensi yang aktif saat ini"
-            >
-              <QrCode className="w-8 h-8 mb-2 text-gray-500" />
-              <span className="text-xs uppercase">Scan QR Absensi</span>
-            </button>
-          )}
+          <Link 
+            href="/siswa/scan"
+            className="flex flex-col items-center justify-center w-full bg-[#00f0ff] hover:bg-[#00d8e6] text-black font-black py-4 px-4 neo-btn"
+          >
+            <QrCode className="w-8 h-8 mb-2 text-black" />
+            <span className="text-xs uppercase">Scan QR Absensi</span>
+          </Link>
 
           <button 
             onClick={() => setIsIzinModalOpen(true)}

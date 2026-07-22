@@ -10,6 +10,7 @@ DROP TYPE IF EXISTS status_registrasi CASCADE;
 DROP TYPE IF EXISTS status_penempatan CASCADE;
 DROP TYPE IF EXISTS status_sesi CASCADE;
 DROP TYPE IF EXISTS status_absensi CASCADE;
+DROP TYPE IF EXISTS status_absensi_soft_skill CASCADE;
 
 -- 1. Buat ENUM untuk tipe data
 CREATE TYPE user_role AS ENUM ('admin', 'siswa');
@@ -17,6 +18,7 @@ CREATE TYPE status_registrasi AS ENUM ('pending', 'approved', 'rejected');
 CREATE TYPE status_penempatan AS ENUM ('belum', 'sudah');
 CREATE TYPE status_sesi AS ENUM ('aktif', 'selesai');
 CREATE TYPE status_absensi AS ENUM ('hadir', 'telat', 'ditolak_lokasi', 'ditolak_expired');
+CREATE TYPE status_absensi_soft_skill AS ENUM ('hadir', 'tidak_hadir', 'izin', 'sakit');
 
 -- 2. Tabel users (Master Pengguna)
 CREATE TABLE users (
@@ -88,10 +90,33 @@ CREATE TABLE absensi (
     UNIQUE(siswa_id, sesi_id) -- Mencegah siswa absen lebih dari 1 kali di sesi yang sama
 );
 
+-- 7. Tabel kelas_soft_skill (Data Jadwal Soft Skill)
+CREATE TABLE kelas_soft_skill (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    judul_materi VARCHAR(255) NOT NULL,
+    pengisi_acara VARCHAR(255) NOT NULL,
+    tanggal DATE NOT NULL,
+    waktu_mulai TIME NOT NULL,
+    waktu_selesai TIME,
+    dibuat_oleh UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 8. Tabel absensi_soft_skill (Kehadiran Manual Soft Skill)
+CREATE TABLE absensi_soft_skill (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    kelas_id UUID NOT NULL REFERENCES kelas_soft_skill(id) ON DELETE CASCADE,
+    siswa_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status status_absensi_soft_skill NOT NULL DEFAULT 'tidak_hadir',
+    waktu_absen TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    diabsen_oleh UUID REFERENCES users(id) ON DELETE SET NULL, -- Siapa admin yang mencentang
+    UNIQUE(kelas_id, siswa_id) -- Mencegah double absen
+);
+
 -- (Opsional) Tambahkan RLS (Row Level Security) jika dibutuhkan nanti
 -- ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
--- 7. Database Indexes untuk Optimasi Performa Query
+-- 9. Database Indexes untuk Optimasi Performa Query
 CREATE INDEX IF NOT EXISTS idx_absensi_waktu_scan ON absensi(waktu_scan DESC);
 CREATE INDEX IF NOT EXISTS idx_absensi_sesi_id ON absensi(sesi_id);
 CREATE INDEX IF NOT EXISTS idx_siswa_perusahaan_id ON siswa(perusahaan_id);
