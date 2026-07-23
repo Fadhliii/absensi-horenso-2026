@@ -95,6 +95,7 @@ export default function AdminDashboardPage() {
                   <Link href="/admin/siswa" className="bg-[#ff00c8] text-white px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Data Siswa</Link>
                   <Link href="/admin/perusahaan" className="bg-[#00f0ff] text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Data Perusahaan</Link>
                   <Link href="/admin/kelas" className="bg-[#ff9900] text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Master Kelas</Link>
+                  <Link href="/admin/users" className="bg-black text-white px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1 font-bold">Manajemen Akun</Link>
                 </>
               )}
               <Link href="/admin/sesi" className="bg-[#4deeea] text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Buka Sesi Kelas</Link>
