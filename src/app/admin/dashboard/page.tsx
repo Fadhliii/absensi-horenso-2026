@@ -56,15 +56,20 @@ export default function AdminDashboardPage() {
     <div className="min-h-screen bg-[#f4f4f0] font-sans">
       
       {/* Header */}
-      <header className="bg-white border-b-4 border-black mb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-black text-black tracking-tight uppercase">Dashboard Admin</h1>
+      <header className="bg-white border-b-4 border-black mb-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg sm:text-2xl font-black text-black tracking-tight uppercase">Dashboard Admin</h1>
+            <form action={logoutAction} className="sm:hidden">
+              <button className="flex items-center text-black bg-white hover:bg-black hover:text-white px-2 py-1 neo-btn text-xs font-black uppercase">
+                <LogOut className="w-3.5 h-3.5 mr-1" /> Logout
+              </button>
+            </form>
           </div>
-          <div className="flex items-center gap-4">
-            <IndonesianClock className="hidden sm:inline-flex" />
-            <form action={logoutAction}>
-              <button className="flex items-center text-black hover:bg-black hover:text-white px-3 py-1 neo-border text-sm font-black transition-colors uppercase">
+          <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+            <IndonesianClock className="w-full sm:w-auto" />
+            <form action={logoutAction} className="hidden sm:block">
+              <button className="flex items-center text-black hover:bg-black hover:text-white px-3 py-1.5 neo-border text-sm font-black transition-colors uppercase">
                 <LogOut className="w-4 h-4 mr-1" /> Logout
               </button>
             </form>
@@ -73,7 +78,7 @@ export default function AdminDashboardPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         
         {loading ? (
           <div className="flex justify-center py-20"><span className="animate-pulse text-gray-500">Memuat Data...</span></div>
@@ -87,35 +92,35 @@ export default function AdminDashboardPage() {
         ) : data && (
           <div className="space-y-6">
             
-            {/* Quick Menu */}
-            <div className="flex flex-wrap gap-4 mb-6">
+            {/* Quick Menu (Neo-Brutalist Grid) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
               {data.role === 'admin' && (
                 <>
-                  <Link href="/admin/approval" className="bg-[#ffe600] text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Menu Approval</Link>
-                  <Link href="/admin/siswa" className="bg-[#ff00c8] text-white px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Data Siswa</Link>
-                  <Link href="/admin/perusahaan" className="bg-[#00f0ff] text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Data Perusahaan</Link>
-                  <Link href="/admin/kelas" className="bg-[#ff9900] text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Master Kelas</Link>
-                  <Link href="/admin/users" className="bg-black text-white px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1 font-bold">Manajemen Akun</Link>
+                  <Link href="/admin/approval" className="bg-[#ffe600] text-black p-3 neo-btn text-xs font-black uppercase flex items-center justify-center text-center">Menu Approval</Link>
+                  <Link href="/admin/siswa" className="bg-[#ff00c8] text-white p-3 neo-btn text-xs font-black uppercase flex items-center justify-center text-center">Data Siswa</Link>
+                  <Link href="/admin/perusahaan" className="bg-[#00f0ff] text-black p-3 neo-btn text-xs font-black uppercase flex items-center justify-center text-center">Data Perusahaan</Link>
+                  <Link href="/admin/kelas" className="bg-[#ff9900] text-black p-3 neo-btn text-xs font-black uppercase flex items-center justify-center text-center">Master Kelas</Link>
+                  <Link href="/admin/users" className="bg-black text-white p-3 neo-btn text-xs font-black uppercase flex items-center justify-center text-center">Manajemen Akun</Link>
                 </>
               )}
-              <Link href="/admin/sesi" className="bg-[#4deeea] text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1">Buka Sesi Kelas</Link>
-              <Link href="/admin/soft-skill" className="bg-[#74ee15] text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1 font-bold">Kelas Soft Skill</Link>
+              <Link href="/admin/sesi" className="bg-[#4deeea] text-black p-3 neo-btn text-xs font-black uppercase flex items-center justify-center text-center">Buka Sesi Kelas</Link>
+              <Link href="/admin/soft-skill" className="bg-[#74ee15] text-black p-3 neo-btn text-xs font-black uppercase flex items-center justify-center text-center">Kelas Soft Skill</Link>
               {data.isSesiAktif ? (
-                <Link href="/admin/sesi/aktif" target="_blank" className="bg-[#ff003c] text-white px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1 flex items-center" title="Link Dedicated untuk menampilkan QR Sesi Aktif yang bisa digunakan oleh Guru lain">
-                  <ExternalLink className="w-4 h-4 mr-1" /> Sesi Aktif (QR)
+                <Link href="/admin/sesi/aktif" target="_blank" className="bg-[#ff003c] text-white p-3 neo-btn text-xs font-black uppercase flex items-center justify-center text-center" title="Link Dedicated untuk menampilkan QR Sesi Aktif">
+                  <ExternalLink className="w-3.5 h-3.5 mr-1 shrink-0" /> Sesi Aktif (QR)
                 </Link>
               ) : (
-                <button disabled className="bg-gray-300 text-gray-500 px-4 py-2 neo-btn shadow-none flex items-center opacity-70 cursor-not-allowed" title="Sesi belum dibuka">
-                  <ExternalLink className="w-4 h-4 mr-1" /> Sesi Aktif (QR)
+                <button disabled className="bg-gray-300 text-gray-500 p-3 neo-btn text-xs font-black uppercase flex items-center justify-center text-center opacity-70 cursor-not-allowed" title="Sesi belum dibuka">
+                  <ExternalLink className="w-3.5 h-3.5 mr-1 shrink-0" /> Sesi Aktif (QR)
                 </button>
               )}
-              <Link href="/admin/rekap" className="bg-[#ffe700] text-black px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1 flex items-center">
+              <Link href="/admin/rekap" className="bg-[#ffe700] text-black p-3 neo-btn text-xs font-black uppercase flex items-center justify-center text-center">
                 Rekap Grid
               </Link>
-              <Link href="/admin/izin" className="bg-[#f000ff] text-white px-4 py-2 neo-btn shadow-none active:translate-x-1 active:translate-y-1 flex items-center relative">
+              <Link href="/admin/izin" className="bg-[#f000ff] text-white p-3 neo-btn text-xs font-black uppercase flex items-center justify-center text-center relative">
                 Permohonan Izin
                 {data.stats.pendingIzin > 0 && (
-                  <span className="absolute -top-3 -right-3 bg-[#ff003c] text-white text-[10px] font-black w-6 h-6 flex items-center justify-center rounded-full neo-border animate-bounce">
+                  <span className="absolute -top-2 -right-2 bg-[#ff003c] text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full neo-border animate-bounce">
                     {data.stats.pendingIzin}
                   </span>
                 )}
