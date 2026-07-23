@@ -257,10 +257,11 @@ export default function SiswaPage() {
             <select
               value={statusPendidikanFilter}
               onChange={(e) => { setStatusPendidikanFilter(e.target.value); setPage(1); }}
-              className="block w-full sm:w-40 px-3 py-2 neo-input text-xs font-bold"
+              className="block w-full sm:w-44 px-3 py-2 neo-input text-xs font-bold"
             >
               <option value="semua">Semua Status Pendidik</option>
               <option value="aktif">🟢 Aktif Belajar</option>
+              <option value="belum_mulai">⚪ Belum Mulai Kelas</option>
               <option value="tunggu_terbang">🟡 Tunggu Terbang</option>
               <option value="alumni">🔵 Alumni</option>
               <option value="dropout">🔴 Drop Out</option>
@@ -398,7 +399,11 @@ export default function SiswaPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-col gap-1 items-start">
-                          {s.siswa?.status_pendidikan === 'tunggu_terbang' ? (
+                          {s.siswa?.status_pendidikan === 'belum_mulai' ? (
+                            <span className="text-[10px] font-black text-black bg-gray-200 px-2 py-0.5 border border-black uppercase">
+                              ⚪ Belum Mulai
+                            </span>
+                          ) : s.siswa?.status_pendidikan === 'tunggu_terbang' ? (
                             <span className="text-[10px] font-black text-black bg-[#ffe600] px-2 py-0.5 border border-black uppercase">
                               🟡 Tunggu Terbang
                             </span>
@@ -700,6 +705,7 @@ export default function SiswaPage() {
                       className="w-full px-3 py-2 border-2 border-black font-bold focus:ring-0 focus:outline-none bg-white"
                     >
                       <option value="aktif">🟢 Aktif Belajar (Presensi Harian)</option>
+                      <option value="belum_mulai">⚪ Belum Mulai Kelas (Otomatis Aktif saat Scan pertama)</option>
                       <option value="tunggu_terbang">🟡 Menunggu Terbang (Bebas Absen)</option>
                       <option value="alumni">🔵 Alumni (Sudah di Jepang)</option>
                       <option value="dropout">🔴 Drop Out (Keluar)</option>

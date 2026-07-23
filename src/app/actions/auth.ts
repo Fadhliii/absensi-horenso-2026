@@ -69,6 +69,7 @@ export async function registerAction(formData: FormData) {
         {
           user_id: newUser.id,
           status_penempatan: perusahaan_id ? 'sudah' : 'belum',
+          status_pendidikan: 'belum_mulai',
           perusahaan_id: perusahaan_id,
           batch_id: batch_id,
           batch: batchName,
@@ -213,7 +214,7 @@ export async function approveStudentAction(id: string) {
   if (!existingSiswa) {
     const { error: siswaError } = await supabase
       .from('siswa')
-      .insert({ user_id: id, status_penempatan: 'belum' });
+      .insert({ user_id: id, status_penempatan: 'belum', status_pendidikan: 'belum_mulai' });
 
     if (siswaError) return { error: siswaError.message };
   }

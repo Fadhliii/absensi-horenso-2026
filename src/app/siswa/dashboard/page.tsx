@@ -146,23 +146,34 @@ export default function SiswaDashboardPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
-            <Link 
-              href="/siswa/scan"
-              className="flex items-center justify-center gap-2 bg-[#00f0ff] hover:bg-[#00d8e6] text-black font-black py-3 px-3 neo-btn text-xs uppercase"
-            >
-              <QrCode className="w-5 h-5 shrink-0" />
-              <span>Scan QR Absen</span>
-            </Link>
+          <>
+            {data?.profile?.statusPendidikan === 'belum_mulai' && (
+              <div className="bg-[#fffde7] neo-card p-4 border-3 border-black text-center space-y-1 mb-3">
+                <span className="text-xl block">⚪ 🎓</span>
+                <h3 className="text-xs font-black text-black uppercase tracking-tight">Status: Belum Mulai Kelas</h3>
+                <p className="text-[11px] font-bold text-gray-700 max-w-md mx-auto">
+                  Silakan lakukan <b>Scan QR Absen</b> pada hari pertama kelas Anda untuk mengaktifkan akun secara otomatis!
+                </p>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <Link 
+                href="/siswa/scan"
+                className="flex items-center justify-center gap-2 bg-[#00f0ff] hover:bg-[#00d8e6] text-black font-black py-3 px-3 neo-btn text-xs uppercase"
+              >
+                <QrCode className="w-5 h-5 shrink-0" />
+                <span>Scan QR Absen</span>
+              </Link>
 
-            <button 
-              onClick={() => setIsIzinModalOpen(true)}
-              className="flex items-center justify-center gap-2 bg-[#ff007f] hover:bg-[#d8006b] text-white font-black py-3 px-3 neo-btn text-xs uppercase"
-            >
-              <Calendar className="w-5 h-5 shrink-0" />
-              <span>Ajukan Izin/Sakit</span>
-            </button>
-          </div>
+              <button 
+                onClick={() => setIsIzinModalOpen(true)}
+                className="flex items-center justify-center gap-2 bg-[#ff007f] hover:bg-[#d8006b] text-white font-black py-3 px-3 neo-btn text-xs uppercase"
+              >
+                <Calendar className="w-5 h-5 shrink-0" />
+                <span>Ajukan Izin/Sakit</span>
+              </button>
+            </div>
+          </>
         )}
 
         {/* Soft Skill History Accordion */}

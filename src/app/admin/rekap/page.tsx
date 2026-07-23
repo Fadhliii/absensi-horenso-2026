@@ -326,6 +326,7 @@ export default function RekapGridPage() {
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500 font-bold"
             >
               <option value="aktif">🟢 Aktif Belajar (Default)</option>
+              <option value="belum_mulai">⚪ Belum Mulai Kelas</option>
               <option value="tunggu_terbang">🟡 Menunggu Terbang</option>
               <option value="alumni">🔵 Alumni</option>
               <option value="dropout">🔴 Drop Out</option>

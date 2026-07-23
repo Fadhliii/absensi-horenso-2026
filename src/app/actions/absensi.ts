@@ -145,6 +145,13 @@ export async function submitAbsensiAction(qrToken: string, studentLat: number, s
       };
     }
 
+    // Otomatis aktifkan status siswa saat pertama kali scan presensi berhasil
+    await supabase
+      .from('siswa')
+      .update({ status_pendidikan: 'aktif' })
+      .eq('user_id', userId)
+      .or('status_pendidikan.eq.belum_mulai,status_pendidikan.is.null');
+
     return { success: true, message: 'Absensi berhasil dicatat!' };
 
   } catch (error: any) {
