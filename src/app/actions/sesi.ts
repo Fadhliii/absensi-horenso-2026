@@ -5,11 +5,16 @@ import { cookies } from 'next/headers';
 import { verifySessionToken } from '@/lib/auth';
 
 const MAX_SESSION_DURATION_SECONDS = 30 * 60; // 30 Menit dalam detik
+let lastCleanupTime = 0;
 
-// Helper internal untuk otomatis menutup sesi yang sudah lebih dari 30 menit
+// Helper internal untuk otomatis menutup sesi yang sudah lebih dari 30 menit (dibatasi 1x per 60 detik)
 export async function closeExpiredSessions() {
+  const now = Date.now();
+  if (now - lastCleanupTime < 60000) return;
+  lastCleanupTime = now;
+
   try {
-    const limitTime = new Date(Date.now() - MAX_SESSION_DURATION_SECONDS * 1000).toISOString();
+    const limitTime = new Date(now - MAX_SESSION_DURATION_SECONDS * 1000).toISOString();
     
     // Matikan sesi aktif yang dibuat lebih tua dari 30 menit yang lalu
     await supabase

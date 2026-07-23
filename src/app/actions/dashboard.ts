@@ -38,13 +38,13 @@ export async function getDashboardStatsAction() {
       { count: pendingIzin }
     ] = await Promise.all([
       // 1. Total Siswa Aktif
-      supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'siswa').eq('status_registrasi', 'approved'),
+      supabase.from('users').select('id', { count: 'exact', head: true }).eq('role', 'siswa').eq('is_approved', true),
       
       // 2. Pending Approval
-      supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'siswa').eq('status_registrasi', 'pending'),
+      supabase.from('users').select('id', { count: 'exact', head: true }).eq('role', 'siswa').eq('is_approved', false),
       
       // 3. Hadir Hari Ini
-      supabase.from('absensi').select('*', { count: 'exact', head: true }).eq('status', 'hadir').gte('waktu_scan', todayISO),
+      supabase.from('absensi').select('id', { count: 'exact', head: true }).eq('status', 'hadir').gte('waktu_scan', todayISO),
       
       // 4. Riwayat Terakhir (10 Baris)
       supabase.from('absensi').select(`
