@@ -16,6 +16,7 @@ type SiswaData = {
   siswa: {
     id: string;
     status_penempatan: 'belum' | 'sudah';
+    status_pendidikan?: string | null;
     perusahaan_id: string | null;
     batch_id?: string | null;
     kelas_id?: string | null;
@@ -37,6 +38,8 @@ export default function SiswaPage() {
   const [statusFilter, setStatusFilter] = useState('semua');
   const [perusahaanFilter, setPerusahaanFilter] = useState('');
   const [batchFilter, setBatchFilter] = useState('');
+  const [kelasFilter, setKelasFilter] = useState('');
+  const [statusPendidikanFilter, setStatusPendidikanFilter] = useState('semua');
   const [keberangkatanFilter, setKeberangkatanFilter] = useState('semua');
   const [sortOrder, setSortOrder] = useState('desc');
   const [total, setTotal] = useState(0);
@@ -49,6 +52,7 @@ export default function SiswaPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [isBulkKelasModalOpen, setIsBulkKelasModalOpen] = useState(false);
+  const [isBulkStatusModalOpen, setIsBulkStatusModalOpen] = useState(false);
 
   const [assignModal, setAssignModal] = useState<{ isOpen: boolean; userId: string; name: string; currentStatus: string; currentCompanyId?: string; currentBatch?: string; currentTanggalBerangkat?: string; currentKelasId?: string }>({ isOpen: false, userId: '', name: '', currentStatus: 'belum' });
 
@@ -93,7 +97,7 @@ export default function SiswaPage() {
     setLoading(true);
     setPageError('');
     try {
-      const result = await getSiswaApprovedAction(page, search, statusFilter, perusahaanFilter, keberangkatanFilter, sortOrder, batchFilter);
+      const result = await getSiswaApprovedAction(page, search, statusFilter, perusahaanFilter, keberangkatanFilter, sortOrder, batchFilter, kelasFilter, statusPendidikanFilter);
       if (result?.data) {
         setData(result.data as any);
         setTotal(result.total || 0);
@@ -105,7 +109,7 @@ export default function SiswaPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, statusFilter, perusahaanFilter, keberangkatanFilter, sortOrder, batchFilter]);
+  }, [page, search, statusFilter, perusahaanFilter, keberangkatanFilter, sortOrder, batchFilter, kelasFilter, statusPendidikanFilter]);
 
   useEffect(() => {
     fetchPerusahaan();
@@ -172,11 +176,22 @@ export default function SiswaPage() {
     fetchData();
   }
 
+  async function handleBulkStatusSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const status_pendidikan = formData.get('status_pendidikan') as string;
+    
+    const { updateBulkStatusPendidikanAction } = await import('@/app/actions/siswa');
+    await updateBulkStatusPendidikanAction(selectedIds, status_pendidikan);
+    
+    setIsBulkStatusModalOpen(false);
+    setSelectedIds([]);
+    fetchData();
+  }
+
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      // Hanya pilih yang statusnya 'sudah'
-      const placableIds = data.filter(s => s.siswa?.status_penempatan === 'sudah').map(s => s.id);
-      setSelectedIds(placableIds);
+      setSelectedIds(data.map(s => s.id));
     } else {
       setSelectedIds([]);
     }
@@ -230,19 +245,40 @@ export default function SiswaPage() {
               className="block w-full pl-10 pr-3 py-2 neo-input text-xs font-bold"
             />
           </div>
-          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+          <div className="flex flex-wrap gap-3 w-full sm:w-auto">
             <select
               value={sortOrder}
               onChange={(e) => { setSortOrder(e.target.value); setPage(1); }}
-              className="block w-full sm:w-36 px-3 py-2 neo-input text-xs font-bold"
+              className="block w-full sm:w-32 px-3 py-2 neo-input text-xs font-bold"
             >
               <option value="desc">Terbaru</option>
               <option value="asc">Terlama</option>
             </select>
             <select
+              value={statusPendidikanFilter}
+              onChange={(e) => { setStatusPendidikanFilter(e.target.value); setPage(1); }}
+              className="block w-full sm:w-40 px-3 py-2 neo-input text-xs font-bold"
+            >
+              <option value="semua">Semua Status Pendidik</option>
+              <option value="aktif">🟢 Aktif Belajar</option>
+              <option value="tunggu_terbang">🟡 Tunggu Terbang</option>
+              <option value="alumni">🔵 Alumni</option>
+              <option value="dropout">🔴 Drop Out</option>
+            </select>
+            <select
+              value={kelasFilter}
+              onChange={(e) => { setKelasFilter(e.target.value); setPage(1); }}
+              className="block w-full sm:w-36 px-3 py-2 neo-input text-xs font-bold"
+            >
+              <option value="">Semua Kelas</option>
+              {kelasList.map(k => (
+                <option key={k.id} value={k.id}>{k.nama_kelas}</option>
+              ))}
+            </select>
+            <select
               value={keberangkatanFilter}
               onChange={(e) => { setKeberangkatanFilter(e.target.value); setPage(1); }}
-              className="block w-full sm:w-44 px-3 py-2 neo-input text-xs font-bold"
+              className="block w-full sm:w-40 px-3 py-2 neo-input text-xs font-bold"
             >
               <option value="semua">Semua Keberangkatan</option>
               <option value="sudah">Sudah Berangkat</option>
@@ -251,7 +287,7 @@ export default function SiswaPage() {
             <select
               value={perusahaanFilter}
               onChange={(e) => { setPerusahaanFilter(e.target.value); setPage(1); }}
-              className="block w-full sm:w-48 px-3 py-2 neo-input text-xs font-bold"
+              className="block w-full sm:w-40 px-3 py-2 neo-input text-xs font-bold"
             >
               <option value="">Semua Perusahaan</option>
               {perusahaanList.map(p => (
@@ -262,7 +298,7 @@ export default function SiswaPage() {
               <select
                 value={batchFilter}
                 onChange={(e) => { setBatchFilter(e.target.value); setPage(1); }}
-                className="block w-full sm:w-48 px-3 py-2 neo-input text-xs font-bold"
+                className="block w-full sm:w-36 px-3 py-2 neo-input text-xs font-bold"
               >
                 <option value="">Semua Batch</option>
                 {filterBatchList.map(b => (
@@ -273,9 +309,9 @@ export default function SiswaPage() {
             <select
               value={statusFilter}
               onChange={handleFilter}
-              className="block w-full sm:w-48 px-3 py-2 neo-input text-xs font-bold"
+              className="block w-full sm:w-40 px-3 py-2 neo-input text-xs font-bold"
             >
-              <option value="semua">Semua Status</option>
+              <option value="semua">Semua Penempatan</option>
               <option value="belum">Belum Ditempatkan</option>
               <option value="sudah">Sudah Ditempatkan</option>
             </select>
@@ -287,16 +323,22 @@ export default function SiswaPage() {
             <span className="text-xs font-black text-black uppercase">
               {selectedIds.length} siswa dipilih
             </span>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <button 
+                onClick={() => setIsBulkStatusModalOpen(true)}
+                className="px-4 py-2 text-xs text-black bg-[#74ee15] hover:bg-[#5cc010] neo-btn font-black uppercase"
+              >
+                Set Status Pendidikan
+              </button>
               <button 
                 onClick={() => setIsBulkKelasModalOpen(true)}
-                className="px-4 py-2 text-xs text-white bg-[#ff00c8] hover:bg-[#d000a3] neo-btn"
+                className="px-4 py-2 text-xs text-white bg-[#ff00c8] hover:bg-[#d000a3] neo-btn font-black uppercase"
               >
                 Set Kelas Massal
               </button>
               <button 
                 onClick={() => setIsBulkModalOpen(true)}
-                className="px-4 py-2 text-xs text-black bg-[#00f0ff] hover:bg-[#00d8e6] neo-btn"
+                className="px-4 py-2 text-xs text-black bg-[#00f0ff] hover:bg-[#00d8e6] neo-btn font-black uppercase"
               >
                 Set Keberangkatan Massal
               </button>
@@ -313,23 +355,23 @@ export default function SiswaPage() {
                     <input 
                       type="checkbox" 
                       onChange={handleSelectAll}
-                      checked={data.length > 0 && data.filter(s => s.siswa?.status_penempatan === 'sudah').every(s => selectedIds.includes(s.id)) && data.some(s => s.siswa?.status_penempatan === 'sudah')}
+                      checked={data.length > 0 && data.every(s => selectedIds.includes(s.id))}
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">Nama Siswa</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider hidden lg:table-cell">Kontak</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider hidden sm:table-cell">Tgl Daftar</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">Kelas</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">Status & Kelas</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">Penempatan & Batch</th>
                   <th scope="col" className="relative px-6 py-3"><span className="sr-only">Aksi</span></th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {loading ? (
-                  <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-800 font-medium">Memuat data...</td></tr>
+                  <tr><td colSpan={7} className="px-6 py-10 text-center text-sm text-gray-800 font-medium">Memuat data...</td></tr>
                 ) : data.length === 0 ? (
-                  <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-800 font-medium">Tidak ada data siswa ditemukan.</td></tr>
+                  <tr><td colSpan={7} className="px-6 py-10 text-center text-sm text-gray-800 font-medium">Tidak ada data siswa ditemukan.</td></tr>
                 ) : (
                   data.map((s) => (
                     <tr key={s.id} className="hover:bg-[#ffe600] hover:text-black font-black transition-colors">
@@ -338,8 +380,7 @@ export default function SiswaPage() {
                           type="checkbox"
                           checked={selectedIds.includes(s.id)}
                           onChange={() => handleSelectOne(s.id)}
-                          disabled={s.siswa?.status_penempatan !== 'sudah'}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50"
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -356,9 +397,29 @@ export default function SiswaPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-xs font-black uppercase text-black bg-yellow-300 px-2 py-1 rounded">
-                          {s.siswa?.master_kelas?.nama_kelas || '-'}
-                        </span>
+                        <div className="flex flex-col gap-1 items-start">
+                          {s.siswa?.status_pendidikan === 'tunggu_terbang' ? (
+                            <span className="text-[10px] font-black text-black bg-[#ffe600] px-2 py-0.5 border border-black uppercase">
+                              🟡 Tunggu Terbang
+                            </span>
+                          ) : s.siswa?.status_pendidikan === 'alumni' ? (
+                            <span className="text-[10px] font-black text-white bg-[#00f0ff] px-2 py-0.5 border border-black uppercase">
+                              🔵 Alumni
+                            </span>
+                          ) : s.siswa?.status_pendidikan === 'dropout' ? (
+                            <span className="text-[10px] font-black text-white bg-[#ff003c] px-2 py-0.5 border border-black uppercase">
+                              🔴 Drop Out
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-black text-black bg-[#74ee15] px-2 py-0.5 border border-black uppercase">
+                              🟢 Aktif Belajar
+                            </span>
+                          )}
+
+                          <span className="text-xs font-black uppercase text-black bg-yellow-200 px-1.5 py-0.5 neo-border">
+                            {s.siswa?.master_kelas?.nama_kelas || 'Tanpa Kelas'}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {s.siswa?.status_penempatan === 'sudah' ? (
@@ -612,6 +673,48 @@ export default function SiswaPage() {
                   Simpan Perubahan
                 </button>
                 <button type="button" onClick={() => setIsBulkKelasModalOpen(false)} className="flex-1 bg-white text-black neo-btn py-2">
+                  Batal
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Bulk Set Status Pendidikan */}
+      {isBulkStatusModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="fixed inset-0 z-40 bg-gray-900/60" 
+            onClick={() => setIsBulkStatusModalOpen(false)}
+          ></div>
+          <div className="relative z-50 w-full max-w-md bg-white rounded-lg text-left shadow-xl overflow-hidden">
+            <form onSubmit={handleBulkStatusSubmit}>
+              <div className="bg-[#74ee15] px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <h3 className="text-lg font-black text-black uppercase mb-4">Set Status Pendidikan ({selectedIds.length} Siswa)</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-black text-black mb-1 uppercase">Pilih Status Pendidikan</label>
+                    <select 
+                      name="status_pendidikan"
+                      className="w-full px-3 py-2 border-2 border-black font-bold focus:ring-0 focus:outline-none bg-white"
+                    >
+                      <option value="aktif">🟢 Aktif Belajar (Presensi Harian)</option>
+                      <option value="tunggu_terbang">🟡 Menunggu Terbang (Bebas Absen)</option>
+                      <option value="alumni">🔵 Alumni (Sudah di Jepang)</option>
+                      <option value="dropout">🔴 Drop Out (Keluar)</option>
+                    </select>
+                    <p className="mt-2 text-xs font-bold text-black">
+                      Siswa yang berstatus "Menunggu Terbang", "Alumni", atau "Drop Out" tidak akan dihitung Alpha pada rekap harian.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 flex gap-4">
+                <button type="submit" className="flex-1 bg-black text-white neo-btn py-2 font-bold uppercase">
+                  Simpan Perubahan
+                </button>
+                <button type="button" onClick={() => setIsBulkStatusModalOpen(false)} className="flex-1 bg-white text-black neo-btn py-2 font-bold uppercase">
                   Batal
                 </button>
               </div>

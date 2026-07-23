@@ -28,12 +28,15 @@ export default function RekapGridPage() {
   }>({ classes: [], students: [] });
 
   const [perusahaanList, setPerusahaanList] = useState<{ id: string; nama: string }[]>([]);
+  const [kelasList, setKelasList] = useState<{ id: string; nama_kelas: string }[]>([]);
   const [holidays, setHolidays] = useState<Record<string, string>>({});
 
   // Filters
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedPerusahaan, setSelectedPerusahaan] = useState('');
+  const [selectedKelas, setSelectedKelas] = useState('');
+  const [selectedStatusPendidikan, setSelectedStatusPendidikan] = useState('aktif');
   const [showDeparted, setShowDeparted] = useState(false);
 
   // Modal Input Manual
@@ -53,6 +56,9 @@ export default function RekapGridPage() {
   const fetchFilters = useCallback(async () => {
     const res = await getAllPerusahaanAction();
     if (res.data) setPerusahaanList(res.data);
+    const { getAllKelasAction } = await import('@/app/actions/kelas');
+    const kelasRes = await getAllKelasAction();
+    if (kelasRes.success && kelasRes.data) setKelasList(kelasRes.data);
   }, []);
 
   const fetchHolidays = useCallback(async () => {
@@ -74,12 +80,12 @@ export default function RekapGridPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     if (activeTab === 'harian') {
-      const res = await getRekapAbsensiAction(selectedYear, selectedMonth, selectedPerusahaan || undefined);
+      const res = await getRekapAbsensiAction(selectedYear, selectedMonth, selectedPerusahaan || undefined, selectedKelas || undefined, selectedStatusPendidikan);
       if (res.success && res.data) {
         setRekapData(res.data);
       }
     } else {
-      const res = await getRekapSoftSkillAction(selectedYear, selectedMonth, selectedPerusahaan || undefined);
+      const res = await getRekapSoftSkillAction(selectedYear, selectedMonth, selectedPerusahaan || undefined, selectedKelas || undefined, selectedStatusPendidikan);
       if (res.success) {
         setSoftSkillRekap({
           classes: res.classes || [],
@@ -88,7 +94,7 @@ export default function RekapGridPage() {
       }
     }
     setLoading(false);
-  }, [activeTab, selectedYear, selectedMonth, selectedPerusahaan]);
+  }, [activeTab, selectedYear, selectedMonth, selectedPerusahaan, selectedKelas, selectedStatusPendidikan]);
 
   useEffect(() => {
     fetchFilters();
@@ -313,11 +319,40 @@ export default function RekapGridPage() {
           </div>
 
           <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Status Siswa</label>
+            <select 
+              value={selectedStatusPendidikan} 
+              onChange={(e) => setSelectedStatusPendidikan(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500 font-bold"
+            >
+              <option value="aktif">🟢 Aktif Belajar (Default)</option>
+              <option value="tunggu_terbang">🟡 Menunggu Terbang</option>
+              <option value="alumni">🔵 Alumni</option>
+              <option value="dropout">🔴 Drop Out</option>
+              <option value="all">Semua Status</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Kelas</label>
+            <select 
+              value={selectedKelas} 
+              onChange={(e) => setSelectedKelas(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500 min-w-[150px]"
+            >
+              <option value="">Semua Kelas</option>
+              {kelasList.map(k => (
+                <option key={k.id} value={k.id}>{k.nama_kelas}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
             <label className="block text-xs font-bold text-gray-700 mb-1">Perusahaan Mitra</label>
             <select 
               value={selectedPerusahaan} 
               onChange={(e) => setSelectedPerusahaan(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500 min-w-[200px]"
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500 min-w-[180px]"
             >
               <option value="">Semua Perusahaan</option>
               {perusahaanList.map(p => (

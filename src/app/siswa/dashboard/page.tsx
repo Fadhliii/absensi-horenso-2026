@@ -128,24 +128,42 @@ export default function SiswaDashboardPage() {
           </div>
         )}
 
-        {/* Action Buttons Grid */}
-        <div className="grid grid-cols-2 gap-3">
-          <Link 
-            href="/siswa/scan"
-            className="flex items-center justify-center gap-2 bg-[#00f0ff] hover:bg-[#00d8e6] text-black font-black py-3 px-3 neo-btn text-xs uppercase"
-          >
-            <QrCode className="w-5 h-5 shrink-0" />
-            <span>Scan QR Absen</span>
-          </Link>
+        {/* Action Buttons Grid / Status Banner */}
+        {data?.profile?.statusPendidikan === 'tunggu_terbang' ? (
+          <div className="bg-[#ffe600] neo-card p-5 border-4 border-black text-center space-y-2">
+            <span className="text-3xl block">✈️ 🎌</span>
+            <h3 className="text-lg font-black text-black uppercase tracking-tight">Status: Menunggu Keberangkatan Ke Jepang</h3>
+            <p className="text-xs font-bold text-black max-w-md mx-auto">
+              Selamat! Anda telah menyelesaikan masa pelatihan di LPK dan saat ini dalam status <u>Menunggu Keberangkatan (Tunggu Terbang)</u>. Anda bebas dari presensi harian. Tetap jaga kesehatan!
+            </p>
+          </div>
+        ) : data?.profile?.statusPendidikan === 'alumni' ? (
+          <div className="bg-[#00f0ff] neo-card p-5 border-4 border-black text-center space-y-2">
+            <span className="text-3xl block">⛩️ ✈️</span>
+            <h3 className="text-lg font-black text-black uppercase tracking-tight">Status: Alumni (Sudah Berada di Jepang)</h3>
+            <p className="text-xs font-bold text-black max-w-md mx-auto">
+              Semoga sukses selalu meniti karir di Jepang! Ganbatte kudasai!
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <Link 
+              href="/siswa/scan"
+              className="flex items-center justify-center gap-2 bg-[#00f0ff] hover:bg-[#00d8e6] text-black font-black py-3 px-3 neo-btn text-xs uppercase"
+            >
+              <QrCode className="w-5 h-5 shrink-0" />
+              <span>Scan QR Absen</span>
+            </Link>
 
-          <button 
-            onClick={() => setIsIzinModalOpen(true)}
-            className="flex items-center justify-center gap-2 bg-[#ff007f] hover:bg-[#d8006b] text-white font-black py-3 px-3 neo-btn text-xs uppercase"
-          >
-            <Calendar className="w-5 h-5 shrink-0" />
-            <span>Ajukan Izin/Sakit</span>
-          </button>
-        </div>
+            <button 
+              onClick={() => setIsIzinModalOpen(true)}
+              className="flex items-center justify-center gap-2 bg-[#ff007f] hover:bg-[#d8006b] text-white font-black py-3 px-3 neo-btn text-xs uppercase"
+            >
+              <Calendar className="w-5 h-5 shrink-0" />
+              <span>Ajukan Izin/Sakit</span>
+            </button>
+          </div>
+        )}
 
         {/* Soft Skill History Accordion */}
         <SoftSkillHistoryAccordion />

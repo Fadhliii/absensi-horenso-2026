@@ -230,7 +230,17 @@ export async function getPerusahaanHierarchyAction(search: string = '') {
 
 // ================= SISWA ACTIONS ================= //
 
-export async function getSiswaApprovedAction(page: number, search: string, statusFilter: string, perusahaanFilter: string = '', keberangkatanFilter: string = 'semua', sortOrder: string = 'desc', batchFilter: string = '') {
+export async function getSiswaApprovedAction(
+  page: number, 
+  search: string, 
+  statusFilter: string, 
+  perusahaanFilter: string = '', 
+  keberangkatanFilter: string = 'semua', 
+  sortOrder: string = 'desc', 
+  batchFilter: string = '',
+  kelasFilter: string = '',
+  statusPendidikanFilter: string = 'semua'
+) {
   const limit = 10;
   const from = (page - 1) * limit;
   const to = from + limit - 1;
@@ -239,7 +249,7 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
     .from('users')
     .select(`
       id, name, email, phone, created_at,
-      siswa ( id, status_penempatan, perusahaan_id, batch_id, batch, tanggal_berangkat, kelas_id, master_kelas (nama_kelas), perusahaan (nama) )
+      siswa ( id, status_penempatan, status_pendidikan, perusahaan_id, batch_id, batch, tanggal_berangkat, kelas_id, master_kelas (nama_kelas), perusahaan (nama) )
     `, { count: 'exact' })
     .eq('role', 'siswa')
     .eq('status_registrasi', 'approved');
@@ -248,15 +258,18 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
     query = query.ilike('name', `%${search}%`);
   }
 
-  // Next.js PostgREST filter on nested relation is a bit tricky, but we can filter by querying the joined table
-  // However, Supabase (PostgREST) doesn't support easy nested filtering that affects the main row return.
-  // Instead, if statusFilter is used OR perusahaanFilter is used, we can query `siswa` table directly and join `users`.
-  
-  if ((statusFilter && statusFilter !== 'semua') || perusahaanFilter || batchFilter || (keberangkatanFilter && keberangkatanFilter !== 'semua')) {
+  if (
+    (statusFilter && statusFilter !== 'semua') || 
+    perusahaanFilter || 
+    batchFilter || 
+    kelasFilter ||
+    (statusPendidikanFilter && statusPendidikanFilter !== 'semua') ||
+    (keberangkatanFilter && keberangkatanFilter !== 'semua')
+  ) {
     let siswaQuery = supabaseAdmin
     .from('siswa')
       .select(`
-        id, status_penempatan, perusahaan_id, batch_id, batch, tanggal_berangkat, kelas_id, master_kelas (nama_kelas), perusahaan (nama),
+        id, status_penempatan, status_pendidikan, perusahaan_id, batch_id, batch, tanggal_berangkat, kelas_id, master_kelas (nama_kelas), perusahaan (nama),
         users!inner (id, name, email, phone, status_registrasi, role, created_at)
       `, { count: 'exact' })
       .eq('users.status_registrasi', 'approved')
@@ -264,6 +277,14 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
 
     if (statusFilter && statusFilter !== 'semua') {
       siswaQuery = siswaQuery.eq('status_penempatan', statusFilter);
+    }
+
+    if (statusPendidikanFilter && statusPendidikanFilter !== 'semua') {
+      siswaQuery = siswaQuery.eq('status_pendidikan', statusPendidikanFilter);
+    }
+
+    if (kelasFilter) {
+      siswaQuery = siswaQuery.eq('kelas_id', kelasFilter);
     }
 
     if (search) {
@@ -285,19 +306,11 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
     }
 
     const { data, count, error } = await siswaQuery
-      // Because we're querying `siswa`, ordering by users.created_at requires referenced ordering which PostgREST doesn't support well on inner joins for sorting. 
-      // But we can just order by siswa's created_at since it's created at the same time usually, or order by users(created_at) if it works.
-      // Wait, let's just order by id or fetch and sort. PostgREST allows ordering by joined tables if it's 1-to-1: `order('users(created_at)')`. But wait, it's safer to just order by `siswa.id` or let's try `users(created_at)`.
-      // Let's just use .order('created_at' in outer query if we can, but since this is siswa table, we don't have created_at selected in siswa!
-      // Let's select `created_at` in siswa as well to be safe, or just order by `id`. 
-      // Actually, since users and siswa are created together, we can sort by `id`. But wait, UUIDs aren't sequential.
-      // I will just add created_at to `siswa` select and order by it. But it's already in the DB.
-      .order('id', { ascending: sortOrder === 'asc' }) // Fallback since we can't easily order by joined users.created_at
+      .order('id', { ascending: sortOrder === 'asc' })
       .range(from, to);
 
     if (error) return { error: error.message };
     
-    // Map kembali bentuknya agar sama
     const mappedData = (data || []).map(d => {
       if (!d) return null;
       const user = Array.isArray(d.users) ? d.users[0] : (d.users as any);
@@ -311,6 +324,7 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
         siswa: {
           id: d.id || '',
           status_penempatan: d.status_penempatan || 'belum',
+          status_pendidikan: d.status_pendidikan || 'aktif',
           perusahaan_id: d.perusahaan_id || null,
           batch_id: d.batch_id || null,
           batch: d.batch || null,
@@ -325,7 +339,6 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
     return { data: mappedData, total: count || 0, limit };
   }
 
-  // Jika tidak ada filter yang butuh siswaQuery, query users join siswa
   const { data, count, error } = await query
     .order('created_at', { ascending: sortOrder === 'asc' })
     .range(from, to);
@@ -345,6 +358,7 @@ export async function getSiswaApprovedAction(page: number, search: string, statu
       siswa: siswaObj ? {
         id: siswaObj.id || '',
         status_penempatan: siswaObj.status_penempatan || 'belum',
+        status_pendidikan: siswaObj.status_pendidikan || 'aktif',
         perusahaan_id: siswaObj.perusahaan_id || null,
         batch_id: siswaObj.batch_id || null,
         batch: siswaObj.batch || null,

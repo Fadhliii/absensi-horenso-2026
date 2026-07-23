@@ -13,7 +13,7 @@ async function verifyAdminOrInstruktur() {
 }
 
 // 1. Rekap Absensi Harian (Grid View)
-export async function getRekapAbsensiAction(year: number, month: number, perusahaanId?: string) {
+export async function getRekapAbsensiAction(year: number, month: number, perusahaanId?: string, kelasId?: string, statusPendidikan: string = 'aktif') {
   try {
     await verifyAdminOrInstruktur();
     
@@ -25,6 +25,8 @@ export async function getRekapAbsensiAction(year: number, month: number, perusah
         created_at,
         siswa!inner (
           perusahaan_id,
+          kelas_id,
+          status_pendidikan,
           tanggal_berangkat
         )
       `)
@@ -35,10 +37,22 @@ export async function getRekapAbsensiAction(year: number, month: number, perusah
     if (perusahaanId) {
       query = query.eq('siswa.perusahaan_id', perusahaanId);
     }
+    if (kelasId) {
+      query = query.eq('siswa.kelas_id', kelasId);
+    }
 
-    const { data: students, error: studentsError } = await query;
+    const { data: rawStudents, error: studentsError } = await query;
 
     if (studentsError) throw studentsError;
+
+    let students = rawStudents || [];
+    if (statusPendidikan && statusPendidikan !== 'all') {
+      students = students.filter(s => {
+        const siswaData = Array.isArray(s.siswa) ? s.siswa[0] : (s.siswa as any);
+        const st = siswaData?.status_pendidikan || 'aktif';
+        return st === statusPendidikan;
+      });
+    }
 
     const startDate = new Date(year, month - 1, 1).toISOString();
     const endDate = new Date(year, month, 1).toISOString();
@@ -153,7 +167,7 @@ export async function getRekapAbsensiAction(year: number, month: number, perusah
 }
 
 // 2. Rekapitulasi Soft Skill (Tab View)
-export async function getRekapSoftSkillAction(year: number, month: number, perusahaanId?: string) {
+export async function getRekapSoftSkillAction(year: number, month: number, perusahaanId?: string, kelasId?: string, statusPendidikan: string = 'aktif') {
   try {
     await verifyAdminOrInstruktur();
 
@@ -181,6 +195,8 @@ export async function getRekapSoftSkillAction(year: number, month: number, perus
         created_at,
         siswa!inner (
           perusahaan_id,
+          kelas_id,
+          status_pendidikan,
           batch,
           tanggal_berangkat,
           perusahaan (nama),
@@ -194,9 +210,21 @@ export async function getRekapSoftSkillAction(year: number, month: number, perus
     if (perusahaanId) {
       query = query.eq('siswa.perusahaan_id', perusahaanId);
     }
+    if (kelasId) {
+      query = query.eq('siswa.kelas_id', kelasId);
+    }
 
-    const { data: students, error: studentError } = await query;
+    const { data: rawStudents, error: studentError } = await query;
     if (studentError) throw studentError;
+
+    let students = rawStudents || [];
+    if (statusPendidikan && statusPendidikan !== 'all') {
+      students = students.filter(s => {
+        const siswaData = Array.isArray(s.siswa) ? s.siswa[0] : (s.siswa as any);
+        const st = siswaData?.status_pendidikan || 'aktif';
+        return st === statusPendidikan;
+      });
+    }
 
     // 3. Ambil seluruh data kehadiran soft skill bulan ini
     const classIds = softSkillClasses?.map(c => c.id) || [];
@@ -296,6 +324,7 @@ export async function getStudentDetailSummaryAction(studentId: string) {
         created_at,
         siswa (
           status_penempatan,
+          status_pendidikan,
           batch,
           tanggal_berangkat,
           perusahaan (nama),
@@ -352,6 +381,7 @@ export async function getStudentDetailSummaryAction(studentId: string) {
         phone: userProfile.phone || '-',
         created_at: userProfile.created_at,
         status_penempatan: siswaData?.status_penempatan || 'belum',
+        status_pendidikan: siswaData?.status_pendidikan || 'aktif',
         nama_perusahaan: perusahaanData?.nama || null,
         batch: siswaData?.batch || null,
         tanggal_berangkat: siswaData?.tanggal_berangkat || null,

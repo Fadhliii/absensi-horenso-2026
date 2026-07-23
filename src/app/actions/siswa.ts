@@ -44,6 +44,7 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
         name,
         siswa (
           status_penempatan,
+          status_pendidikan,
           perusahaan (nama),
           master_kelas (nama_kelas)
         )
@@ -191,6 +192,7 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
       profile: {
         name: profile.name,
         statusPenempatan: siswaObj?.status_penempatan || 'belum',
+        statusPendidikan: siswaObj?.status_pendidikan || 'aktif',
         namaPerusahaan: namaPerusahaan || null,
         namaKelas: namaKelas || null
       },
@@ -201,3 +203,34 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
     return { error: error.message || 'Terjadi kesalahan sistem' };
   }
 }
+
+export async function updateBulkStatusPendidikanAction(siswaIds: string[], statusPendidikan: string) {
+  try {
+    if (!siswaIds || siswaIds.length === 0) throw new Error('Pilih minimal satu siswa.');
+    const { error } = await supabase
+      .from('siswa')
+      .update({ status_pendidikan: statusPendidikan })
+      .in('id', siswaIds);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function updateBulkKelasAction(siswaIds: string[], kelasId: string | null) {
+  try {
+    if (!siswaIds || siswaIds.length === 0) throw new Error('Pilih minimal satu siswa.');
+    const { error } = await supabase
+      .from('siswa')
+      .update({ kelas_id: kelasId || null })
+      .in('id', siswaIds);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
