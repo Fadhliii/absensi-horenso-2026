@@ -82,12 +82,19 @@ export default function SiswaDashboardPage() {
     <div className="min-h-screen bg-[#f4f4f0] font-sans flex flex-col">
       {/* Ringkas Header */}
       <header className="bg-white border-b-4 border-black sticky top-0 z-30">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
-          <h1 className="text-lg font-black text-black uppercase tracking-tight">Portal Siswa</h1>
-          <div className="flex items-center gap-2">
-            <IndonesianClock />
-            <form action={logoutAction}>
-              <button className="flex items-center text-black bg-white hover:bg-black hover:text-white px-2 py-1 neo-btn text-xs">
+        <div className="max-w-3xl mx-auto px-4 py-2.5 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
+          <div className="flex items-center justify-between">
+            <h1 className="text-base sm:text-lg font-black text-black uppercase tracking-tight">Portal Siswa</h1>
+            <form action={logoutAction} className="sm:hidden">
+              <button className="flex items-center text-black bg-white hover:bg-black hover:text-white px-2 py-1 neo-btn text-xs font-black uppercase">
+                <LogOut className="w-3.5 h-3.5 mr-1" /> Logout
+              </button>
+            </form>
+          </div>
+          <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+            <IndonesianClock className="w-full sm:w-auto" />
+            <form action={logoutAction} className="hidden sm:block">
+              <button className="flex items-center text-black bg-white hover:bg-black hover:text-white px-2.5 py-1 neo-btn text-xs font-black uppercase">
                 <LogOut className="w-3.5 h-3.5 mr-1" /> Logout
               </button>
             </form>
