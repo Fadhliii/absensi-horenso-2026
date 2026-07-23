@@ -146,11 +146,18 @@ export async function submitAbsensiAction(qrToken: string, studentLat: number, s
     }
 
     // Otomatis aktifkan status siswa saat pertama kali scan presensi berhasil
-    await supabase
+    const { data: currentSiswa } = await supabase
       .from('siswa')
-      .update({ status_pendidikan: 'aktif' })
+      .select('status_pendidikan')
       .eq('user_id', userId)
-      .or('status_pendidikan.eq.belum_mulai,status_pendidikan.is.null');
+      .single();
+
+    if (!currentSiswa?.status_pendidikan || currentSiswa.status_pendidikan === 'belum_mulai') {
+      await supabase
+        .from('siswa')
+        .update({ status_pendidikan: 'aktif' })
+        .eq('user_id', userId);
+    }
 
     return { success: true, message: 'Absensi berhasil dicatat!' };
 
