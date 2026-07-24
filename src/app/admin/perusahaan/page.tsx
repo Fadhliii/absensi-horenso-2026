@@ -16,7 +16,7 @@ import { logoutAction } from '@/app/actions/auth';
 import IndonesianClock from '@/components/IndonesianClock';
 import { 
   Plus, Edit2, Trash2, Search, LogOut, ArrowLeft, 
-  ChevronDown, ChevronRight, Layers, User, Calendar, Building2, UserPlus, CheckSquare, Square
+  Layers, User, Calendar, Building2, Eye, ChevronRight, CheckSquare, Square, Users, X
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -44,6 +44,7 @@ type PerusahaanHierarchy = {
   nama: string;
   alamat?: string;
   kontak?: string;
+  created_at?: string;
   batches: BatchItem[];
   unbatchedSiswa: SiswaItem[];
   totalSiswa: number;
@@ -54,8 +55,10 @@ export default function PerusahaanPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   
-  // Accordion state
-  const [openCompanyIds, setOpenCompanyIds] = useState<Record<string, boolean>>({});
+  // Selected Company for Detail Drawer/Modal
+  const [detailCompany, setDetailCompany] = useState<PerusahaanHierarchy | null>(null);
+
+  // Accordion state inside detail modal
   const [openBatchIds, setOpenBatchIds] = useState<Record<string, boolean>>({});
 
   // Modal state
@@ -74,24 +77,21 @@ export default function PerusahaanPage() {
     const result = await getPerusahaanHierarchyAction(search);
     if (result.data) {
       setData(result.data);
-      // Auto expand first company if single search result
-      if (search && result.data.length === 1) {
-        setOpenCompanyIds({ [result.data[0].id]: true });
+      // Sync detail company if active
+      if (detailCompany) {
+        const updatedDetail = result.data.find(p => p.id === detailCompany.id);
+        if (updatedDetail) setDetailCompany(updatedDetail);
       }
     }
     setLoading(false);
-  }, [search]);
+  }, [search, detailCompany]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchData();
     }, 300);
     return () => clearTimeout(timer);
-  }, [fetchData]);
-
-  const toggleCompany = (id: string) => {
-    setOpenCompanyIds(prev => ({ ...prev, [id]: !prev[id] }));
-  };
+  }, [search]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleBatch = (id: string) => {
     setOpenBatchIds(prev => ({ ...prev, [id]: !prev[id] }));
@@ -116,6 +116,7 @@ export default function PerusahaanPage() {
   async function handleDeleteCompany(id: string, nama: string) {
     if (!confirm(`Hapus perusahaan "${nama}"? Semua batch & status penempatan siswa di perusahaan ini akan direset.`)) return;
     await deletePerusahaanAction(id);
+    if (detailCompany?.id === id) setDetailCompany(null);
     fetchData();
   }
 
@@ -186,6 +187,11 @@ export default function PerusahaanPage() {
     }
   };
 
+  // Stats calculation
+  const totalPerusahaan = data.length;
+  const totalBatch = data.reduce((acc, p) => acc + p.batches.length, 0);
+  const totalSiswaPlacements = data.reduce((acc, p) => acc + p.totalSiswa, 0);
+
   return (
     <div className="min-h-screen bg-[#f4f4f0] font-sans">
       <header className="bg-white border-b-4 border-black sticky top-0 z-30">
@@ -195,8 +201,8 @@ export default function PerusahaanPage() {
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-xl font-black text-black tracking-tight uppercase">Kelola Perusahaan & Batch</h1>
-              <p className="text-xs text-black font-bold uppercase">Struktur Mitra, Angkatan (Batch), & Penempatan Siswa</p>
+              <h1 className="text-xl font-black text-black tracking-tight uppercase">Master Perusahaan Mitra</h1>
+              <p className="text-xs text-black font-bold uppercase">Kelola Daftar Perusahaan, Batch, & Penempatan Siswa</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -212,6 +218,37 @@ export default function PerusahaanPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
+        {/* Top Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-[#00f0ff] p-5 neo-card neo-shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-xs font-black uppercase text-black">Total Perusahaan Mitra</p>
+              <h3 className="text-3xl font-black text-black mt-1">{totalPerusahaan}</h3>
+            </div>
+            <div className="w-12 h-12 bg-white neo-border flex items-center justify-center">
+              <Building2 className="w-6 h-6 text-black" />
+            </div>
+          </div>
+          <div className="bg-[#ffe600] p-5 neo-card neo-shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-xs font-black uppercase text-black">Total Batch / Angkatan</p>
+              <h3 className="text-3xl font-black text-black mt-1">{totalBatch}</h3>
+            </div>
+            <div className="w-12 h-12 bg-white neo-border flex items-center justify-center">
+              <Layers className="w-6 h-6 text-black" />
+            </div>
+          </div>
+          <div className="bg-[#00e676] p-5 neo-card neo-shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-xs font-black uppercase text-black">Siswa Terpenuhi</p>
+              <h3 className="text-3xl font-black text-black mt-1">{totalSiswaPlacements}</h3>
+            </div>
+            <div className="w-12 h-12 bg-white neo-border flex items-center justify-center">
+              <Users className="w-6 h-6 text-black" />
+            </div>
+          </div>
+        </div>
+
         {/* Search & Header Action */}
         <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6">
           <div className="relative flex-1 max-w-md">
@@ -220,256 +257,303 @@ export default function PerusahaanPage() {
             </div>
             <input
               type="text"
-              placeholder="Cari perusahaan..."
+              placeholder="Cari perusahaan mitra (nama/alamat)..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 neo-input text-xs font-bold"
+              className="block w-full pl-10 pr-3 py-2.5 neo-input text-xs font-bold"
             />
           </div>
           
           <button
             onClick={() => setModalCompany({ isOpen: true, mode: 'create' })}
-            className="inline-flex items-center justify-center px-4 py-2 text-xs text-black bg-[#00f0ff] hover:bg-[#00d8e6] neo-btn"
+            className="inline-flex items-center justify-center px-5 py-2.5 text-xs text-black bg-[#00f0ff] hover:bg-[#00d8e6] neo-btn font-black"
           >
-            <Plus className="w-4 h-4 mr-2" /> Tambah Perusahaan
+            <Plus className="w-4 h-4 mr-2" /> + Tambah Perusahaan Mitra
           </button>
         </div>
 
-        {/* Loading / Empty / Content */}
-        {loading ? (
-          <div className="flex justify-center py-16">
-            <span className="animate-pulse text-gray-500 font-medium text-sm">Memuat Struktur Perusahaan & Batch...</span>
+        {/* Dedicated Perusahaan Table */}
+        <div className="bg-white neo-card neo-shadow-md overflow-hidden">
+          <div className="p-4 bg-[#fff59d] border-b-3 border-black flex justify-between items-center">
+            <h2 className="text-sm font-black text-black uppercase tracking-wide flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-black" /> Daftar Perusahaan Mitra ({data.length})
+            </h2>
+            <span className="text-xs font-black text-black uppercase">
+              Klik &quot;Kelola Batch & Siswa&quot; untuk melihat detail angkatan
+            </span>
           </div>
-        ) : data.length === 0 ? (
-          <div className="bg-white rounded-2xl p-12 text-center border border-gray-200 shadow-xs">
-            <Building2 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <h3 className="text-base font-bold text-gray-900 mb-1">Belum Ada Perusahaan Mitra</h3>
-            <p className="text-sm text-gray-500 mb-4">Tambahkan perusahaan mitra pertama Anda untuk mulai mengelola batch siswa.</p>
-            <button
-              onClick={() => setModalCompany({ isOpen: true, mode: 'create' })}
-              className="inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-all shadow-xs"
-            >
-              <Plus className="w-4 h-4 mr-2" /> Tambah Perusahaan Baru
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {data.map((p) => {
-              const isCompanyOpen = openCompanyIds[p.id] ?? true; // default expanded
 
-              return (
-                <div key={p.id} className="bg-white neo-card mb-4 overflow-hidden">
-                  
-                  {/* Header Perusahaan */}
-                  <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border-b-3 border-black">
-                    <div className="flex items-start gap-3 cursor-pointer select-none flex-1" onClick={() => toggleCompany(p.id)}>
-                      <button className="mt-1 p-1 neo-border bg-[#ffe600] text-black">
-                        {isCompanyOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                      </button>
-                      <div>
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <h2 className="text-lg font-black text-black uppercase">{p.nama}</h2>
-                          <span className="px-2.5 py-0.5 neo-badge bg-[#00f0ff] text-black text-xs">
-                            {p.totalSiswa} Siswa
-                          </span>
-                          <span className="px-2.5 py-0.5 neo-badge bg-[#a855f7] text-white text-xs">
-                            {p.batches.length} Batch
-                          </span>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-black text-white text-xs font-black uppercase tracking-wider border-b-3 border-black">
+                  <th className="p-3 text-center w-12">#</th>
+                  <th className="p-3">Nama Perusahaan</th>
+                  <th className="p-3">Kontak & Alamat</th>
+                  <th className="p-3 text-center">Jumlah Batch</th>
+                  <th className="p-3 text-center">Jumlah Siswa</th>
+                  <th className="p-3 text-center">Tanggal Dibuat</th>
+                  <th className="p-3 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y-2 divide-black text-xs font-bold text-black">
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-gray-500 animate-pulse font-black uppercase">
+                      Memuat Data Perusahaan Mitra...
+                    </td>
+                  </tr>
+                ) : data.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-black font-black uppercase bg-[#fffde7]">
+                      Belum ada data perusahaan mitra. Silakan tambahkan perusahaan baru.
+                    </td>
+                  </tr>
+                ) : (
+                  data.map((p, idx) => (
+                    <tr key={p.id} className="hover:bg-[#f0fd44]/20 transition-colors">
+                      <td className="p-3 text-center font-black">{idx + 1}</td>
+                      <td className="p-3">
+                        <div className="font-black text-black uppercase text-sm flex items-center gap-2">
+                          <Building2 className="w-4 h-4 text-black shrink-0" />
+                          <span>{p.nama}</span>
                         </div>
-                        {p.alamat && <p className="text-xs text-black font-bold mt-1 line-clamp-1">{p.alamat}</p>}
-                        {p.kontak && <p className="text-xs text-black font-bold mt-0.5">Kontak: {p.kontak}</p>}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 self-end sm:self-center">
-                      <button
-                        onClick={() => setModalBatch({ isOpen: true, mode: 'create', perusahaanId: p.id })}
-                        className="inline-flex items-center px-3 py-1.5 text-xs text-black bg-[#ffe600] hover:bg-[#ebd300] neo-btn"
-                        title="Tambah Batch / Angkatan Baru"
-                      >
-                        <Plus className="w-3.5 h-3.5 mr-1" /> Tambah Batch
-                      </button>
-                      <button
-                        onClick={() => setModalCompany({ isOpen: true, mode: 'edit', data: p })}
-                        className="p-2 neo-border bg-white text-black hover:bg-black hover:text-white"
-                        title="Edit Perusahaan"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCompany(p.id, p.nama)}
-                        className="p-2 neo-border bg-[#ff1744] text-white hover:bg-red-800"
-                        title="Hapus Perusahaan"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Body Perusahaan (Accordion List Batches) */}
-                  {isCompanyOpen && (
-                    <div className="p-5 bg-gray-50/50 space-y-3">
-                      {p.batches.length === 0 && p.unbatchedSiswa.length === 0 ? (
-                        <div className="text-center py-6 border-2 border-dashed border-gray-200 rounded-xl">
-                          <Layers className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                          <p className="text-xs font-semibold text-gray-500">Belum ada Batch di perusahaan ini.</p>
+                      </td>
+                      <td className="p-3">
+                        <div className="space-y-0.5">
+                          <p className="font-bold text-black">{p.kontak || '-'}</p>
+                          {p.alamat && <p className="text-[11px] text-gray-600 line-clamp-1">{p.alamat}</p>}
+                        </div>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className="px-2.5 py-1 neo-badge bg-[#a855f7] text-white text-xs font-black">
+                          {p.batches.length} Batch
+                        </span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className="px-2.5 py-1 neo-badge bg-[#00e676] text-black text-xs font-black">
+                          👥 {p.totalSiswa} Siswa
+                        </span>
+                      </td>
+                      <td className="p-3 text-center text-[11px] font-bold">
+                        {p.created_at ? new Date(p.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                      </td>
+                      <td className="p-3 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
                           <button
-                            onClick={() => setModalBatch({ isOpen: true, mode: 'create', perusahaanId: p.id })}
-                            className="mt-2 text-xs font-bold text-blue-600 hover:underline"
+                            onClick={() => setDetailCompany(p)}
+                            className="inline-flex items-center px-3 py-1.5 text-xs text-black bg-[#00f0ff] hover:bg-[#00d8e6] neo-btn font-black"
+                            title="Lihat Detail Batch & Kelola Siswa"
                           >
-                            + Buat Batch Pertama (misal: Batch 1)
+                            <Eye className="w-3.5 h-3.5 mr-1" /> Kelola Batch & Siswa
+                          </button>
+                          <button
+                            onClick={() => setModalCompany({ isOpen: true, mode: 'edit', data: p })}
+                            className="p-1.5 neo-border bg-white text-black hover:bg-black hover:text-white"
+                            title="Edit Perusahaan"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCompany(p.id, p.nama)}
+                            className="p-1.5 neo-border bg-[#ff1744] text-white hover:bg-red-800"
+                            title="Hapus Perusahaan"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
-                      ) : (
-                        <>
-                          {/* List Batches */}
-                          {p.batches.map((b) => {
-                            const isBatchOpen = openBatchIds[b.id] ?? false; // default collapsed for compact UI
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-                            return (
-                              <div key={b.id} className="bg-[#fffde7] neo-card mb-3 overflow-hidden">
-                                
-                                {/* Batch Header Bar */}
-                                <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#fffde7]">
-                                  <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => toggleBatch(b.id)}>
-                                    <span className="p-1 neo-border bg-white text-black">
-                                      {isBatchOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                                    </span>
-                                    <div>
-                                      <div className="flex items-center gap-2">
-                                        <h3 className="text-sm font-black text-black uppercase">{b.nama_batch}</h3>
-                                        {b.kuota && b.kuota > 0 ? (
-                                          <span className="text-[11px] font-black px-2 py-0.5 neo-badge bg-[#00e676] text-black">
-                                            Terisi {b.siswa.length} / {b.kuota} Siswa
-                                          </span>
-                                        ) : (
-                                          <span className="text-[11px] font-black px-2 py-0.5 neo-badge bg-white text-black">
-                                            {b.siswa.length} Siswa
-                                          </span>
-                                        )}
-                                      </div>
-                                      {b.tanggal_berangkat && (
-                                        <div className="flex items-center text-[11px] text-black font-bold mt-0.5">
-                                          <Calendar className="w-3.5 h-3.5 mr-1 text-black" />
-                                          Keberangkatan: {new Date(b.tanggal_berangkat).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
+      </main>
 
-                                  <div className="flex items-center gap-2 self-end sm:self-center flex-wrap">
-                                    <button
-                                      onClick={() => handleOpenAssign(b.id, p.id, b.nama_batch)}
-                                      className="inline-flex items-center px-3 py-1 text-xs text-black bg-[#00e676] hover:bg-[#00c853] neo-btn"
-                                      title="Tambah Siswa ke Batch Ini"
-                                    >
-                                      <Plus className="w-3.5 h-3.5 mr-1" /> Tambah Siswa
-                                    </button>
-                                    <button
-                                      onClick={() => toggleBatch(b.id)}
-                                      className="text-xs font-black px-2.5 py-1 text-black bg-white neo-btn"
-                                    >
-                                      {isBatchOpen ? 'Sembunyikan Siswa' : `Tampilkan Siswa (${b.siswa.length})`}
-                                    </button>
-                                    <button
-                                      onClick={() => setModalBatch({ isOpen: true, mode: 'edit', data: b })}
-                                      className="p-1.5 neo-border bg-white text-black hover:bg-black hover:text-white"
-                                      title="Edit Batch"
-                                    >
-                                      <Edit2 className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button
-                                      onClick={() => handleDeleteBatch(b.id, b.nama_batch)}
-                                      className="p-1.5 neo-border bg-[#ff1744] text-white hover:bg-red-800"
-                                      title="Hapus Batch"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                </div>
+      {/* Modal / Drawer Detail Perusahaan (Kelola Batch & Siswa) */}
+      {detailCompany && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setDetailCompany(null)}></div>
+          <div className="relative z-50 w-full max-w-4xl bg-white neo-card neo-shadow-lg p-6 flex flex-col max-h-[90vh]">
+            
+            {/* Modal Header */}
+            <div className="flex justify-between items-start border-b-3 border-black pb-4 mb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 neo-badge bg-[#ffe600] text-black text-xs font-black">Perusahaan Mitra</span>
+                  <h3 className="text-xl font-black text-black uppercase">{detailCompany.nama}</h3>
+                </div>
+                <div className="flex items-center gap-4 text-xs font-bold text-black mt-1">
+                  <span>Kontak: {detailCompany.kontak || '-'}</span>
+                  <span>•</span>
+                  <span>Total: {detailCompany.totalSiswa} Siswa Terdaftar</span>
+                  <span>•</span>
+                  <span>{detailCompany.batches.length} Batch</span>
+                </div>
+                {detailCompany.alamat && <p className="text-xs text-gray-700 font-bold mt-1">Alamat: {detailCompany.alamat}</p>}
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setModalBatch({ isOpen: true, mode: 'create', perusahaanId: detailCompany.id })}
+                  className="inline-flex items-center px-3 py-1.5 text-xs text-black bg-[#ffe600] hover:bg-[#ebd300] neo-btn font-black"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" /> + Tambah Batch Baru
+                </button>
+                <button
+                  onClick={() => setDetailCompany(null)}
+                  className="p-1.5 neo-border bg-white text-black hover:bg-black hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
 
-                                {/* List Siswa di dalam Batch (Collapsible Show/Hide) */}
-                                {isBatchOpen && (
-                                  <div className="border-t-3 border-black bg-white p-4">
-                                    {b.siswa.length === 0 ? (
-                                      <div className="text-center py-6 neo-border bg-[#fff9c4]">
-                                        <User className="w-8 h-8 text-black mx-auto mb-2" />
-                                        <p className="text-xs font-black text-black uppercase mb-2">Belum ada siswa yang dimasukkan ke {b.nama_batch}.</p>
-                                        <button
-                                          onClick={() => handleOpenAssign(b.id, p.id, b.nama_batch)}
-                                          className="inline-flex items-center px-4 py-2 text-xs text-black bg-[#00e676] neo-btn"
-                                        >
-                                          <Plus className="w-3.5 h-3.5 mr-1.5" /> Tambah Siswa Pertama
-                                        </button>
-                                      </div>
-                                    ) : (
-                                      <div>
-                                        <div className="flex justify-between items-center mb-3">
-                                          <span className="text-xs font-black text-black uppercase tracking-wide">
-                                            Daftar Siswa ({b.siswa.length})
-                                          </span>
-                                          <button
-                                            onClick={() => handleOpenAssign(b.id, p.id, b.nama_batch)}
-                                            className="inline-flex items-center text-xs font-black text-black underline hover:text-blue-700 uppercase"
-                                          >
-                                            <Plus className="w-3.5 h-3.5 mr-1" /> Tambah Siswa Lagi
-                                          </button>
-                                        </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                                          {b.siswa.map((s) => (
-                                            <div key={s.id} className="bg-white p-3 neo-border neo-shadow-sm flex items-center gap-3">
-                                              <div className="w-8 h-8 rounded-none neo-border bg-[#00f0ff] text-black flex items-center justify-center font-black text-xs">
-                                                <User className="w-4 h-4" />
-                                              </div>
-                                              <div className="overflow-hidden">
-                                                <p className="text-xs font-black text-black truncate">{s.name}</p>
-                                                <p className="text-[11px] text-black font-bold truncate">{s.email}</p>
-                                              </div>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    )}
-                                  </div>
+            {/* Modal Content Body: List Batch & Siswa */}
+            <div className="flex-1 overflow-y-auto pr-1 space-y-4">
+              {detailCompany.batches.length === 0 && detailCompany.unbatchedSiswa.length === 0 ? (
+                <div className="text-center py-12 neo-border bg-[#fff9c4]">
+                  <Layers className="w-10 h-10 text-black mx-auto mb-2" />
+                  <p className="text-sm font-black text-black uppercase">Belum ada Batch di {detailCompany.nama}.</p>
+                  <button
+                    onClick={() => setModalBatch({ isOpen: true, mode: 'create', perusahaanId: detailCompany.id })}
+                    className="mt-3 inline-flex items-center px-4 py-2 text-xs text-black bg-[#ffe600] neo-btn font-black"
+                  >
+                    <Plus className="w-4 h-4 mr-1.5" /> Buat Batch Pertama (misal: Batch 1)
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {/* List Batches */}
+                  {detailCompany.batches.map((b) => {
+                    const isBatchOpen = openBatchIds[b.id] ?? true; // Default expanded in detail modal
+
+                    return (
+                      <div key={b.id} className="bg-[#fffde7] neo-card overflow-hidden">
+                        
+                        {/* Batch Header Bar */}
+                        <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#fffde7]">
+                          <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => toggleBatch(b.id)}>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-sm font-black text-black uppercase">{b.nama_batch}</h4>
+                                {b.kuota && b.kuota > 0 ? (
+                                  <span className="text-[11px] font-black px-2 py-0.5 neo-badge bg-[#00e676] text-black">
+                                    Terisi {b.siswa.length} / {b.kuota} Siswa
+                                  </span>
+                                ) : (
+                                  <span className="text-[11px] font-black px-2 py-0.5 neo-badge bg-white text-black">
+                                    {b.siswa.length} Siswa
+                                  </span>
                                 )}
-
                               </div>
-                            );
-                          })}
+                              {b.tanggal_berangkat && (
+                                <div className="flex items-center text-[11px] text-black font-bold mt-0.5">
+                                  <Calendar className="w-3.5 h-3.5 mr-1 text-black" />
+                                  Keberangkatan: {new Date(b.tanggal_berangkat).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                </div>
+                              )}
+                            </div>
+                          </div>
 
-                          {/* Siswa tanpa batch */}
-                          {p.unbatchedSiswa.length > 0 && (
-                            <div className="bg-amber-50/60 rounded-xl border border-amber-200/60 p-4">
-                              <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wide mb-2">
-                                Siswa Tanpa Batch ({p.unbatchedSiswa.length})
-                              </h4>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                              onClick={() => handleOpenAssign(b.id, detailCompany.id, b.nama_batch)}
+                              className="inline-flex items-center px-3 py-1.5 text-xs text-black bg-[#00e676] hover:bg-[#00c853] neo-btn font-black"
+                            >
+                              <Plus className="w-3.5 h-3.5 mr-1" /> Tambah Siswa
+                            </button>
+                            <button
+                              onClick={() => setModalBatch({ isOpen: true, mode: 'edit', data: b })}
+                              className="p-1.5 neo-border bg-white text-black hover:bg-black hover:text-white"
+                              title="Edit Batch"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteBatch(b.id, b.nama_batch)}
+                              className="p-1.5 neo-border bg-[#ff1744] text-white hover:bg-red-800"
+                              title="Hapus Batch"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* List Siswa di dalam Batch */}
+                        {isBatchOpen && (
+                          <div className="border-t-3 border-black bg-white p-4">
+                            {b.siswa.length === 0 ? (
+                              <div className="text-center py-4 bg-[#fff9c4] neo-border">
+                                <p className="text-xs font-black text-black uppercase mb-1">Belum ada siswa di {b.nama_batch}.</p>
+                                <button
+                                  onClick={() => handleOpenAssign(b.id, detailCompany.id, b.nama_batch)}
+                                  className="text-xs font-black text-black underline uppercase hover:text-blue-700"
+                                >
+                                  + Masukkan Siswa Sekarang
+                                </button>
+                              </div>
+                            ) : (
                               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                                {p.unbatchedSiswa.map((s) => (
-                                  <div key={s.id} className="bg-white p-3 rounded-lg border border-amber-200 shadow-2xs flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs">
+                                {b.siswa.map((s) => (
+                                  <div key={s.id} className="bg-white p-3 neo-border neo-shadow-sm flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-none neo-border bg-[#00f0ff] text-black flex items-center justify-center font-black text-xs shrink-0">
                                       <User className="w-4 h-4" />
                                     </div>
                                     <div className="overflow-hidden">
-                                      <p className="text-xs font-bold text-gray-900 truncate">{s.name}</p>
-                                      <p className="text-[11px] text-gray-500 font-medium truncate">{s.email}</p>
+                                      <p className="text-xs font-black text-black truncate">{s.name}</p>
+                                      <p className="text-[11px] text-black font-bold truncate">{s.email}</p>
                                     </div>
                                   </div>
                                 ))}
                               </div>
+                            )}
+                          </div>
+                        )}
+
+                      </div>
+                    );
+                  })}
+
+                  {/* Siswa tanpa batch */}
+                  {detailCompany.unbatchedSiswa.length > 0 && (
+                    <div className="bg-[#fff3e0] neo-card p-4">
+                      <h4 className="text-xs font-black text-black uppercase mb-2">
+                        Siswa Tanpa Batch ({detailCompany.unbatchedSiswa.length})
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {detailCompany.unbatchedSiswa.map((s) => (
+                          <div key={s.id} className="bg-white p-3 neo-border flex items-center gap-3">
+                            <div className="w-8 h-8 neo-border bg-[#ffe600] text-black flex items-center justify-center font-black text-xs shrink-0">
+                              <User className="w-4 h-4" />
                             </div>
-                          )}
-                        </>
-                      )}
+                            <div className="overflow-hidden">
+                              <p className="text-xs font-black text-black truncate">{s.name}</p>
+                              <p className="text-[11px] text-black font-bold truncate">{s.email}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
+                </>
+              )}
+            </div>
 
-                </div>
-              );
-            })}
+            <div className="pt-4 border-t-3 border-black flex justify-end mt-4">
+              <button
+                onClick={() => setDetailCompany(null)}
+                className="px-5 py-2 text-xs text-black bg-white neo-btn font-black"
+              >
+                Tutup
+              </button>
+            </div>
           </div>
-        )}
-
-      </main>
+        </div>
+      )}
 
       {/* Modal Tambah/Edit Perusahaan */}
       {modalCompany.isOpen && (
@@ -487,7 +571,7 @@ export default function PerusahaanPage() {
                   name="nama" 
                   required 
                   defaultValue={modalCompany.data?.nama} 
-                  placeholder="Contoh: PT. Ichikoh Indonesia"
+                  placeholder="Contoh: PT. Ichikoh Indonesia / Toyota Japan Ltd."
                   className="w-full px-3.5 py-2.5 neo-input text-xs"
                 />
               </div>
@@ -521,7 +605,7 @@ export default function PerusahaanPage() {
                 </button>
                 <button 
                   type="submit" 
-                  className="px-5 py-2 text-xs text-black bg-[#00f0ff] hover:bg-[#00d8e6] neo-btn"
+                  className="px-5 py-2 text-xs text-black bg-[#00f0ff] hover:bg-[#00d8e6] neo-btn font-black"
                 >
                   Simpan
                 </button>
@@ -584,7 +668,7 @@ export default function PerusahaanPage() {
                 </button>
                 <button 
                   type="submit" 
-                  className="px-5 py-2 text-xs text-black bg-[#ffe600] hover:bg-[#ebd300] neo-btn"
+                  className="px-5 py-2 text-xs text-black bg-[#ffe600] hover:bg-[#ebd300] neo-btn font-black"
                 >
                   Simpan Batch
                 </button>
@@ -673,7 +757,7 @@ export default function PerusahaanPage() {
               <button 
                 onClick={handleAssignSubmit}
                 disabled={selectedSiswaIds.length === 0 || isAssigning}
-                className="inline-flex items-center px-5 py-2 text-xs text-black bg-[#00e676] hover:bg-[#00c853] disabled:opacity-50 disabled:cursor-not-allowed neo-btn"
+                className="inline-flex items-center px-5 py-2 text-xs text-black bg-[#00e676] hover:bg-[#00c853] disabled:opacity-50 disabled:cursor-not-allowed neo-btn font-black"
               >
                 {isAssigning ? 'Menyimpan...' : `Tambahkan ${selectedSiswaIds.length} Siswa`}
               </button>
