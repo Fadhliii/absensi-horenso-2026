@@ -536,32 +536,49 @@ export async function updateSiswaProfileAction(id: string, formData: FormData) {
   return { success: true };
 }
 
-export async function getUnassignedSiswaAction() {
-  const { data, error } = await supabaseAdmin
-    .from('siswa')
-    .select(`
-      id, status_penempatan,
-      users!inner (id, name, email)
-    `)
-    .eq('users.status_registrasi', 'approved')
-    .eq('users.role', 'siswa')
-    .eq('status_penempatan', 'belum');
+export async function getUnassignedSiswaAction(perusahaanId?: string, batchId?: string) {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('siswa')
+      .select(`
+        id, user_id, perusahaan_id, batch_id, status_penempatan, batch,
+        users!inner (id, name, email, status_registrasi, role)
+      `)
+      .eq('users.status_registrasi', 'approved')
+      .eq('users.role', 'siswa');
 
-  if (error) return { error: error.message };
-  
-  const mappedData = (data || []).map(d => {
-    const user = Array.isArray(d.users) ? d.users[0] : (d.users as any);
-    return {
-      user_id: user?.id || '',
-      name: user?.name || 'Siswa',
-      email: user?.email || ''
-    };
-  });
-  
-  // Urutkan berdasarkan nama di client side atau js saja
-  mappedData.sort((a, b) => a.name.localeCompare(b.name));
-  
-  return { data: mappedData };
+    if (error) return { error: error.message };
+
+    const available = (data || []).filter(s => {
+      // Jangan tampilkan jika sudah ada di batch yang persis sama
+      if (batchId && s.batch_id === batchId) return false;
+      return true;
+    });
+
+    const mappedData = available.map(d => {
+      const user = Array.isArray(d.users) ? d.users[0] : (d.users as any);
+      const isSameCompanyUnbatched = Boolean(perusahaanId && d.perusahaan_id === perusahaanId && !d.batch_id);
+      return {
+        user_id: user?.id || '',
+        name: user?.name || 'Siswa',
+        email: user?.email || '',
+        perusahaan_id: d.perusahaan_id,
+        batch_id: d.batch_id,
+        is_same_company_unbatched: isSameCompanyUnbatched
+      };
+    });
+
+    // Prioritaskan siswa yang ada di perusahaan ini tapi belum punya batch ke paling atas
+    mappedData.sort((a, b) => {
+      if (a.is_same_company_unbatched && !b.is_same_company_unbatched) return -1;
+      if (!a.is_same_company_unbatched && b.is_same_company_unbatched) return 1;
+      return a.name.localeCompare(b.name);
+    });
+
+    return { data: mappedData };
+  } catch (error: any) {
+    return { error: error.message };
+  }
 }
 
 export async function bulkAssignSiswaBatchAction(

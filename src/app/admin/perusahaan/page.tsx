@@ -67,10 +67,22 @@ export default function PerusahaanPage() {
 
   // Assign Siswa State
   const [modalAssign, setModalAssign] = useState<{ isOpen: boolean; batchId?: string; perusahaanId?: string; batchName?: string }>({ isOpen: false });
-  const [unassignedSiswa, setUnassignedSiswa] = useState<{user_id: string; name: string; email: string}[]>([]);
+  const [unassignedSiswa, setUnassignedSiswa] = useState<{user_id: string; name: string; email: string; is_same_company_unbatched?: boolean}[]>([]);
   const [selectedSiswaIds, setSelectedSiswaIds] = useState<string[]>([]);
   const [siswaSearchQuery, setSiswaSearchQuery] = useState('');
   const [isAssigning, setIsAssigning] = useState(false);
+
+  // Open Assign Modal
+  async function handleOpenAssign(batchId: string, perusahaanId: string, batchName: string) {
+    setModalAssign({ isOpen: true, batchId, perusahaanId, batchName });
+    setSelectedSiswaIds([]);
+    setSiswaSearchQuery('');
+    
+    const result = await getUnassignedSiswaAction(perusahaanId, batchId);
+    if (result.data) {
+      setUnassignedSiswa(result.data);
+    }
+  }
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -140,18 +152,6 @@ export default function PerusahaanPage() {
     if (!confirm(`Hapus batch "${nama}"? Siswa di batch ini tidak akan terhapus, tetapi status batch-nya akan dikosongkan.`)) return;
     await deletePerusahaanBatchAction(id);
     fetchData();
-  }
-
-  // Open Assign Modal
-  async function handleOpenAssign(batchId: string, perusahaanId: string, batchName: string) {
-    setModalAssign({ isOpen: true, batchId, perusahaanId, batchName });
-    setSelectedSiswaIds([]);
-    setSiswaSearchQuery('');
-    
-    const result = await getUnassignedSiswaAction();
-    if (result.data) {
-      setUnassignedSiswa(result.data);
-    }
   }
 
   // Submit Assign
@@ -736,8 +736,15 @@ export default function PerusahaanPage() {
                     <div className="text-black">
                       {selectedSiswaIds.includes(s.user_id) ? <CheckSquare className="w-5 h-5 fill-black text-white" /> : <Square className="w-5 h-5" />}
                     </div>
-                    <div className="overflow-hidden">
-                      <p className="text-xs font-black uppercase truncate">{s.name}</p>
+                    <div className="overflow-hidden flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-xs font-black uppercase truncate">{s.name}</p>
+                        {s.is_same_company_unbatched && (
+                          <span className="px-1.5 py-0.5 text-[10px] font-black bg-[#ffe600] text-black border border-black shrink-0">
+                            ⭐ Perusahaan Ini (Tanpa Batch)
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[11px] font-bold truncate">{s.email}</p>
                     </div>
                   </div>
