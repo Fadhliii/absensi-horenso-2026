@@ -14,7 +14,7 @@ export function getAccurateLocation(
   onSuccess: (result: AccurateLocationResult) => void,
   onError: (error: { message: string }) => void,
   onProgress?: (currentAccuracy: number) => void,
-  maxWaitMs = 3500
+  maxWaitMs = 6000
 ) {
   if (typeof window === 'undefined' || !navigator.geolocation) {
     onError({ message: 'Browser Anda tidak mendukung deteksi lokasi (GPS).' });
@@ -33,29 +33,28 @@ export function getAccurateLocation(
     });
   };
 
-  // 1. Coba percakapan cepat dengan getCurrentPosition (MaxAge 5 detik)
+  // 1. Coba percakapan cepat dengan getCurrentPosition (MaxAge 10 detik, Timeout 5 detik)
   navigator.geolocation.getCurrentPosition(
     (position) => {
       const acc = Math.round(position.coords.accuracy);
       if (onProgress) onProgress(acc);
 
-      // Jika akurasi bawaan sudah sangat bagus (<= 35m), langsung return instan tanpa menunggu!
-      if (acc <= 35) {
+      // Jika akurasi sudah cukup baik (<= 45m), langsung return instan
+      if (acc <= 45) {
         handleSuccess(position);
         return;
       }
       
-      // Jika akurasi masih di atas 35m, jalankan watchPosition sebentar untuk perbaikan
       startWatch(position);
     },
     (err) => {
-      // Jika getCurrentPosition gagal, langsung coba watchPosition
+      // Jika getCurrentPosition gagal/timeout di iPhone, langsung coba watchPosition & fallback
       startWatch(null);
     },
     {
       enableHighAccuracy: true,
-      maximumAge: 5000,
-      timeout: 2000
+      maximumAge: 10000,
+      timeout: 5000
     }
   );
 
@@ -69,7 +68,12 @@ export function getAccurateLocation(
       if (bestPosition) {
         handleSuccess(bestPosition);
       } else {
-        onError({ message: 'Gagal mendapatkan data GPS dari perangkat dalam batas waktu.' });
+        // Fallback panggil sekali lagi tanpa HighAccuracy jika iOS memblokir GPS murni
+        navigator.geolocation.getCurrentPosition(
+          (pos) => handleSuccess(pos),
+          () => onError({ message: 'Gagal mendapatkan data GPS. Di iPhone, pastikan Pengaturan > Privasi > Layanan Lokasi > Situs Web Safari diizinkan & Lokasi Tepat (Precise Location) aktif.' }),
+          { enableHighAccuracy: false, timeout: 3000 }
+        );
       }
     }, maxWaitMs);
 
@@ -88,7 +92,7 @@ export function getAccurateLocation(
             bestPosition = position;
           }
 
-          if (position.coords.accuracy <= 15) {
+          if (position.coords.accuracy <= 25) {
             clearTimeout(timer);
             if (watchId !== null) navigator.geolocation.clearWatch(watchId);
             handleSuccess(position);
@@ -98,12 +102,17 @@ export function getAccurateLocation(
           if (!bestPosition) {
             clearTimeout(timer);
             if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-            onError({ message: err.message || 'Gagal mengambil sinyal GPS.' });
+            // Fallback tanpa high accuracy
+            navigator.geolocation.getCurrentPosition(
+              (pos) => handleSuccess(pos),
+              () => onError({ message: err.message || 'Gagal mengambil sinyal GPS dari perangkat Anda.' }),
+              { enableHighAccuracy: false, timeout: 3000 }
+            );
           }
         },
         {
           enableHighAccuracy: true,
-          maximumAge: 0,
+          maximumAge: 5000,
           timeout: maxWaitMs
         }
       );
