@@ -169,6 +169,11 @@ export default function RekapGridPage() {
   };
 
   const handleSaveQuickCellEdit = async (targetStatus: 'H' | 'T' | 'I' | 'S' | 'RESET') => {
+    if ((targetStatus === 'I' || targetStatus === 'S') && !quickCellEdit.alasan.trim()) {
+      setQuickEditError('Harap isi alasan / keterangan untuk Izin atau Sakit!');
+      return;
+    }
+
     setQuickEditLoading(true);
     setQuickEditError('');
 
@@ -176,12 +181,12 @@ export default function RekapGridPage() {
       quickCellEdit.siswaId,
       quickCellEdit.dateStr,
       targetStatus,
-      quickCellEdit.alasan
+      quickCellEdit.alasan.trim()
     );
 
     if (res.success) {
       setQuickCellEdit(prev => ({ ...prev, isOpen: false }));
-      fetchData();
+      await fetchData();
     } else {
       setQuickEditError(res.error || 'Gagal menyimpan data.');
     }
@@ -190,7 +195,18 @@ export default function RekapGridPage() {
 
   const handleInputManual = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputSiswaIds.length === 0 || !inputTanggal || !inputAlasan) return;
+    if (inputSiswaIds.length === 0) {
+      setInputError('Pilih minimal 1 siswa!');
+      return;
+    }
+    if (!inputTanggal) {
+      setInputError('Pilih tanggal!');
+      return;
+    }
+    if (!inputAlasan.trim()) {
+      setInputError('Harap isi alasan / keterangan izin/sakit!');
+      return;
+    }
 
     setInputError('');
     setInputLoading(true);
@@ -199,7 +215,7 @@ export default function RekapGridPage() {
     formData.append('siswa_ids', JSON.stringify(inputSiswaIds));
     formData.append('tanggal', inputTanggal);
     formData.append('tipe', inputTipe);
-    formData.append('alasan', inputAlasan);
+    formData.append('alasan', inputAlasan.trim());
 
     const result = await inputIzinManualAction(formData);
     
@@ -210,8 +226,7 @@ export default function RekapGridPage() {
       setInputSiswaIds([]);
       setInputTanggal('');
       setInputAlasan('');
-      alert('Berhasil menginput absen manual.');
-      fetchData();
+      await fetchData();
     }
     setInputLoading(false);
   };
@@ -287,8 +302,6 @@ export default function RekapGridPage() {
       createdAtDate.setHours(0,0,0,0);
       const isNotJoinedYet = currentDate < createdAtDate;
 
-      if (isDeparted || isNotJoinedYet) return;
-
       if (status === 'H') {
         hadirList.push({ id: siswa.id, name: siswa.name });
       } else if (status === 'T') {
@@ -299,7 +312,7 @@ export default function RekapGridPage() {
         sakitList.push({ id: siswa.id, name: siswa.name, alasan });
       } else if (status === 'SS') {
         softSkillList.push({ id: siswa.id, name: siswa.name, detail: softSkill });
-      } else if (!isWknd && !isHoliday) {
+      } else if (!isDeparted && !isNotJoinedYet && !isWknd && !isHoliday) {
         alphaList.push({ id: siswa.id, name: siswa.name });
       }
     });
@@ -608,13 +621,7 @@ export default function RekapGridPage() {
                           let innerClass = "w-7 h-7 mx-auto rounded flex items-center justify-center text-xs font-bold transition-all ";
                           let content: React.ReactNode = '0';
 
-                          if (isDeparted) {
-                            innerClass += "bg-blue-100 text-blue-600";
-                            content = '✈️';
-                          } else if (isNotJoinedYet) {
-                            innerClass += "bg-gray-100 text-gray-400";
-                            content = '-';
-                          } else if (isSoftSkill) {
+                          if (isSoftSkill) {
                             innerClass += "bg-[#6b21a8] text-white font-black shadow-md scale-110 border border-purple-900";
                             content = 'SS';
                           } else if (hadir) {
@@ -626,6 +633,12 @@ export default function RekapGridPage() {
                           } else if (sakit) {
                             innerClass += "bg-[#ff003c] text-white shadow-sm scale-110";
                             content = 'S';
+                          } else if (isDeparted) {
+                            innerClass += "bg-blue-100 text-blue-600";
+                            content = '✈️';
+                          } else if (isNotJoinedYet) {
+                            innerClass += "bg-gray-100 text-gray-400";
+                            content = '-';
                           } else if (weekend || isHoliday) {
                             innerClass += "bg-gray-200 text-transparent";
                             content = '';
