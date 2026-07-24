@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { getRekapAbsensiAction, getRekapSoftSkillAction, getStudentDetailSummaryAction } from '@/app/actions/rekap';
+import { getRekapAbsensiAction, getRekapSoftSkillAction, getStudentDetailSummaryAction, updateCellAttendanceAction } from '@/app/actions/rekap';
 import { inputIzinManualAction } from '@/app/actions/izin';
 import { getAllPerusahaanAction } from '@/app/actions/master';
 import { logoutAction } from '@/app/actions/auth';
@@ -57,6 +57,27 @@ export default function RekapGridPage() {
   const [selectedDetailDay, setSelectedDetailDay] = useState<number | null>(null);
   const [dailyTabFilter, setDailyTabFilter] = useState<'all' | 'hadir' | 'telat' | 'izin_sakit' | 'soft_skill' | 'alpha'>('all');
   const [dailySearchQuery, setDailySearchQuery] = useState('');
+
+  // Modal Quick Cell Edit (Klik Sel Rekap Grid)
+  const [quickCellEdit, setQuickCellEdit] = useState<{
+    isOpen: boolean;
+    siswaId: string;
+    siswaName: string;
+    day: number;
+    dateStr: string;
+    currentStatus: string;
+    alasan: string;
+  }>({
+    isOpen: false,
+    siswaId: '',
+    siswaName: '',
+    day: 1,
+    dateStr: '',
+    currentStatus: '',
+    alasan: ''
+  });
+  const [quickEditLoading, setQuickEditLoading] = useState(false);
+  const [quickEditError, setQuickEditError] = useState('');
 
   const fetchFilters = useCallback(async () => {
     const res = await getAllPerusahaanAction();
@@ -123,6 +144,48 @@ export default function RekapGridPage() {
       setStudentDetail(res.data);
     }
     setDetailLoading(false);
+  };
+
+  // Clickable Cell Attendance Manual Edit Handler
+  const handleOpenQuickCellEdit = (siswa: any, day: number) => {
+    const monthStr = selectedMonth.toString().padStart(2, '0');
+    const dayStr = day.toString().padStart(2, '0');
+    const dateStr = `${selectedYear}-${monthStr}-${dayStr}`;
+
+    const statusObj = siswa.attendance[day];
+    const status = statusObj?.status || '';
+    const alasan = statusObj?.alasan || '';
+
+    setQuickCellEdit({
+      isOpen: true,
+      siswaId: siswa.id,
+      siswaName: siswa.name,
+      day,
+      dateStr,
+      currentStatus: status,
+      alasan
+    });
+    setQuickEditError('');
+  };
+
+  const handleSaveQuickCellEdit = async (targetStatus: 'H' | 'T' | 'I' | 'S' | 'RESET') => {
+    setQuickEditLoading(true);
+    setQuickEditError('');
+
+    const res = await updateCellAttendanceAction(
+      quickCellEdit.siswaId,
+      quickCellEdit.dateStr,
+      targetStatus,
+      quickCellEdit.alasan
+    );
+
+    if (res.success) {
+      setQuickCellEdit(prev => ({ ...prev, isOpen: false }));
+      fetchData();
+    } else {
+      setQuickEditError(res.error || 'Gagal menyimpan data.');
+    }
+    setQuickEditLoading(false);
   };
 
   const handleInputManual = async (e: React.FormEvent) => {
@@ -459,11 +522,11 @@ export default function RekapGridPage() {
         {/* TAB 1: ABSENSI HARIAN GRID */}
         {activeTab === 'harian' && (
           <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col relative">
-            <div className="overflow-x-auto h-full max-h-[65vh]">
+            <div className="overflow-x-auto h-full max-h-[82vh]">
               <table className="w-full text-sm text-left whitespace-nowrap border-collapse">
                 <thead className="text-xs text-gray-700 bg-gray-100 sticky top-0 z-20">
                   <tr>
-                    <th scope="col" className="px-4 py-3 sticky left-0 bg-gray-100 z-30 border-r border-b border-gray-200 min-w-[200px] align-bottom uppercase">
+                    <th scope="col" className="px-4 py-3 sticky left-0 bg-gray-100 z-30 border-r border-b border-gray-200 min-w-[200px] align-bottom uppercase font-black">
                       Nama Siswa (Klik utk Detail)
                     </th>
                     {daysArray.map(day => {
@@ -530,13 +593,18 @@ export default function RekapGridPage() {
                           const isHoliday = !!holidayName;
                           
                           const currentDate = new Date(selectedYear, selectedMonth - 1, day);
+                          currentDate.setHours(0,0,0,0);
+                          const today = new Date();
+                          today.setHours(0,0,0,0);
+                          const isFutureDate = currentDate > today;
+
                           const isDeparted = siswa.tanggal_berangkat && currentDate >= new Date(siswa.tanggal_berangkat);
                           
                           const createdAtDate = new Date(siswa.created_at);
                           createdAtDate.setHours(0,0,0,0);
                           const isNotJoinedYet = currentDate < createdAtDate;
                           
-                          let cellClass = "px-1 py-1 text-center border-r border-gray-50 last:border-0";
+                          let cellClass = "px-1 py-1 text-center border-r border-gray-50 last:border-0 cursor-pointer hover:scale-125 transition-transform z-10";
                           let innerClass = "w-7 h-7 mx-auto rounded flex items-center justify-center text-xs font-bold transition-all ";
                           let content: React.ReactNode = '0';
 
@@ -547,7 +615,7 @@ export default function RekapGridPage() {
                             innerClass += "bg-gray-100 text-gray-400";
                             content = '-';
                           } else if (isSoftSkill) {
-                            innerClass += "bg-[#6b21a8] text-white font-black shadow-md scale-110 border border-purple-900 cursor-pointer";
+                            innerClass += "bg-[#6b21a8] text-white font-black shadow-md scale-110 border border-purple-900";
                             content = 'SS';
                           } else if (hadir) {
                             innerClass += "bg-green-500 text-white shadow-sm scale-110";
@@ -561,21 +629,27 @@ export default function RekapGridPage() {
                           } else if (weekend || isHoliday) {
                             innerClass += "bg-gray-200 text-transparent";
                             content = '';
+                          } else if (isFutureDate) {
+                            // Tanggal Mendatang: Netral abu-abu tanpa merah alert!
+                            innerClass += "bg-gray-100 text-gray-400 font-normal";
+                            content = '-';
                           } else {
-                            innerClass += "bg-red-100 text-red-500";
+                            // Hari Kerja Absen Lampau: Merah Alert
+                            innerClass += "bg-red-100 text-red-500 font-black";
+                            content = '0';
                           }
 
-                          let titleStr = isDeparted ? 'Sudah Berangkat' : (isNotJoinedYet ? 'Belum Bergabung' : (isHoliday ? holidayName : ''));
+                          let titleStr = isDeparted ? 'Sudah Berangkat' : (isNotJoinedYet ? 'Belum Bergabung' : (isHoliday ? holidayName : (isFutureDate ? 'Mendatang (Klik untuk edit)' : 'Klik untuk edit absensi')));
                           if (isSoftSkill && softSkill) {
                             titleStr = `Soft Skill: ${softSkill.judul} | Pemateri: ${softSkill.pemateri} | Jam: ${softSkill.waktu}`;
                           } else if (izin) {
-                            titleStr = `Izin${alasan ? ' - ' + alasan : ''}`;
+                            titleStr = `Izin${alasan ? ' - ' + alasan : ''} (Klik untuk edit)`;
                           } else if (sakit) {
-                            titleStr = `Sakit${alasan ? ' - ' + alasan : ''}`;
+                            titleStr = `Sakit${alasan ? ' - ' + alasan : ''} (Klik untuk edit)`;
                           }
 
                           return (
-                            <td key={day} className={cellClass} title={titleStr}>
+                            <td key={day} className={cellClass} title={titleStr} onClick={() => handleOpenQuickCellEdit(siswa, day)}>
                               <div className={innerClass}>
                                 {content}
                               </div>
@@ -1211,6 +1285,114 @@ export default function RekapGridPage() {
           </div>
         );
       })()}
+
+      {/* Modal Quick Edit Cell Absensi (Klik Sel Rekap Grid) */}
+      {quickCellEdit.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setQuickCellEdit(prev => ({ ...prev, isOpen: false }))}></div>
+          <div className="relative z-50 w-full max-w-md bg-white neo-card neo-shadow-lg p-6 flex flex-col">
+            
+            <div className="flex justify-between items-start border-b-3 border-black pb-3 mb-4">
+              <div>
+                <span className="px-2 py-0.5 neo-badge bg-[#ffe600] text-black text-xs font-black">
+                  📅 Tanggal {quickCellEdit.day} ({quickCellEdit.dateStr})
+                </span>
+                <h3 className="text-lg font-black text-black uppercase mt-1">Edit Absensi Siswa</h3>
+                <p className="text-xs font-bold text-gray-600 truncate max-w-[280px]">{quickCellEdit.siswaName}</p>
+              </div>
+              <button 
+                onClick={() => setQuickCellEdit(prev => ({ ...prev, isOpen: false }))} 
+                className="p-1.5 neo-border bg-white text-black hover:bg-black hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {quickEditError && (
+              <div className="mb-4 p-3 bg-red-50 text-red-700 text-xs font-bold neo-border border-red-500">
+                {quickEditError}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <p className="text-xs font-black uppercase text-black">Pilih Status Absensi Baru:</p>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  disabled={quickEditLoading}
+                  onClick={() => handleSaveQuickCellEdit('H')}
+                  className="p-3 neo-btn bg-[#00e676] text-black font-black text-xs flex items-center justify-center gap-2 hover:scale-105 transition-transform"
+                >
+                  🟢 Hadir (1)
+                </button>
+
+                <button
+                  disabled={quickEditLoading}
+                  onClick={() => handleSaveQuickCellEdit('T')}
+                  className="p-3 neo-btn bg-[#ffe600] text-black font-black text-xs flex items-center justify-center gap-2 hover:scale-105 transition-transform"
+                >
+                  ⏰ Telat (T)
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-xs font-black uppercase text-black mb-1">Alasan / Keterangan (Untuk Izin / Sakit):</label>
+                <input 
+                  type="text"
+                  placeholder="Contoh: Acara keluarga, Sakit demam..."
+                  value={quickCellEdit.alasan}
+                  onChange={(e) => setQuickCellEdit(prev => ({ ...prev, alasan: e.target.value }))}
+                  className="w-full px-3 py-2 neo-input text-xs font-bold mb-2"
+                />
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    disabled={quickEditLoading}
+                    onClick={() => handleSaveQuickCellEdit('I')}
+                    className="p-3 neo-btn bg-[#00f0ff] text-black font-black text-xs flex items-center justify-center gap-2 hover:scale-105 transition-transform"
+                  >
+                    🟡 Set Izin (I)
+                  </button>
+
+                  <button
+                    disabled={quickEditLoading}
+                    onClick={() => handleSaveQuickCellEdit('S')}
+                    className="p-3 neo-btn bg-[#ff003c] text-white font-black text-xs flex items-center justify-center gap-2 hover:scale-105 transition-transform"
+                  >
+                    🔴 Set Sakit (S)
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-gray-200">
+                <button
+                  disabled={quickEditLoading}
+                  onClick={() => handleSaveQuickCellEdit('RESET')}
+                  className="w-full p-2.5 neo-btn bg-gray-200 text-red-600 hover:bg-red-600 hover:text-white font-black text-xs flex items-center justify-center gap-2 transition-colors"
+                >
+                  ⚪ Hapus / Reset Absen (Tanpa Record)
+                </button>
+              </div>
+            </div>
+
+            {quickEditLoading && (
+              <div className="mt-3 text-center text-xs font-black text-blue-600 flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" /> Menyimpan perubahan...
+              </div>
+            )}
+
+            <div className="pt-4 border-t-3 border-black flex justify-end mt-4">
+              <button 
+                onClick={() => setQuickCellEdit(prev => ({ ...prev, isOpen: false }))}
+                className="px-4 py-2 text-xs font-black text-black bg-white neo-btn"
+              >
+                Batal
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       </main>
     </div>

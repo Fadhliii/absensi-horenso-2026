@@ -425,3 +425,59 @@ export async function getStudentDetailSummaryAction(studentId: string) {
     return { success: false, error: error.message || 'Gagal memuat detail siswa' };
   }
 }
+
+// 4. Action untuk Edit Manual Absensi Per-Sel dari Rekap Grid
+export async function updateCellAttendanceAction(
+  siswaId: string, 
+  tanggalStr: string, // YYYY-MM-DD
+  status: 'H' | 'T' | 'I' | 'S' | 'RESET',
+  alasan: string = ''
+) {
+  try {
+    await verifyAdminOrInstruktur();
+
+    // Timestamp WIB untuk jam 07:00:00 (UTC+7)
+    const waktuScanStr = `${tanggalStr}T07:00:00+07:00`;
+    const startOfDay = `${tanggalStr}T00:00:00+07:00`;
+    const endOfDay = `${tanggalStr}T23:59:59+07:00`;
+
+    // 1. Hapus record absensi harian jika ada di tanggal ini
+    await supabase
+      .from('absensi')
+      .delete()
+      .eq('siswa_id', siswaId)
+      .gte('waktu_scan', startOfDay)
+      .lte('waktu_scan', endOfDay);
+
+    // 2. Hapus record izin_absen jika ada di tanggal ini
+    await supabase
+      .from('izin_absen')
+      .delete()
+      .eq('siswa_id', siswaId)
+      .eq('tanggal', tanggalStr);
+
+    if (status === 'H' || status === 'T') {
+      const dbStatus = status === 'T' ? 'telat' : 'hadir';
+      const { error } = await supabase.from('absensi').insert([{
+        siswa_id: siswaId,
+        waktu_scan: waktuScanStr,
+        status: dbStatus
+      }]);
+      if (error) throw error;
+    } else if (status === 'I' || status === 'S') {
+      const tipe = status === 'I' ? 'izin' : 'sakit';
+      const { error } = await supabase.from('izin_absen').insert([{
+        siswa_id: siswaId,
+        tanggal: tanggalStr,
+        tipe,
+        status: 'approved',
+        alasan: alasan || (tipe === 'izin' ? 'Izin Input Manual Admin' : 'Sakit Input Manual Admin')
+      }]);
+      if (error) throw error;
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Gagal mengubah absensi.' };
+  }
+}
