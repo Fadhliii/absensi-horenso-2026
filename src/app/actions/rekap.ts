@@ -491,7 +491,10 @@ export async function updateCellAttendanceAction(
         siswa_id: siswaId,
         waktu_scan: waktuScanStr,
         status: dbStatus,
-        sesi_id: latestSesi.id
+        sesi_id: latestSesi.id,
+        lat_siswa: 0,
+        lng_siswa: 0,
+        jarak_meter: 0
       };
 
       const { error } = await supabase.from('absensi').insert([insertObj]);
