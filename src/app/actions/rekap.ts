@@ -459,22 +459,40 @@ export async function updateCellAttendanceAction(
 
     if (status === 'H' || status === 'T') {
       // Ambil sesi_absensi terbaru untuk FK constraint sesi_id
-      const { data: latestSesi } = await supabase
+      let { data: latestSesi } = await supabase
         .from('sesi_absensi')
         .select('id')
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
+      // Jika tidak ada sesi sama sekali (tabel kosong), buat sesi dummy untuk memenuhi foreign key constraint (sesi_id NOT NULL)
+      if (!latestSesi?.id) {
+        const { data: newSesi, error: sesiError } = await supabase
+          .from('sesi_absensi')
+          .insert([{
+            dibuat_oleh: session.userId,
+            lokasi_lat: 0,
+            lokasi_lng: 0,
+            status: 'selesai'
+          }])
+          .select('id')
+          .single();
+
+        if (sesiError) {
+          console.error('Error creating dummy session:', sesiError);
+          throw new Error('Gagal membuat sesi absensi dummy.');
+        }
+        latestSesi = newSesi;
+      }
+
       const dbStatus = status === 'T' ? 'telat' : 'hadir';
       const insertObj: any = {
         siswa_id: siswaId,
         waktu_scan: waktuScanStr,
-        status: dbStatus
+        status: dbStatus,
+        sesi_id: latestSesi.id
       };
-      if (latestSesi?.id) {
-        insertObj.sesi_id = latestSesi.id;
-      }
 
       const { error } = await supabase.from('absensi').insert([insertObj]);
       if (error) {
