@@ -10,6 +10,7 @@ async function verifyAdminOrInstruktur() {
   if (!token) throw new Error('Unauthorized');
   const session = await verifySessionToken(token);
   if (!session || (session.role !== 'admin' && session.role !== 'instruktur')) throw new Error('Unauthorized');
+  return session;
 }
 
 // Helper untuk mendapatkan tanggal (1-31) dalam WIB (Asia/Jakarta)
@@ -434,7 +435,7 @@ export async function updateCellAttendanceAction(
   alasan: string = ''
 ) {
   try {
-    await verifyAdminOrInstruktur();
+    const session = await verifyAdminOrInstruktur();
 
     // Timestamp WIB untuk jam 07:00:00 (UTC+7)
     const waktuScanStr = `${tanggalStr}T07:00:00+07:00`;
@@ -457,13 +458,29 @@ export async function updateCellAttendanceAction(
       .eq('tanggal', tanggalStr);
 
     if (status === 'H' || status === 'T') {
+      // Ambil sesi_absensi terbaru untuk FK constraint sesi_id
+      const { data: latestSesi } = await supabase
+        .from('sesi_absensi')
+        .select('id')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
       const dbStatus = status === 'T' ? 'telat' : 'hadir';
-      const { error } = await supabase.from('absensi').insert([{
+      const insertObj: any = {
         siswa_id: siswaId,
         waktu_scan: waktuScanStr,
         status: dbStatus
-      }]);
-      if (error) throw error;
+      };
+      if (latestSesi?.id) {
+        insertObj.sesi_id = latestSesi.id;
+      }
+
+      const { error } = await supabase.from('absensi').insert([insertObj]);
+      if (error) {
+        console.error('Error inserting absensi:', error);
+        throw new Error(error.message);
+      }
     } else if (status === 'I' || status === 'S') {
       const tipe = status === 'I' ? 'izin' : 'sakit';
       const { error } = await supabase.from('izin_absen').insert([{
@@ -471,13 +488,18 @@ export async function updateCellAttendanceAction(
         tanggal: tanggalStr,
         tipe,
         status: 'approved',
-        alasan: alasan || (tipe === 'izin' ? 'Izin Input Manual Admin' : 'Sakit Input Manual Admin')
+        alasan: alasan || (tipe === 'izin' ? 'Izin Input Manual Admin' : 'Sakit Input Manual Admin'),
+        dilaporkan_ke: session.userId
       }]);
-      if (error) throw error;
+      if (error) {
+        console.error('Error inserting izin_absen:', error);
+        throw new Error(error.message);
+      }
     }
 
     return { success: true };
   } catch (err: any) {
+    console.error('Exception in updateCellAttendanceAction:', err);
     return { success: false, error: err.message || 'Gagal mengubah absensi.' };
   }
 }

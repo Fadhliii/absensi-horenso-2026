@@ -164,6 +164,24 @@ export async function inputIzinManualAction(formData: FormData) {
       return { error: 'Daftar siswa tidak valid.' };
     }
 
+    // 1. Hapus record absensi harian jika ada di tanggal ini untuk siswa-siswa tersebut
+    const startOfDay = `${tanggal}T00:00:00+07:00`;
+    const endOfDay = `${tanggal}T23:59:59+07:00`;
+
+    await supabase
+      .from('absensi')
+      .delete()
+      .in('siswa_id', siswa_ids)
+      .gte('waktu_scan', startOfDay)
+      .lte('waktu_scan', endOfDay);
+
+    // 2. Hapus record izin_absen jika ada di tanggal ini untuk siswa-siswa tersebut
+    await supabase
+      .from('izin_absen')
+      .delete()
+      .in('siswa_id', siswa_ids)
+      .eq('tanggal', tanggal);
+
     const payload = siswa_ids.map(id => ({
       siswa_id: id,
       tanggal,
@@ -179,15 +197,14 @@ export async function inputIzinManualAction(formData: FormData) {
       .insert(payload);
 
     if (error) {
-      if (error.code === '23505') {
-        return { error: 'Satu atau lebih siswa sudah memiliki data izin/sakit pada tanggal tersebut.' };
-      }
-      throw error;
+      console.error('Error inserting manual izin_absen:', error);
+      return { error: error.message || 'Gagal menyimpan data izin manual.' };
     }
 
     revalidatePath('/admin/rekap');
     return { success: true };
   } catch (err: any) {
+    console.error('Exception in inputIzinManualAction:', err);
     return { error: err.message || 'Terjadi kesalahan sistem' };
   }
 }
