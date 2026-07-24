@@ -12,6 +12,30 @@ async function verifyAdminOrInstruktur() {
   if (!session || (session.role !== 'admin' && session.role !== 'instruktur')) throw new Error('Unauthorized');
 }
 
+// Helper untuk mendapatkan tanggal (1-31) dalam WIB (Asia/Jakarta)
+function getWibDayFromTimestamp(timestampStr: string): number {
+  try {
+    const d = new Date(timestampStr);
+    const dayStr = new Intl.DateTimeFormat('id-ID', {
+      timeZone: 'Asia/Jakarta',
+      day: 'numeric'
+    }).format(d);
+    return parseInt(dayStr, 10);
+  } catch {
+    return new Date(timestampStr).getDate();
+  }
+}
+
+// Helper untuk mendapatkan tanggal (1-31) dari string YYYY-MM-DD
+function getDayFromDateString(dateStr: string): number {
+  if (!dateStr) return 1;
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    return parseInt(parts[2], 10);
+  }
+  return new Date(dateStr).getDate();
+}
+
 // 1. Rekap Absensi Harian (Grid View)
 export async function getRekapAbsensiAction(year: number, month: number, perusahaanId?: string, kelasId?: string, statusPendidikan: string = 'aktif') {
   try {
@@ -54,23 +78,28 @@ export async function getRekapAbsensiAction(year: number, month: number, perusah
       });
     }
 
-    const startDate = new Date(year, month - 1, 1).toISOString();
-    const endDate = new Date(year, month, 1).toISOString();
+    // WIB Boundaries for Month Range (UTC+7)
+    const startWib = new Date(Date.UTC(year, month - 1, 1, -7, 0, 0)).toISOString();
+    const endWib = new Date(Date.UTC(year, month, 1, -7, 0, 0)).toISOString();
 
     const { data: absensi, error: absensiError } = await supabase
       .from('absensi')
       .select('siswa_id, waktu_scan, status')
-      .gte('waktu_scan', startDate)
-      .lt('waktu_scan', endDate)
-      .eq('status', 'hadir');
+      .gte('waktu_scan', startWib)
+      .lt('waktu_scan', endWib)
+      .in('status', ['hadir', 'telat']);
 
     if (absensiError) throw absensiError;
+
+    const startDateStr = `${year}-${String(month).padStart(2, '0')}-01`;
+    const lastDayOfMonth = new Date(year, month, 0).getDate();
+    const endDateStr = `${year}-${String(month).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}`;
 
     const { data: izin, error: izinError } = await supabase
       .from('izin_absen')
       .select('siswa_id, tanggal, tipe, alasan')
-      .gte('tanggal', startDate.substring(0, 10))
-      .lt('tanggal', endDate.substring(0, 10))
+      .gte('tanggal', startDateStr)
+      .lte('tanggal', endDateStr)
       .eq('status', 'approved');
 
     if (izinError) throw izinError;
@@ -88,8 +117,8 @@ export async function getRekapAbsensiAction(year: number, month: number, perusah
           waktu_selesai
         )
       `)
-      .gte('kelas_soft_skill.tanggal', startDate.substring(0, 10))
-      .lt('kelas_soft_skill.tanggal', endDate.substring(0, 10))
+      .gte('kelas_soft_skill.tanggal', startDateStr)
+      .lte('kelas_soft_skill.tanggal', endDateStr)
       .eq('status', 'hadir');
 
     if (softSkillError) {
@@ -106,18 +135,16 @@ export async function getRekapAbsensiAction(year: number, month: number, perusah
       attendanceMap[s.id] = {};
     });
 
-    absensi.forEach(a => {
+    absensi?.forEach(a => {
       if (attendanceMap[a.siswa_id]) {
-        const dateObj = new Date(a.waktu_scan);
-        const day = dateObj.getDate();
-        attendanceMap[a.siswa_id][day] = { status: 'H' };
+        const day = getWibDayFromTimestamp(a.waktu_scan);
+        attendanceMap[a.siswa_id][day] = { status: a.status === 'telat' ? 'T' : 'H' };
       }
     });
 
     izin?.forEach(i => {
       if (attendanceMap[i.siswa_id]) {
-        const dateObj = new Date(i.tanggal);
-        const day = dateObj.getDate();
+        const day = getDayFromDateString(i.tanggal);
         attendanceMap[i.siswa_id][day] = { 
           status: i.tipe === 'izin' ? 'I' : 'S',
           alasan: i.alasan
@@ -129,9 +156,7 @@ export async function getRekapAbsensiAction(year: number, month: number, perusah
       if (attendanceMap[ss.siswa_id]) {
         const dateStr = ss.kelas_soft_skill?.tanggal;
         if (dateStr) {
-          const dateObj = new Date(dateStr);
-          const day = dateObj.getDate();
-          
+          const day = getDayFromDateString(dateStr);
           const currentEntry = attendanceMap[ss.siswa_id][day] || { status: 'H' };
           const waktuStr = `${ss.kelas_soft_skill.waktu_mulai?.slice(0, 5)} ${ss.kelas_soft_skill.waktu_selesai ? `- ${ss.kelas_soft_skill.waktu_selesai.slice(0, 5)}` : ''} WIB`;
 
