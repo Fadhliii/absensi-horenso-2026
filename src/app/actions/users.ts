@@ -121,7 +121,6 @@ export async function createUserByAdminAction(formData: FormData) {
           password_hash,
           role,
           phone,
-          is_approved: true,
           status_registrasi: 'approved',
           force_change_password: false
         }

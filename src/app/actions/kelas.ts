@@ -108,7 +108,7 @@ export async function getAllApprovedSiswaForKelasAction() {
       .from('users')
       .select('id, name, email, siswa:siswa!inner(id, kelas_id, status_pendidikan, master_kelas:master_kelas(nama_kelas))')
       .eq('role', 'siswa')
-      .eq('is_approved', true)
+      .eq('status_registrasi', 'approved')
       .order('name', { ascending: true });
 
     if (error) throw error;

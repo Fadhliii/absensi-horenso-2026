@@ -55,7 +55,7 @@ export async function getRekapAbsensiAction(year: number, month: number, perusah
         )
       `)
       .eq('role', 'siswa')
-      .eq('is_approved', true)
+      .eq('status_registrasi', 'approved')
       .order('name');
 
     if (perusahaanId) {
@@ -229,7 +229,7 @@ export async function getRekapSoftSkillAction(year: number, month: number, perus
         )
       `)
       .eq('role', 'siswa')
-      .eq('is_approved', true)
+      .eq('status_registrasi', 'approved')
       .order('name');
 
     if (perusahaanId) {

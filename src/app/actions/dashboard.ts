@@ -38,10 +38,10 @@ export async function getDashboardStatsAction() {
       { count: pendingIzin }
     ] = await Promise.all([
       // 1. Total Siswa Aktif
-      supabase.from('users').select('id', { count: 'exact', head: true }).eq('role', 'siswa').eq('is_approved', true),
+      supabase.from('users').select('id', { count: 'exact', head: true }).eq('role', 'siswa').eq('status_registrasi', 'approved'),
       
       // 2. Pending Approval
-      supabase.from('users').select('id', { count: 'exact', head: true }).eq('role', 'siswa').eq('is_approved', false),
+      supabase.from('users').select('id', { count: 'exact', head: true }).eq('role', 'siswa').eq('status_registrasi', 'pending'),
       
       // 3. Hadir Hari Ini
       supabase.from('absensi').select('id', { count: 'exact', head: true }).eq('status', 'hadir').gte('waktu_scan', todayISO),
