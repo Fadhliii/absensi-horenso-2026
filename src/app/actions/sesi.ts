@@ -178,3 +178,62 @@ export async function getActiveSesiInfoAction() {
     return { active: false, userRole: 'guest' };
   }
 }
+
+// ================= LOKASI PRESET ACTIONS ================= //
+
+export async function getLokasiPresetsAction() {
+  try {
+    const { data, error } = await supabase
+      .from('lokasi_preset')
+      .select('*')
+      .order('nama_lokasi', { ascending: true });
+
+    if (error) return { error: error.message };
+    return { data: data || [] };
+  } catch (err: any) {
+    return { error: err.message };
+  }
+}
+
+export async function createLokasiPresetAction(formData: FormData) {
+  try {
+    await getAdminOrInstrukturId();
+    const nama_lokasi = formData.get('nama_lokasi') as string;
+    const lat = parseFloat(formData.get('latitude') as string);
+    const lng = parseFloat(formData.get('longitude') as string);
+    const radius = parseInt(formData.get('radius') as string) || 50;
+
+    if (!nama_lokasi || isNaN(lat) || isNaN(lng)) {
+      return { error: 'Nama lokasi dan koordinat GPS wajib diisi.' };
+    }
+
+    const { error } = await supabase
+      .from('lokasi_preset')
+      .insert([{
+        nama_lokasi,
+        latitude: lat,
+        longitude: lng,
+        radius_meter: radius
+      }]);
+
+    if (error) return { error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { error: err.message };
+  }
+}
+
+export async function deleteLokasiPresetAction(id: string) {
+  try {
+    await getAdminOrInstrukturId();
+    const { error } = await supabase
+      .from('lokasi_preset')
+      .delete()
+      .eq('id', id);
+
+    if (error) return { error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { error: err.message };
+  }
+}
