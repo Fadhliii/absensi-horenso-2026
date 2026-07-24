@@ -5,7 +5,7 @@ import { getRekapAbsensiAction, getRekapSoftSkillAction, getStudentDetailSummary
 import { inputIzinManualAction } from '@/app/actions/izin';
 import { getAllPerusahaanAction } from '@/app/actions/master';
 import { logoutAction } from '@/app/actions/auth';
-import { LogOut, ArrowLeft, Loader2, CalendarDays, PlusCircle, Download, BookOpen, User, CheckCircle2, AlertCircle, Clock, XCircle, Building2, Calendar } from 'lucide-react';
+import { LogOut, ArrowLeft, Loader2, CalendarDays, PlusCircle, Download, BookOpen, User, CheckCircle2, AlertCircle, Clock, XCircle, Building2, Calendar, Search, X, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
 export default function RekapGridPage() {
@@ -45,13 +45,18 @@ export default function RekapGridPage() {
   const [inputTanggal, setInputTanggal] = useState('');
   const [inputTipe, setInputTipe] = useState<'izin' | 'sakit'>('izin');
   const [inputAlasan, setInputAlasan] = useState('');
-  const [inputLoading, setInputLoading] = useState(false);
   const [inputError, setInputError] = useState('');
+  const [inputLoading, setInputLoading] = useState(false);
 
   // Modal Detail Siswa (Clickable Name)
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [studentDetail, setStudentDetail] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  // Modal Rincian Kehadiran Tanggal (Clickable Header Tanggal)
+  const [selectedDetailDay, setSelectedDetailDay] = useState<number | null>(null);
+  const [dailyTabFilter, setDailyTabFilter] = useState<'all' | 'hadir' | 'telat' | 'izin_sakit' | 'soft_skill' | 'alpha'>('all');
+  const [dailySearchQuery, setDailySearchQuery] = useState('');
 
   const fetchFilters = useCallback(async () => {
     const res = await getAllPerusahaanAction();
@@ -194,6 +199,61 @@ export default function RekapGridPage() {
       return tglBerangkat >= startOfMonth;
     });
   }, [softSkillRekap.students, showDeparted, selectedYear, selectedMonth]);
+
+  const getDailyBreakdown = useCallback((day: number) => {
+    const hadirList: { id: string; name: string }[] = [];
+    const telatList: { id: string; name: string }[] = [];
+    const izinList: { id: string; name: string; alasan?: string }[] = [];
+    const sakitList: { id: string; name: string; alasan?: string }[] = [];
+    const softSkillList: { id: string; name: string; detail?: any }[] = [];
+    const alphaList: { id: string; name: string }[] = [];
+
+    const currentDate = new Date(selectedYear, selectedMonth - 1, day);
+    const isWknd = isWeekend(day);
+    const holidayName = getHolidayName(day);
+    const isHoliday = Boolean(holidayName);
+
+    filteredData.forEach(siswa => {
+      const statusObj = siswa.attendance[day];
+      const status = statusObj?.status;
+      const alasan = statusObj?.alasan;
+      const softSkill = statusObj?.softSkill;
+
+      const isDeparted = siswa.tanggal_berangkat && currentDate >= new Date(siswa.tanggal_berangkat);
+      const createdAtDate = new Date(siswa.created_at);
+      createdAtDate.setHours(0,0,0,0);
+      const isNotJoinedYet = currentDate < createdAtDate;
+
+      if (isDeparted || isNotJoinedYet) return;
+
+      if (status === 'H') {
+        hadirList.push({ id: siswa.id, name: siswa.name });
+      } else if (status === 'T') {
+        telatList.push({ id: siswa.id, name: siswa.name });
+      } else if (status === 'I') {
+        izinList.push({ id: siswa.id, name: siswa.name, alasan });
+      } else if (status === 'S') {
+        sakitList.push({ id: siswa.id, name: siswa.name, alasan });
+      } else if (status === 'SS') {
+        softSkillList.push({ id: siswa.id, name: siswa.name, detail: softSkill });
+      } else if (!isWknd && !isHoliday) {
+        alphaList.push({ id: siswa.id, name: siswa.name });
+      }
+    });
+
+    return {
+      hadirList,
+      telatList,
+      izinList,
+      sakitList,
+      softSkillList,
+      alphaList,
+      totalAktif: hadirList.length + telatList.length + izinList.length + sakitList.length + softSkillList.length + (isWknd || isHoliday ? 0 : alphaList.length),
+      isWknd,
+      isHoliday,
+      holidayName
+    };
+  }, [filteredData, selectedYear, selectedMonth, isWeekend, getHolidayName]);
 
   const exportToExcel = async () => {
     try {
@@ -414,13 +474,19 @@ export default function RekapGridPage() {
                         <th 
                           key={day} 
                           scope="col" 
-                          title={holidayName || ''}
-                          className={`px-2 py-2 border-b border-gray-200 text-center w-10 min-w-[40px] ${(isWknd || isHoliday) ? 'bg-gray-200 text-gray-500' : ''}`}
+                          onClick={() => { setSelectedDetailDay(day); setDailyTabFilter('all'); setDailySearchQuery(''); }}
+                          title={holidayName ? `${holidayName} - Klik untuk rincian kehadiran` : `Klik untuk rincian kehadiran tanggal ${day}`}
+                          className={`px-2 py-2 border-b border-gray-200 text-center w-10 min-w-[44px] cursor-pointer hover:bg-[#ffe600] hover:text-black transition-colors ${
+                            (isWknd || isHoliday) ? 'bg-gray-200 text-gray-500' : ''
+                          }`}
                         >
                           <div className={`text-[10px] uppercase font-bold ${(isWknd || isHoliday) ? 'text-red-500' : 'text-gray-500'}`}>
                             {getDayName(day)}
                           </div>
-                          <div className="text-sm mt-1">{day}</div>
+                          <div className="text-xs font-black mt-1 flex items-center justify-center gap-0.5">
+                            <span>{day}</span>
+                            <span className="text-[9px] text-blue-600">🔍</span>
+                          </div>
                         </th>
                       );
                     })}
@@ -520,6 +586,33 @@ export default function RekapGridPage() {
                     ))
                   )}
                 </tbody>
+                {/* Footer Total Kehadiran per Hari */}
+                <tfoot className="bg-gray-100 font-black text-xs sticky bottom-0 z-20 border-t-3 border-black">
+                  <tr>
+                    <td className="px-4 py-2.5 sticky left-0 bg-[#ffe600] text-black z-30 border-r-2 border-black uppercase font-black">
+                      Total Hadir (H/T)
+                    </td>
+                    {daysArray.map(day => {
+                      const breakdown = getDailyBreakdown(day);
+                      const totalHadir = breakdown.hadirList.length + breakdown.telatList.length;
+                      const isWknd = isWeekend(day);
+                      const isHoliday = Boolean(getHolidayName(day));
+
+                      return (
+                        <td 
+                          key={day} 
+                          onClick={() => { setSelectedDetailDay(day); setDailyTabFilter('all'); setDailySearchQuery(''); }}
+                          title={`Klik untuk rincian tanggal ${day}`}
+                          className={`px-1 py-2 text-center border-r border-gray-300 cursor-pointer hover:bg-[#00f0ff] hover:text-black transition-colors ${
+                            (isWknd || isHoliday) ? 'bg-gray-200 text-gray-400' : 'bg-white text-blue-900 font-black'
+                          }`}
+                        >
+                          {(isWknd || isHoliday) ? '-' : totalHadir}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </div>
@@ -946,6 +1039,178 @@ export default function RekapGridPage() {
             </div>
           </div>
         )}
+
+      {/* Modal Rincian Kehadiran Tanggal (Clickable Header Tanggal) */}
+      {selectedDetailDay !== null && (() => {
+        const breakdown = getDailyBreakdown(selectedDetailDay);
+        const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        const formattedDateStr = `${selectedDetailDay} ${monthNames[selectedMonth - 1]} ${selectedYear}`;
+
+        let displayList: { id: string; name: string; statusType: string; label: string; badgeBg: string; textColor: string; info?: string }[] = [];
+
+        if (dailyTabFilter === 'all' || dailyTabFilter === 'hadir') {
+          breakdown.hadirList.forEach(s => displayList.push({ id: s.id, name: s.name, statusType: 'Hadir', label: 'Hadir Tepat Waktu', badgeBg: 'bg-green-500', textColor: 'text-white' }));
+        }
+        if (dailyTabFilter === 'all' || dailyTabFilter === 'telat') {
+          breakdown.telatList.forEach(s => displayList.push({ id: s.id, name: s.name, statusType: 'Telat', label: 'Hadir (Telat)', badgeBg: 'bg-[#ffe600]', textColor: 'text-black' }));
+        }
+        if (dailyTabFilter === 'all' || dailyTabFilter === 'izin_sakit') {
+          breakdown.izinList.forEach(s => displayList.push({ id: s.id, name: s.name, statusType: 'Izin', label: 'Izin', badgeBg: 'bg-[#00f0ff]', textColor: 'text-black', info: s.alasan }));
+          breakdown.sakitList.forEach(s => displayList.push({ id: s.id, name: s.name, statusType: 'Sakit', label: 'Sakit', badgeBg: 'bg-[#ff003c]', textColor: 'text-white', info: s.alasan }));
+        }
+        if (dailyTabFilter === 'all' || dailyTabFilter === 'soft_skill') {
+          breakdown.softSkillList.forEach(s => displayList.push({ id: s.id, name: s.name, statusType: 'Soft Skill', label: 'Soft Skill', badgeBg: 'bg-purple-700', textColor: 'text-white', info: s.detail ? `${s.detail.judul} (${s.detail.pemateri})` : undefined }));
+        }
+        if (dailyTabFilter === 'all' || dailyTabFilter === 'alpha') {
+          if (!breakdown.isWknd && !breakdown.isHoliday) {
+            breakdown.alphaList.forEach(s => displayList.push({ id: s.id, name: s.name, statusType: 'Alpha', label: 'Alpha / Belum Absen', badgeBg: 'bg-[#ff1744]', textColor: 'text-white' }));
+          }
+        }
+
+        const filteredDisplayList = displayList.filter(s => s.name.toLowerCase().includes(dailySearchQuery.toLowerCase()));
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setSelectedDetailDay(null)}></div>
+            <div className="relative z-50 w-full max-w-3xl bg-white neo-card neo-shadow-lg p-6 flex flex-col max-h-[90vh]">
+              
+              {/* Modal Header */}
+              <div className="flex justify-between items-start border-b-3 border-black pb-3 mb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 neo-badge bg-[#ffe600] text-black text-xs font-black">
+                      📅 {getDayName(selectedDetailDay)}, {formattedDateStr}
+                    </span>
+                    {breakdown.isHoliday && (
+                      <span className="px-2 py-0.5 neo-badge bg-[#ff1744] text-white text-xs font-black">
+                        🎉 {breakdown.holidayName}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-xl font-black text-black uppercase mt-1">Rincian Kehadiran Harian</h3>
+                </div>
+                <button onClick={() => setSelectedDetailDay(null)} className="p-1.5 neo-border bg-white text-black hover:bg-black hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Summary Badges Bar */}
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
+                <div 
+                  onClick={() => setDailyTabFilter('hadir')}
+                  className={`p-2 neo-border text-center cursor-pointer transition-all ${dailyTabFilter === 'hadir' ? 'bg-[#00e676] font-black' : 'bg-green-50'}`}
+                >
+                  <p className="text-[10px] font-black uppercase text-black">Hadir</p>
+                  <p className="text-base font-black text-black">{breakdown.hadirList.length}</p>
+                </div>
+                <div 
+                  onClick={() => setDailyTabFilter('telat')}
+                  className={`p-2 neo-border text-center cursor-pointer transition-all ${dailyTabFilter === 'telat' ? 'bg-[#ffe600] font-black' : 'bg-amber-50'}`}
+                >
+                  <p className="text-[10px] font-black uppercase text-black">Telat</p>
+                  <p className="text-base font-black text-black">{breakdown.telatList.length}</p>
+                </div>
+                <div 
+                  onClick={() => setDailyTabFilter('izin_sakit')}
+                  className={`p-2 neo-border text-center cursor-pointer transition-all ${dailyTabFilter === 'izin_sakit' ? 'bg-[#00f0ff] font-black' : 'bg-cyan-50'}`}
+                >
+                  <p className="text-[10px] font-black uppercase text-black">Izin & Sakit</p>
+                  <p className="text-base font-black text-black">{breakdown.izinList.length + breakdown.sakitList.length}</p>
+                </div>
+                <div 
+                  onClick={() => setDailyTabFilter('soft_skill')}
+                  className={`p-2 neo-border text-center cursor-pointer transition-all ${dailyTabFilter === 'soft_skill' ? 'bg-purple-600 text-white font-black' : 'bg-purple-50'}`}
+                >
+                  <p className="text-[10px] font-black uppercase">Soft Skill</p>
+                  <p className="text-base font-black">{breakdown.softSkillList.length}</p>
+                </div>
+                <div 
+                  onClick={() => setDailyTabFilter('alpha')}
+                  className={`p-2 neo-border text-center cursor-pointer transition-all ${dailyTabFilter === 'alpha' ? 'bg-[#ff1744] text-white font-black' : 'bg-red-50'}`}
+                >
+                  <p className="text-[10px] font-black uppercase">Alpha</p>
+                  <p className="text-base font-black">{breakdown.isWknd || breakdown.isHoliday ? 0 : breakdown.alphaList.length}</p>
+                </div>
+                <div 
+                  onClick={() => setDailyTabFilter('all')}
+                  className={`p-2 neo-border text-center cursor-pointer transition-all ${dailyTabFilter === 'all' ? 'bg-black text-white font-black' : 'bg-gray-100'}`}
+                >
+                  <p className="text-[10px] font-black uppercase">Total Aktif</p>
+                  <p className="text-base font-black">{breakdown.totalAktif}</p>
+                </div>
+              </div>
+
+              {/* Filter Tabs & Search */}
+              <div className="flex flex-col sm:flex-row justify-between gap-2 mb-3">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button onClick={() => setDailyTabFilter('all')} className={`px-2.5 py-1 text-xs neo-btn font-black ${dailyTabFilter === 'all' ? 'bg-black text-white' : 'bg-white text-black'}`}>Semua ({displayList.length})</button>
+                  <button onClick={() => setDailyTabFilter('hadir')} className={`px-2.5 py-1 text-xs neo-btn font-black ${dailyTabFilter === 'hadir' ? 'bg-[#00e676] text-black' : 'bg-white text-black'}`}>Hadir ({breakdown.hadirList.length})</button>
+                  <button onClick={() => setDailyTabFilter('telat')} className={`px-2.5 py-1 text-xs neo-btn font-black ${dailyTabFilter === 'telat' ? 'bg-[#ffe600] text-black' : 'bg-white text-black'}`}>Telat ({breakdown.telatList.length})</button>
+                  <button onClick={() => setDailyTabFilter('izin_sakit')} className={`px-2.5 py-1 text-xs neo-btn font-black ${dailyTabFilter === 'izin_sakit' ? 'bg-[#00f0ff] text-black' : 'bg-white text-black'}`}>Izin/Sakit ({breakdown.izinList.length + breakdown.sakitList.length})</button>
+                  <button onClick={() => setDailyTabFilter('soft_skill')} className={`px-2.5 py-1 text-xs neo-btn font-black ${dailyTabFilter === 'soft_skill' ? 'bg-purple-700 text-white' : 'bg-white text-black'}`}>Soft Skill ({breakdown.softSkillList.length})</button>
+                  {!breakdown.isWknd && !breakdown.isHoliday && (
+                    <button onClick={() => setDailyTabFilter('alpha')} className={`px-2.5 py-1 text-xs neo-btn font-black ${dailyTabFilter === 'alpha' ? 'bg-[#ff1744] text-white' : 'bg-white text-black'}`}>Alpha ({breakdown.alphaList.length})</button>
+                  )}
+                </div>
+
+                <div className="relative min-w-[180px]">
+                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-black" />
+                  <input 
+                    type="text" 
+                    placeholder="Cari siswa..."
+                    value={dailySearchQuery}
+                    onChange={(e) => setDailySearchQuery(e.target.value)}
+                    className="w-full pl-8 pr-2 py-1 neo-input text-xs font-black"
+                  />
+                </div>
+              </div>
+
+              {/* Student List Table */}
+              <div className="flex-1 overflow-y-auto neo-border bg-[#f4f4f0] p-2 space-y-1.5 min-h-[200px]">
+                {filteredDisplayList.length === 0 ? (
+                  <div className="text-center py-12 text-black font-black text-xs">
+                    Tidak ada data siswa untuk kategori ini.
+                  </div>
+                ) : (
+                  filteredDisplayList.map((s, idx) => (
+                    <div key={`${s.id}-${idx}`} className="bg-white p-3 neo-border neo-shadow-sm flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <button
+                          onClick={() => handleOpenStudentDetail(s.id)}
+                          className="font-black text-xs text-black hover:text-blue-700 underline text-left truncate flex items-center gap-1.5"
+                          title="Klik untuk lihat detail profil siswa"
+                        >
+                          <User className="w-4 h-4 text-black shrink-0" />
+                          <span className="truncate">{s.name}</span>
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {s.info && <span className="text-[11px] font-bold text-gray-700 italic max-w-[180px] truncate">&quot;{s.info}&quot;</span>}
+                        <span className={`px-2.5 py-1 neo-badge text-xs font-black ${s.badgeBg} ${s.textColor}`}>
+                          {s.label}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="pt-3 border-t-3 border-black flex justify-between items-center mt-3">
+                <span className="text-xs font-black text-black uppercase">
+                  Menampilkan {filteredDisplayList.length} dari {displayList.length} Siswa
+                </span>
+                <button 
+                  onClick={() => setSelectedDetailDay(null)}
+                  className="px-5 py-2 text-xs font-black text-black bg-white neo-btn font-black"
+                >
+                  Tutup
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
 
       </main>
     </div>
