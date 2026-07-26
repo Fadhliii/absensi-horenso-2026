@@ -3,6 +3,7 @@
 import { supabase } from '@/lib/supabase';
 import { cookies } from 'next/headers';
 import { verifySessionToken } from '@/lib/auth';
+import { closeExpiredSessions } from '@/app/actions/sesi';
 
 async function verifyAdminOrInstruktur() {
   const cookieStore = await cookies();
@@ -18,6 +19,7 @@ async function verifyAdminOrInstruktur() {
 // 1. Ambil daftar absensi yang pending untuk persetujuan masal
 export async function getPendingAbsensiListAction(tanggalStr?: string, kelasIdFilter?: string) {
   try {
+    await closeExpiredSessions();
     await verifyAdminOrInstruktur();
 
     const today = tanggalStr ? new Date(tanggalStr) : new Date();

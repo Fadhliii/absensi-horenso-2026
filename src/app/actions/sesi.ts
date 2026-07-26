@@ -7,23 +7,81 @@ import { verifySessionToken } from '@/lib/auth';
 const MAX_SESSION_DURATION_SECONDS = 30 * 60; // 30 Menit dalam detik
 let lastCleanupTime = 0;
 
-// Helper internal untuk otomatis menutup sesi yang sudah lebih dari 30 menit (dibatasi 1x per 60 detik)
+// Helper internal untuk otomatis menutup sesi yang kadaluarsa & auto-approve absensi pending > 3 jam
 export async function closeExpiredSessions() {
   const now = Date.now();
-  if (now - lastCleanupTime < 60000) return;
+  if (now - lastCleanupTime < 30000) return; // batasi max 1x per 30 detik
   lastCleanupTime = now;
 
   try {
     const limitTime = new Date(now - MAX_SESSION_DURATION_SECONDS * 1000).toISOString();
     
-    // Matikan sesi aktif yang dibuat lebih tua dari 30 menit yang lalu
+    // 1. Matikan sesi aktif yang dibuat lebih tua dari 30 menit yang lalu
     await supabase
       .from('sesi_absensi')
       .update({ status: 'selesai' })
       .eq('status', 'aktif')
       .lt('dibuat_pada', limitTime);
+
+    // 2. PERATURAN 3 JAM: Auto-approve semua absensi pending menjadi 'hadir' 
+    // jika sudah 3 jam sejak siswa PERTAMA menekan tombol Masuk Kelas
+    const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
+    const { data: pendingList } = await supabase
+      .from('absensi')
+      .select('id, sesi_id, waktu_scan')
+      .in('status', ['pending_hadir', 'pending_telat', 'pending_luar_radius']);
+
+    if (pendingList && pendingList.length > 0) {
+      const sesiPendingMap = new Map<string, { id: string; waktu_scan: string }[]>();
+      pendingList.forEach(item => {
+        const key = item.sesi_id || 'default_sesi';
+        if (!sesiPendingMap.has(key)) sesiPendingMap.set(key, []);
+        sesiPendingMap.get(key)!.push(item);
+      });
+
+      const idsToAutoApprove: string[] = [];
+
+      for (const [sesiId, items] of sesiPendingMap.entries()) {
+        let earliestTime = Math.min(...items.map(i => new Date(i.waktu_scan).getTime()));
+
+        if (sesiId !== 'default_sesi') {
+          const { data: firstScan } = await supabase
+            .from('absensi')
+            .select('waktu_scan')
+            .eq('sesi_id', sesiId)
+            .order('waktu_scan', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+
+          if (firstScan) {
+            const firstScanMs = new Date(firstScan.waktu_scan).getTime();
+            if (firstScanMs < earliestTime) earliestTime = firstScanMs;
+          }
+        }
+
+        // Jika sudah 3 jam dari scan PERTAMA siswa
+        if (now - earliestTime >= THREE_HOURS_MS) {
+          items.forEach(i => idsToAutoApprove.push(i.id));
+        }
+      }
+
+      // Auto-approve per-item jika waktu scan item itu sendiri > 3 jam
+      const threeHoursAgoIso = new Date(now - THREE_HOURS_MS).toISOString();
+      pendingList.forEach(item => {
+        if (item.waktu_scan <= threeHoursAgoIso && !idsToAutoApprove.includes(item.id)) {
+          idsToAutoApprove.push(item.id);
+        }
+      });
+
+      if (idsToAutoApprove.length > 0) {
+        await supabase
+          .from('absensi')
+          .update({ status: 'hadir' })
+          .in('id', idsToAutoApprove);
+      }
+    }
   } catch (err) {
-    console.error('Gagal menutup sesi kadaluarsa:', err);
+    console.error('Gagal menutup sesi / auto-approve absensi:', err);
   }
 }
 

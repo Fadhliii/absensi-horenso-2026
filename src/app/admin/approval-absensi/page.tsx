@@ -182,9 +182,12 @@ export default function AdminApprovalAbsensiPage() {
         <div className="bg-[#fffde7] neo-card p-4 border-3 border-black flex items-start gap-3">
           <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <h3 className="text-xs font-black text-black uppercase">Petunjuk Persetujuan Masuk Kelas</h3>
+            <h3 className="text-xs font-black text-black uppercase">Petunjuk & Peraturan Persetujuan Masuk Kelas</h3>
             <p className="text-xs font-bold text-gray-700 leading-relaxed">
-              Berikut adalah daftar siswa yang menekan tombol <b>"Masuk Kelas"</b> hari ini. Pilih status <b>🟢 HADIR</b> atau <b>🔴 TIDAK HADIR</b> pada setiap siswa, lalu klik tombol <b>"SIMPAN PERSETUJUAN"</b> di bawah untuk memproses sekaligus.
+              Berikut adalah daftar siswa yang menekan tombol <b>"Masuk Kelas"</b> hari ini. Pilih status <b>🟢 HADIR</b> atau <b>🔴 TIDAK HADIR</b> pada setiap siswa, lalu klik tombol <b>"SIMPAN PERSETUJUAN"</b> di bawah.
+            </p>
+            <p className="text-[11px] font-black text-purple-900 bg-purple-100 p-2 rounded border border-purple-300 mt-1">
+              ⏰ <b>Peraturan Otomatis (Auto-Approve 3 Jam)</b>: Jika antrian persetujuan belum di-ACC oleh Admin/Guru selama <b>3 jam</b> (dihitung sejak siswa pertama menekan Masuk Kelas), maka seluruh antrian siswa pada hari tersebut akan <b>otomatis disetujui sebagai HADIR</b> oleh sistem.
             </p>
           </div>
         </div>
