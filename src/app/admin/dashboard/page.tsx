@@ -123,7 +123,8 @@ export default function AdminDashboardPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
           <div className="flex items-center justify-between">
             <h1 className="text-lg sm:text-2xl font-black text-black tracking-tight uppercase flex items-center gap-2">
-              <ShieldCheck className="w-6 h-6 text-purple-700" /> Dashboard Admin
+              <ShieldCheck className="w-6 h-6 text-purple-700" />
+              {data?.role === 'instruktur' ? 'Portal Instruktur / Guru' : 'Dashboard Admin'}
             </h1>
             <form action={logoutAction} className="sm:hidden">
               <button className="flex items-center text-black bg-white hover:bg-black hover:text-white px-2 py-1 neo-btn text-xs font-black uppercase">
