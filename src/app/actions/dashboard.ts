@@ -12,10 +12,14 @@ export async function getDashboardStatsAction() {
     const cookieStore = await cookies();
     const token = cookieStore.get('session')?.value;
     let role = 'admin';
+    let userId: string | null = null;
     
     if (token) {
       const session = await verifySessionToken(token);
-      if (session) role = session.role;
+      if (session) {
+        role = session.role;
+        userId = session.userId;
+      }
     }
 
     const today = new Date();
@@ -123,6 +127,23 @@ export async function getDashboardStatsAction() {
 
     const isSesiAktif = sesiAktif && sesiAktif.length > 0;
 
+    let assignedKelas: { id: string; nama_kelas: string; total_siswa: number } | null = null;
+    if (role === 'instruktur' && userId) {
+      const { data: kData } = await supabase
+        .from('master_kelas')
+        .select('id, nama_kelas, siswa:siswa(count)')
+        .eq('instruktur_id', userId)
+        .maybeSingle();
+
+      if (kData) {
+        assignedKelas = {
+          id: kData.id,
+          nama_kelas: kData.nama_kelas,
+          total_siswa: (kData.siswa as any)?.[0]?.count || 0
+        };
+      }
+    }
+
     return {
       success: true,
       stats: {
@@ -131,6 +152,7 @@ export async function getDashboardStatsAction() {
         hadirHariIni: hadirHariIni || 0,
         pendingIzin: pendingIzin || 0,
       },
+      assignedKelas,
       logAbsensi: logAbsensi || [],
       chartData,
       isSesiAktif,

@@ -250,37 +250,37 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* RINGKASAN MENU TERBAGI KATEGORI */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {data.role === 'admin' ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-              {/* Kategori 1: Presensi & Kelas Hari Ini */}
-              <div className="bg-white neo-card p-5 space-y-3">
-                <div className="flex items-center gap-2 border-b-3 border-black pb-2 mb-3">
-                  <DoorOpen className="w-5 h-5 text-purple-700" />
-                  <h3 className="text-xs font-black text-black uppercase tracking-wider">1. Presensi & Sesi Kelas</h3>
+                {/* Kategori 1: Presensi & Sesi Kelas */}
+                <div className="bg-white neo-card p-5 space-y-3">
+                  <div className="flex items-center gap-2 border-b-3 border-black pb-2 mb-3">
+                    <DoorOpen className="w-5 h-5 text-purple-700" />
+                    <h3 className="text-xs font-black text-black uppercase tracking-wider">1. Presensi & Sesi Kelas</h3>
+                  </div>
+                  <div className="space-y-2">
+                    <Link href="/admin/approval-absensi" className="bg-[#00f0ff] hover:bg-[#00d8e6] text-black p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
+                      <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Approval Masuk Kelas</span>
+                      {pendingMasukCount > 0 && <span className="bg-[#ff003c] text-white px-2 py-0.5 text-[10px] font-black rounded-full">{pendingMasukCount}</span>}
+                    </Link>
+
+                    <Link href="/admin/sesi" className="bg-[#ffe600] hover:bg-[#e6cf00] text-black p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
+                      <span className="flex items-center gap-2"><DoorOpen className="w-4 h-4" /> Pengaturan Sesi & Lokasi</span>
+                    </Link>
+
+                    <Link href="/admin/rekap" className="bg-[#74ee15] hover:bg-[#62cb12] text-black p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
+                      <span className="flex items-center gap-2"><ClipboardList className="w-4 h-4" /> Rekap Grid Presensi</span>
+                    </Link>
+
+                    <Link href="/admin/izin" className="bg-[#ff00c8] hover:bg-[#d600a8] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
+                      <span className="flex items-center gap-2"><Calendar className="w-4 h-4" /> Permohonan Izin / Sakit</span>
+                      {data.stats.pendingIzin > 0 && <span className="bg-[#ff003c] text-white px-2 py-0.5 text-[10px] font-black rounded-full">{data.stats.pendingIzin}</span>}
+                    </Link>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Link href="/admin/approval-absensi" className="bg-[#00f0ff] hover:bg-[#00d8e6] text-black p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
-                    <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Approval Masuk Kelas</span>
-                    {pendingMasukCount > 0 && <span className="bg-[#ff003c] text-white px-2 py-0.5 text-[10px] font-black rounded-full">{pendingMasukCount}</span>}
-                  </Link>
 
-                  <Link href="/admin/sesi" className="bg-[#ffe600] hover:bg-[#e6cf00] text-black p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
-                    <span className="flex items-center gap-2"><DoorOpen className="w-4 h-4" /> Pengaturan Sesi & Lokasi</span>
-                  </Link>
-
-                  <Link href="/admin/rekap" className="bg-[#74ee15] hover:bg-[#62cb12] text-black p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
-                    <span className="flex items-center gap-2"><ClipboardList className="w-4 h-4" /> Rekap Grid Presensi</span>
-                  </Link>
-
-                  <Link href="/admin/izin" className="bg-[#ff00c8] hover:bg-[#d600a8] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
-                    <span className="flex items-center gap-2"><Calendar className="w-4 h-4" /> Permohonan Izin / Sakit</span>
-                    {data.stats.pendingIzin > 0 && <span className="bg-[#ff003c] text-white px-2 py-0.5 text-[10px] font-black rounded-full">{data.stats.pendingIzin}</span>}
-                  </Link>
-                </div>
-              </div>
-
-              {/* Kategori 2: Data Master & Akun Siswa */}
-              {data.role === 'admin' ? (
+                {/* Kategori 2: Data Master & Akun Siswa */}
                 <div className="bg-white neo-card p-5 space-y-3">
                   <div className="flex items-center gap-2 border-b-3 border-black pb-2 mb-3">
                     <Users className="w-5 h-5 text-amber-600" />
@@ -305,102 +305,144 @@ export default function AdminDashboardPage() {
                     </Link>
                   </div>
                 </div>
-              ) : (
+
+                {/* Kategori 3: Pengaturan & Program Tambahan */}
                 <div className="bg-white neo-card p-5 space-y-3">
                   <div className="flex items-center gap-2 border-b-3 border-black pb-2 mb-3">
-                    <BookOpen className="w-5 h-5 text-green-600" />
-                    <h3 className="text-xs font-black text-black uppercase tracking-wider">2. Kegiatan Pelatihan</h3>
+                    <BookOpen className="w-5 h-5 text-blue-600" />
+                    <h3 className="text-xs font-black text-black uppercase tracking-wider">3. Program & Akun</h3>
                   </div>
                   <div className="space-y-2">
                     <Link href="/admin/soft-skill" className="bg-[#74ee15] hover:bg-[#62cb12] text-black p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
                       <span className="flex items-center gap-2"><BookOpen className="w-4 h-4" /> Kelas Soft Skill</span>
                     </Link>
+
+                    <Link href="/admin/users" className="bg-black text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between hover:bg-gray-800">
+                      <span className="flex items-center gap-2"><UserCog className="w-4 h-4" /> Manajemen User / Instruktur</span>
+                    </Link>
+
+                    {data.isSesiAktif && (
+                      <Link href="/admin/sesi/aktif" target="_blank" className="bg-[#ff003c] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
+                        <span className="flex items-center gap-2"><ExternalLink className="w-4 h-4" /> Tampilan Sesi Aktif</span>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            ) : (
+              /* MENU RAPI KHUSUS INSTRUKTUR (TANPA DUPLIKASI KOTAK) */
+              <div className="bg-white neo-card p-5 space-y-4">
+                <div className="flex items-center gap-2 border-b-3 border-black pb-2">
+                  <BookOpen className="w-5 h-5 text-purple-700" />
+                  <h3 className="text-sm font-black text-black uppercase tracking-wider">Menu Operasional Instruktur / Guru</h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                  <Link href="/admin/approval-absensi" className="bg-[#00f0ff] hover:bg-[#00d8e6] text-black p-3 neo-btn text-xs font-black uppercase flex items-center justify-between shadow-sm">
+                    <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Approval Masuk Kelas</span>
+                    {pendingMasukCount > 0 && <span className="bg-[#ff003c] text-white px-2 py-0.5 text-[10px] font-black rounded-full">{pendingMasukCount}</span>}
+                  </Link>
+
+                  <Link href={data.assignedKelas ? `/admin/rekap?kelasId=${data.assignedKelas.id}` : '/admin/rekap'} className="bg-[#74ee15] hover:bg-[#62cb12] text-black p-3 neo-btn text-xs font-black uppercase flex items-center justify-between shadow-sm">
+                    <span className="flex items-center gap-2"><ClipboardList className="w-4 h-4" /> Rekap Grid Presensi</span>
+                  </Link>
+
+                  <Link href="/admin/izin" className="bg-[#ff00c8] hover:bg-[#d600a8] text-white p-3 neo-btn text-xs font-black uppercase flex items-center justify-between shadow-sm">
+                    <span className="flex items-center gap-2"><Calendar className="w-4 h-4" /> Permohonan Izin / Sakit</span>
+                    {data.stats.pendingIzin > 0 && <span className="bg-[#ff003c] text-white px-2 py-0.5 text-[10px] font-black rounded-full">{data.stats.pendingIzin}</span>}
+                  </Link>
+
+                  <Link href="/admin/soft-skill" className="bg-[#ffe600] hover:bg-[#e6cf00] text-black p-3 neo-btn text-xs font-black uppercase flex items-center justify-between shadow-sm">
+                    <span className="flex items-center gap-2"><BookOpen className="w-4 h-4" /> Kelas Soft Skill</span>
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* STATISTIK CARDS */}
+            {data.role === 'admin' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="bg-[#4deeea] neo-card p-6 flex items-center">
+                  <div className="w-14 h-14 bg-white neo-border flex items-center justify-center mr-4 shrink-0">
+                    <Users className="w-7 h-7 text-black" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-black uppercase mb-1">Total Siswa Aktif</p>
+                    <p className="text-3xl font-black text-black">{data.stats.totalSiswa}</p>
+                  </div>
+                </div>
+                
+                <div className="bg-[#74ee15] neo-card p-6 flex items-center">
+                  <div className="w-14 h-14 bg-white neo-border flex items-center justify-center mr-4 shrink-0">
+                    <UserCheck className="w-7 h-7 text-black" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-black uppercase mb-1">Hadir Hari Ini</p>
+                    <p className="text-3xl font-black text-black">{data.stats.hadirHariIni}</p>
+                  </div>
+                </div>
+
+                <div className="bg-[#ffe700] neo-card p-6 flex items-center">
+                  <div className="w-14 h-14 bg-white neo-border flex items-center justify-center mr-4 shrink-0">
+                    <CheckCircle2 className="w-7 h-7 text-black" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-black uppercase mb-1">Pending Masuk Kelas</p>
+                    <p className="text-3xl font-black text-black">{pendingMasukCount}</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* CARDS KHUSUS INSTRUKTUR: ONLY 2 CARDS (TOTAL MURID KELAS X & PENDING MASUK KELAS) */
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="bg-[#00f0ff] neo-card p-6 flex items-center">
+                  <div className="w-14 h-14 bg-white neo-border flex items-center justify-center mr-4 shrink-0">
+                    <Users className="w-7 h-7 text-black" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-black uppercase mb-1">
+                      Total Murid {data.assignedKelas ? `(${data.assignedKelas.nama_kelas})` : '(Belum Ditugaskan)'}
+                    </p>
+                    <p className="text-3xl font-black text-black">{data.assignedKelas?.total_siswa || 0} Siswa</p>
+                  </div>
+                </div>
+
+                <div className="bg-[#ffe600] neo-card p-6 flex items-center">
+                  <div className="w-14 h-14 bg-white neo-border flex items-center justify-center mr-4 shrink-0">
+                    <CheckCircle2 className="w-7 h-7 text-black" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-black uppercase mb-1">Pending Masuk Kelas</p>
+                    <p className="text-3xl font-black text-black">{pendingMasukCount} Siswa</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Layout Bawah: Grafik (Admin Only) & Log Pemindaian */}
+            <div className={`grid grid-cols-1 ${data.role === 'admin' ? 'lg:grid-cols-3' : 'grid-cols-1'} gap-8`}>
+              
+              {/* Grafik Mingguan - HANYA UNTUK ADMIN */}
+              {data.role === 'admin' && (
+                <div className="lg:col-span-2 bg-[#ffffff] neo-card p-6">
+                  <h3 className="text-lg font-black text-black uppercase mb-6 border-b-4 border-black pb-2 inline-block">
+                    Grafik Kehadiran (7 Hari)
+                  </h3>
+                  <div className="mt-4">
+                    <DashboardChart data={data.chartData} />
                   </div>
                 </div>
               )}
 
-              {/* Kategori 3: Pengaturan & Program Tambahan */}
-              <div className="bg-white neo-card p-5 space-y-3">
-                <div className="flex items-center gap-2 border-b-3 border-black pb-2 mb-3">
-                  <BookOpen className="w-5 h-5 text-blue-600" />
-                  <h3 className="text-xs font-black text-black uppercase tracking-wider">3. Program & Akun</h3>
-                </div>
-                <div className="space-y-2">
-                  <Link href="/admin/soft-skill" className="bg-[#74ee15] hover:bg-[#62cb12] text-black p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
-                    <span className="flex items-center gap-2"><BookOpen className="w-4 h-4" /> Kelas Soft Skill</span>
-                  </Link>
-
-                  {data.role === 'admin' && (
-                    <Link href="/admin/users" className="bg-black text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between hover:bg-gray-800">
-                      <span className="flex items-center gap-2"><UserCog className="w-4 h-4" /> Manajemen User / Instruktur</span>
-                    </Link>
-                  )}
-
-                  {data.isSesiAktif && (
-                    <Link href="/admin/sesi/aktif" target="_blank" className="bg-[#ff003c] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
-                      <span className="flex items-center gap-2"><ExternalLink className="w-4 h-4" /> Tampilan Sesi Aktif</span>
-                    </Link>
-                  )}
-                </div>
-              </div>
-
-            </div>
-
-            {/* STATISTIK CARDS */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              
-              <div className="bg-[#4deeea] neo-card p-6 flex items-center">
-                <div className="w-14 h-14 bg-white neo-border flex items-center justify-center mr-4 shrink-0">
-                  <Users className="w-7 h-7 text-black" />
-                </div>
-                <div>
-                  <p className="text-xs font-black text-black uppercase mb-1">Total Siswa Aktif</p>
-                  <p className="text-3xl font-black text-black">{data.stats.totalSiswa}</p>
-                </div>
-              </div>
-              
-              <div className="bg-[#74ee15] neo-card p-6 flex items-center">
-                <div className="w-14 h-14 bg-white neo-border flex items-center justify-center mr-4 shrink-0">
-                  <UserCheck className="w-7 h-7 text-black" />
-                </div>
-                <div>
-                  <p className="text-xs font-black text-black uppercase mb-1">Hadir Hari Ini</p>
-                  <p className="text-3xl font-black text-black">{data.stats.hadirHariIni}</p>
-                </div>
-              </div>
-
-              <div className="bg-[#ffe700] neo-card p-6 flex items-center">
-                <div className="w-14 h-14 bg-white neo-border flex items-center justify-center mr-4 shrink-0">
-                  <CheckCircle2 className="w-7 h-7 text-black" />
-                </div>
-                <div>
-                  <p className="text-xs font-black text-black uppercase mb-1">Pending Masuk Kelas</p>
-                  <p className="text-3xl font-black text-black">{pendingMasukCount}</p>
-                </div>
-              </div>
-              
-            </div>
-
-            {/* Layout Bawah: Grafik & Log Pemindaian */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              
-              {/* Grafik Mingguan */}
-              <div className="lg:col-span-2 bg-[#ffffff] neo-card p-6">
-                <h3 className="text-lg font-black text-black uppercase mb-6 border-b-4 border-black pb-2 inline-block">
-                  Grafik Kehadiran (7 Hari)
-                </h3>
-                <div className="mt-4">
-                  <DashboardChart data={data.chartData} />
-                </div>
-              </div>
-
               {/* Log Pemindaian Terakhir */}
-              <div className="bg-[#f000ff] neo-card p-6 flex flex-col h-full">
+              <div className={`${data.role === 'admin' ? '' : 'w-full'} bg-[#f000ff] neo-card p-6 flex flex-col h-full`}>
                 <div className="flex justify-between items-center mb-6 bg-white p-3 neo-border">
-                  <h3 className="text-sm font-black text-black uppercase">Aktivitas Terakhir</h3>
-                  <Link href="/admin/laporan" className="text-[11px] font-black text-black hover:bg-black hover:text-white px-2 py-1 neo-border flex items-center uppercase">
-                    Eksport <ExternalLink className="w-3 h-3 ml-1" />
-                  </Link>
+                  <h3 className="text-sm font-black text-black uppercase">Aktivitas Presensi Terakhir</h3>
+                  {data.role === 'admin' && (
+                    <Link href="/admin/laporan" className="text-[11px] font-black text-black hover:bg-black hover:text-white px-2 py-1 neo-border flex items-center uppercase">
+                      Eksport <ExternalLink className="w-3 h-3 ml-1" />
+                    </Link>
+                  )}
                 </div>
 
                 <div className="flex-1 overflow-y-auto pr-2 bg-white neo-border p-4 max-h-[350px]">

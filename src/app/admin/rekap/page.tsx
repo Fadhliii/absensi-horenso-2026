@@ -1,14 +1,18 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { getRekapAbsensiAction, getRekapSoftSkillAction, getStudentDetailSummaryAction, updateCellAttendanceAction } from '@/app/actions/rekap';
 import { inputIzinManualAction } from '@/app/actions/izin';
 import { getAllPerusahaanAction } from '@/app/actions/master';
 import { logoutAction } from '@/app/actions/auth';
+import { useSearchParams } from 'next/navigation';
 import { LogOut, ArrowLeft, Loader2, CalendarDays, PlusCircle, Download, BookOpen, User, CheckCircle2, AlertCircle, Clock, XCircle, Building2, Calendar, Search, X, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
-export default function RekapGridPage() {
+function RekapGridContent() {
+  const searchParams = useSearchParams();
+  const urlKelasId = searchParams.get('kelasId');
+
   const [activeTab, setActiveTab] = useState<'harian' | 'soft_skill'>('harian');
   const [loading, setLoading] = useState(true);
 
@@ -35,7 +39,13 @@ export default function RekapGridPage() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedPerusahaan, setSelectedPerusahaan] = useState('');
-  const [selectedKelas, setSelectedKelas] = useState('');
+  const [selectedKelas, setSelectedKelas] = useState(urlKelasId || '');
+
+  useEffect(() => {
+    if (urlKelasId) {
+      setSelectedKelas(urlKelasId);
+    }
+  }, [urlKelasId]);
   const [selectedStatusPendidikan, setSelectedStatusPendidikan] = useState('aktif');
   const [showDeparted, setShowDeparted] = useState(false);
 
@@ -1409,5 +1419,20 @@ export default function RekapGridPage() {
 
       </main>
     </div>
+  );
+}
+
+export default function RekapGridPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#f4f4f0] flex items-center justify-center p-12">
+        <div className="text-center space-y-3">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto text-black" />
+          <p className="font-black text-sm text-black uppercase">Memuat Rekap Grid...</p>
+        </div>
+      </div>
+    }>
+      <RekapGridContent />
+    </Suspense>
   );
 }
