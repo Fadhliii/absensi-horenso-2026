@@ -3,9 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getDashboardStatsAction } from '@/app/actions/dashboard';
 import { getPendingCountAction } from '@/app/actions/approval';
+import { mulaiSesiAction, selesaiSesiAction, getActiveSesiInfoAction } from '@/app/actions/sesi';
 import { logoutAction } from '@/app/actions/auth';
 import IndonesianClock from '@/components/IndonesianClock';
-import { Users, UserCheck, UserPlus, LogOut, ExternalLink, MapPin, CheckCircle2, ShieldCheck, DoorOpen, Calendar, Building2, BookOpen, UserCog, ClipboardList, Layers } from 'lucide-react';
+import { Users, UserCheck, UserPlus, LogOut, ExternalLink, MapPin, CheckCircle2, ShieldCheck, DoorOpen, Calendar, Building2, BookOpen, UserCog, ClipboardList, Layers, Loader2, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 
@@ -25,6 +26,10 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // 1-Click Buka Kelas State
+  const [sesiInfo, setSesiInfo] = useState<{ active: boolean; sessionId?: string }>({ active: false });
+  const [bukaSesiLoading, setBukaSesiLoading] = useState(false);
+
   const fetchData = useCallback(async () => {
     try {
       const result = await getDashboardStatsAction();
@@ -36,6 +41,9 @@ export default function AdminDashboardPage() {
 
       const countRes = await getPendingCountAction();
       setPendingMasukCount(countRes.count);
+
+      const sesiRes = await getActiveSesiInfoAction();
+      setSesiInfo({ active: sesiRes.active, sessionId: sesiRes.sessionId });
     } catch (err: any) {
       setError(err.message || 'Error jaringan');
     }
@@ -45,6 +53,57 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // 1-Click Buka Kelas Handler
+  const handle1ClickBukaKelas = async () => {
+    if (!navigator.geolocation) {
+      alert('Browser Anda tidak mendukung GPS!');
+      return;
+    }
+
+    setBukaSesiLoading(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const formData = new FormData();
+        formData.append('latitude', pos.coords.latitude.toString());
+        formData.append('longitude', pos.coords.longitude.toString());
+        formData.append('radius', '50');
+        formData.append('interval', '10');
+
+        const res = await mulaiSesiAction(formData);
+        if (res.error) {
+          alert('Gagal Buka Kelas: ' + res.error);
+        } else {
+          setSesiInfo({ active: true, sessionId: res.sessionId });
+          alert('BERHASIL! Kelas hari ini telah DIBUKA. Siswa sudah bisa menekan tombol Masuk Kelas.');
+        }
+        setBukaSesiLoading(false);
+      },
+      (err) => {
+        console.error('Geolocation error:', err);
+        alert('Gagal mendeteksi lokasi GPS. Harap izinkan akses lokasi (Location Permission) browser!');
+        setBukaSesiLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  };
+
+  // 1-Click Tutup Kelas Handler
+  const handle1ClickTutupKelas = async () => {
+    if (!sesiInfo.sessionId) return;
+    if (!confirm('Apakah Anda yakin ingin menutup sesi kelas hari ini?')) return;
+
+    setBukaSesiLoading(true);
+    const res = await selesaiSesiAction(sesiInfo.sessionId);
+    if (res.error) {
+      alert('Gagal Tutup Kelas: ' + res.error);
+    } else {
+      setSesiInfo({ active: false });
+      alert('Kelas telah DITUTUP.');
+    }
+    setBukaSesiLoading(false);
+  };
 
   const formatTime = (isoString: string) => {
     const d = new Date(isoString);
@@ -98,33 +157,95 @@ export default function AdminDashboardPage() {
         ) : data && (
           <div className="space-y-6">
             
-            {/* HERO BANNER: APPROVAL ABSENSI MASUK KELAS */}
-            <div className="bg-[#00f0ff] neo-card p-5 border-4 border-black flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-[#ffe600] neo-border flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="w-7 h-7 text-black" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-black text-black uppercase tracking-tight">Persetujuan Masuk Kelas (Setujui Berjamaah)</h2>
-                    {pendingMasukCount > 0 && (
-                      <span className="bg-[#ff003c] text-white text-xs font-black px-2 py-0.5 rounded-full neo-border animate-pulse">
-                        {pendingMasukCount} PENDING
-                      </span>
-                    )}
+            {/* 2 MAIN HERO BANNERS: 1-CLICK BUKA KELAS & APPROVAL BERJAMAAH */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              {/* BANNER 1: BUKA / TUTUP KELAS SEKARANG (1-KLIK) */}
+              <div className={`neo-card p-5 border-4 border-black flex flex-col justify-between space-y-4 ${
+                sesiInfo.active ? 'bg-[#74ee15]' : 'bg-[#ffe600]'
+              }`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-white neo-border flex items-center justify-center shrink-0">
+                      <DoorOpen className="w-7 h-7 text-black" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-base font-black text-black uppercase tracking-tight">Buka Sesi Kelas (1-Klik)</h2>
+                        {sesiInfo.active ? (
+                          <span className="bg-green-800 text-white text-[10px] font-black px-2 py-0.5 rounded border border-black animate-pulse">
+                            🟢 KELAS DIBUKA
+                          </span>
+                        ) : (
+                          <span className="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded border border-black">
+                            🔴 KELAS TUTUP
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs font-bold text-black mt-0.5">
+                        {sesiInfo.active 
+                          ? 'Siswa sudah dapat menekan tombol Masuk Kelas di HP mereka.' 
+                          : 'Tekan 1-Klik Buka Kelas di bawah untuk mendeteksi GPS lokasi mengajar Anda.'}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs font-bold text-gray-800">
-                    Siswa menekan &quot;Masuk Kelas&quot; di HP mereka. Instruktur/Admin menyetujui kehadiran siswa secara langsung di sini.
-                  </p>
+                </div>
+
+                <div>
+                  {sesiInfo.active ? (
+                    <button
+                      onClick={handle1ClickTutupKelas}
+                      disabled={bukaSesiLoading}
+                      className="w-full bg-[#ff003c] hover:bg-red-700 text-white font-black py-3 px-4 neo-btn text-xs uppercase flex items-center justify-center gap-2 shadow-md active:scale-95"
+                    >
+                      {bukaSesiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <XCircle className="w-5 h-5" />}
+                      <span>TUTUP KELAS HARI INI</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handle1ClickBukaKelas}
+                      disabled={bukaSesiLoading}
+                      className="w-full bg-[#00e676] hover:bg-green-500 text-black font-black py-3.5 px-4 neo-btn text-xs uppercase flex items-center justify-center gap-2 shadow-lg active:scale-95 scale-[1.01]"
+                    >
+                      {bukaSesiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <DoorOpen className="w-5 h-5" />}
+                      <span className="text-sm font-black tracking-wide">BUKA KELAS SEKARANG (1-KLIK)</span>
+                    </button>
+                  )}
                 </div>
               </div>
-              <Link 
-                href="/admin/approval-absensi"
-                className="w-full md:w-auto bg-[#ffe600] hover:bg-[#ebd300] text-black font-black px-6 py-3 neo-btn text-xs uppercase flex items-center justify-center gap-2 shadow-lg shrink-0"
-              >
-                <span>Buka Persetujuan Masal ({pendingMasukCount})</span>
-                <CheckCircle2 className="w-4 h-4" />
-              </Link>
+
+              {/* BANNER 2: PERSETUJUAN MASUK KELAS (SETUJUI BERJAMAAH) */}
+              <div className="bg-[#00f0ff] neo-card p-5 border-4 border-black flex flex-col justify-between space-y-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-[#ffe600] neo-border flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-7 h-7 text-black" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-base font-black text-black uppercase tracking-tight">Persetujuan Masal</h2>
+                        {pendingMasukCount > 0 && (
+                          <span className="bg-[#ff003c] text-white text-[10px] font-black px-2 py-0.5 rounded-full neo-border animate-pulse">
+                            {pendingMasukCount} PENDING
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs font-bold text-gray-800 mt-0.5">
+                        Setujui presensi banyak siswa sekaligus setelah mereka menekan tombol Masuk Kelas.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <Link 
+                  href="/admin/approval-absensi"
+                  className="w-full bg-[#ffe600] hover:bg-[#ebd300] text-black font-black py-3.5 px-4 neo-btn text-xs uppercase flex items-center justify-center gap-2 shadow-md active:scale-95"
+                >
+                  <ShieldCheck className="w-5 h-5" />
+                  <span className="text-sm font-black tracking-wide">PERSETUJUAN BERJAMAAH ({pendingMasukCount})</span>
+                </Link>
+              </div>
+
             </div>
 
             {/* RINGKASAN MENU TERBAGI KATEGORI */}
@@ -143,7 +264,7 @@ export default function AdminDashboardPage() {
                   </Link>
 
                   <Link href="/admin/sesi" className="bg-[#ffe600] hover:bg-[#e6cf00] text-black p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
-                    <span className="flex items-center gap-2"><DoorOpen className="w-4 h-4" /> Buka Sesi Kelas & GPS</span>
+                    <span className="flex items-center gap-2"><DoorOpen className="w-4 h-4" /> Pengaturan Sesi & Lokasi</span>
                   </Link>
 
                   <Link href="/admin/rekap" className="bg-[#74ee15] hover:bg-[#62cb12] text-black p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
