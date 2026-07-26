@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getAllUsersAction, updateUserRoleAction, updateUserStatusAction, createUserByAdminAction } from '@/app/actions/users';
+import { getAllUsersAction, updateUserRoleAction, updateUserStatusAction, createUserByAdminAction, updateUserNameAction } from '@/app/actions/users';
 import { getAllKelasAction } from '@/app/actions/kelas';
 import { getAllPerusahaanAction } from '@/app/actions/master';
 import Link from 'next/link';
-import { ArrowLeft, Search, CheckCircle, XCircle, Clock, UserPlus, X } from 'lucide-react';
+import { ArrowLeft, Search, CheckCircle, XCircle, Clock, UserPlus, X, Edit2 } from 'lucide-react';
 
 export default function UsersManagementPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -16,6 +16,11 @@ export default function UsersManagementPage() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all'); // all, siswa, instruktur, admin
   const [statusFilter, setStatusFilter] = useState('all'); // all, approved, pending, rejected
+
+  // Modal State Edit Nama
+  const [editingUser, setEditingUser] = useState<{ id: string; name: string } | null>(null);
+  const [editNameInput, setEditNameInput] = useState('');
+  const [editNameLoading, setEditNameLoading] = useState(false);
 
   // Modal State Tambah Akun Baru
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -38,6 +43,24 @@ export default function UsersManagementPage() {
       setUsers(result.data || []);
     }
     setLoading(false);
+  };
+
+  const handleOpenEditName = (u: any) => {
+    setEditingUser({ id: u.id, name: u.name });
+    setEditNameInput(u.name);
+  };
+
+  const handleSaveEditName = async () => {
+    if (!editingUser || !editNameInput.trim()) return;
+    setEditNameLoading(true);
+    const res = await updateUserNameAction(editingUser.id, editNameInput.trim());
+    if (res.error) {
+      alert('Gagal mengedit nama: ' + res.error);
+    } else {
+      setEditingUser(null);
+      await fetchUsers();
+    }
+    setEditNameLoading(false);
   };
 
   const fetchDropdowns = async () => {
@@ -155,7 +178,7 @@ export default function UsersManagementPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-black text-white text-xs uppercase tracking-wider">
-                  <th className="p-4 border-r-2 border-gray-700">Nama</th>
+                  <th className="p-4 border-r-2 border-gray-700">Nama Pengguna</th>
                   <th className="p-4 border-r-2 border-gray-700">Email / Telp</th>
                   <th className="p-4 border-r-2 border-gray-700 text-center">Role</th>
                   <th className="p-4 border-r-2 border-gray-700 text-center">Status</th>
@@ -171,12 +194,23 @@ export default function UsersManagementPage() {
                   filteredUsers.map((u) => (
                     <tr key={u.id} className="border-b-2 border-black hover:bg-[#ffe600] hover:text-black font-black transition-colors">
                       <td className="p-4 border-r-2 border-black">
-                        <div className="font-black text-base">{u.name}</div>
-                        {u.siswa?.[0]?.batch && (
-                          <div className="text-xs bg-gray-200 inline-block px-1 mt-1 neo-border">
-                            {u.siswa[0].batch}
+                        <div className="flex items-center justify-between gap-2">
+                          <div>
+                            <div className="font-black text-base">{u.name}</div>
+                            {u.siswa?.[0]?.batch && (
+                              <div className="text-xs bg-gray-200 inline-block px-1 mt-1 neo-border">
+                                {u.siswa[0].batch}
+                              </div>
+                            )}
                           </div>
-                        )}
+                          <button
+                            onClick={() => handleOpenEditName(u)}
+                            className="p-1.5 bg-[#ffe600] hover:bg-black hover:text-white neo-border text-[10px] font-black uppercase flex items-center gap-1 shrink-0"
+                            title="Edit Nama"
+                          >
+                            <Edit2 className="w-3 h-3" /> Edit Nama
+                          </button>
+                        </div>
                       </td>
                       <td className="p-4 border-r-2 border-black">
                         <div className="text-sm font-bold">{u.email}</div>
@@ -374,6 +408,43 @@ export default function UsersManagementPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Edit Nama Pengguna */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={() => setEditingUser(null)}></div>
+          <div className="relative z-50 w-full max-w-md bg-white neo-card p-6 border-4 border-black space-y-4 shadow-2xl">
+            <h3 className="text-lg font-black uppercase text-black border-b-3 border-black pb-2 flex items-center gap-2">
+              <Edit2 className="w-5 h-5 text-purple-700" /> Edit Nama Pengguna
+            </h3>
+            <div>
+              <label className="block text-xs font-black uppercase text-black mb-1">Nama Lengkap Baru *</label>
+              <input
+                type="text"
+                value={editNameInput}
+                onChange={(e) => setEditNameInput(e.target.value)}
+                className="w-full neo-input p-2 font-bold text-sm bg-white"
+                placeholder="Masukkan nama lengkap baru..."
+              />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={handleSaveEditName}
+                disabled={editNameLoading}
+                className="flex-1 bg-[#00e676] hover:bg-green-600 text-black font-black py-2.5 neo-btn text-xs uppercase"
+              >
+                {editNameLoading ? 'Memproses...' : 'Simpan Perubahan Nama'}
+              </button>
+              <button
+                onClick={() => setEditingUser(null)}
+                className="flex-1 bg-[#f4f4f0] text-black font-black py-2.5 neo-btn text-xs uppercase"
+              >
+                Batal
+              </button>
+            </div>
           </div>
         </div>
       )}

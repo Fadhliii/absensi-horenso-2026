@@ -45,6 +45,25 @@ export async function updateUserRoleAction(userId: string, newRole: string) {
   return { success: true };
 }
 
+export async function updateUserNameAction(userId: string, newName: string) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('session')?.value;
+  if (!token) return { error: 'Sesi tidak valid.' };
+  const session = await verifySessionToken(token);
+  if (!session || session.role !== 'admin') return { error: 'Akses ditolak.' };
+
+  const trimmedName = newName.trim();
+  if (!trimmedName) return { error: 'Nama tidak boleh kosong.' };
+
+  const { error } = await supabase
+    .from('users')
+    .update({ name: trimmedName })
+    .eq('id', userId);
+
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
 export async function updateUserStatusAction(userId: string, newStatus: string) {
   const cookieStore = await cookies();
   const token = cookieStore.get('session')?.value;
