@@ -225,16 +225,22 @@ export async function masukKelasDirectAction(studentLat: number, studentLng: num
     const allowedRadius = Math.max((sesiData.radius_meter || 50) + 30, 80);
     const isTooFar = distance > allowedRadius;
 
-    // Tentukan status awal pending
-    let initialStatus = isTooFar ? 'pending_luar_radius' : 'pending_hadir';
+    if (isTooFar) {
+      return { 
+        error: `Posisi Anda di luar radius kelas! Jarak Anda: ${Math.round(distance)}m (Batas Radius: ${allowedRadius}m). Silakan mendekat ke area kelas.` 
+      };
+    }
+
+    // Tentukan status awal pending (Hadir / Telat)
+    let initialStatus = 'pending_hadir';
     
-    // Cek jam (WIB UTC+7) - Jika lewat dari jam 07:15 WIB, set ke pending_telat jika dalam radius
+    // Cek jam (WIB UTC+7) - Jika lewat dari jam 07:15 WIB, set ke pending_telat
     const nowWibHour = new Date(new Date().getTime() + (7 * 60 * 60 * 1000)).getUTCHours();
     const nowWibMin = new Date(new Date().getTime() + (7 * 60 * 60 * 1000)).getUTCMinutes();
     const totalWibMinutes = nowWibHour * 60 + nowWibMin;
     const cutoffMinutes = 7 * 60 + 15; // 07:15 WIB
 
-    if (!isTooFar && totalWibMinutes > cutoffMinutes) {
+    if (totalWibMinutes > cutoffMinutes) {
       initialStatus = 'pending_telat';
     }
 
