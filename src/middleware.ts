@@ -52,7 +52,7 @@ export async function middleware(request: NextRequest) {
     // 3b. Restriksi Instruktur ke halaman admin tertentu
     if (session.role === 'instruktur') {
       const forbiddenForInstruktur = ['/admin/siswa', '/admin/perusahaan', '/admin/approval'];
-      if (forbiddenForInstruktur.some(route => pathname.startsWith(route))) {
+      if (forbiddenForInstruktur.some(route => pathname === route || pathname.startsWith(`${route}/`))) {
         return NextResponse.redirect(new URL('/admin/dashboard', request.url));
       }
     }
