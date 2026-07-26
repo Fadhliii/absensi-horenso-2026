@@ -9,16 +9,19 @@ import {
   getSiswaInKelasAction,
   getAllApprovedSiswaForKelasAction,
   addSiswaToKelasAction,
-  removeSiswaFromKelasAction
+  removeSiswaFromKelasAction,
+  getInstrukturListForAssignmentAction
 } from '@/app/actions/kelas';
 import IndonesianClock from '@/components/IndonesianClock';
-import { ArrowLeft, Plus, Edit2, Trash2, Users, UserPlus, UserMinus, X } from 'lucide-react';
+import { ArrowLeft, Plus, Edit2, Trash2, Users, UserPlus, UserMinus, X, UserCheck } from 'lucide-react';
 import Link from 'next/link';
 
 type KelasItem = {
   id: string;
   nama_kelas: string;
   deskripsi: string | null;
+  instruktur_id?: string | null;
+  nama_instruktur?: string | null;
   jumlah_siswa: number;
   created_at?: string;
   updated_at?: string;
@@ -50,8 +53,15 @@ type AllSiswaOption = {
   } | null;
 };
 
+type InstrukturOption = {
+  id: string;
+  name: string;
+  email: string;
+};
+
 export default function MasterKelasPage() {
   const [data, setData] = useState<KelasItem[]>([]);
+  const [instrukturOptions, setInstrukturOptions] = useState<InstrukturOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -59,7 +69,7 @@ export default function MasterKelasPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [currentId, setCurrentId] = useState('');
-  const [formData, setFormData] = useState({ nama_kelas: '', deskripsi: '' });
+  const [formData, setFormData] = useState({ nama_kelas: '', deskripsi: '', instruktur_id: '' });
 
   // Modal Kelola Siswa di Kelas
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -75,18 +85,27 @@ export default function MasterKelasPage() {
 
   async function fetchData() {
     setLoading(true);
-    const res = await getAllKelasAction();
-    if (res.success && res.data) {
-      setData(res.data);
+    const [resKelas, resInstruktur] = await Promise.all([
+      getAllKelasAction(),
+      getInstrukturListForAssignmentAction()
+    ]);
+
+    if (resKelas.success && resKelas.data) {
+      setData(resKelas.data);
     } else {
-      setError(res.error || 'Gagal memuat data kelas');
+      setError(resKelas.error || 'Gagal memuat data kelas');
     }
+
+    if (resInstruktur.success && resInstruktur.data) {
+      setInstrukturOptions(resInstruktur.data);
+    }
+
     setLoading(false);
   }
 
   function openCreateModal() {
     setModalMode('create');
-    setFormData({ nama_kelas: '', deskripsi: '' });
+    setFormData({ nama_kelas: '', deskripsi: '', instruktur_id: '' });
     setIsModalOpen(true);
   }
 
@@ -94,7 +113,11 @@ export default function MasterKelasPage() {
     if (e) e.stopPropagation();
     setModalMode('edit');
     setCurrentId(kelas.id);
-    setFormData({ nama_kelas: kelas.nama_kelas, deskripsi: kelas.deskripsi || '' });
+    setFormData({ 
+      nama_kelas: kelas.nama_kelas, 
+      deskripsi: kelas.deskripsi || '',
+      instruktur_id: kelas.instruktur_id || '' 
+    });
     setIsModalOpen(true);
   }
 
@@ -103,6 +126,7 @@ export default function MasterKelasPage() {
     const fd = new FormData();
     fd.append('nama_kelas', formData.nama_kelas);
     fd.append('deskripsi', formData.deskripsi);
+    fd.append('instruktur_id', formData.instruktur_id);
     
     if (modalMode === 'edit') {
       fd.append('id', currentId);
@@ -228,9 +252,9 @@ export default function MasterKelasPage() {
               <thead className="bg-[#ffe600] border-b-3 border-black">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-black text-black uppercase tracking-wider">Nama Kelas</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-black uppercase tracking-wider">Instruktur Pengajar</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-black uppercase tracking-wider">Deskripsi</th>
                   <th className="px-6 py-4 text-center text-xs font-black text-black uppercase tracking-wider">Jumlah Siswa</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-black uppercase tracking-wider">Tanggal Dibuat</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-black uppercase tracking-wider">Terakhir Diedit</th>
                   <th className="px-6 py-4 text-right text-xs font-black text-black uppercase tracking-wider">Aksi</th>
                 </tr>
@@ -250,14 +274,22 @@ export default function MasterKelasPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="font-black text-sm uppercase">{item.nama_kelas}</span>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {item.nama_instruktur ? (
+                          <span className="bg-[#00f0ff] text-black px-2.5 py-1 neo-border text-xs font-black flex items-center w-fit">
+                            👨‍🏫 {item.nama_instruktur}
+                          </span>
+                        ) : (
+                          <span className="bg-gray-100 text-gray-500 px-2 py-0.5 border border-gray-300 text-xs font-medium rounded">
+                            Belum Ditugaskan
+                          </span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 font-medium text-gray-700 max-w-xs truncate">{item.deskripsi || '-'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <span className="bg-[#00f0ff] text-black px-2.5 py-1 neo-border text-xs font-black">
+                        <span className="bg-[#74ee15] text-black px-2.5 py-1 neo-border text-xs font-black">
                           👥 {item.jumlah_siswa} Siswa
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-600 font-bold">
-                        {formatDateStr(item.created_at)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-600 font-bold">
                         {formatDateStr(item.updated_at || item.created_at)}
@@ -317,6 +349,19 @@ export default function MasterKelasPage() {
                 />
               </div>
               <div>
+                <label className="block text-sm font-black uppercase text-black mb-1">Instruktur Pengajar / Wali Kelas</label>
+                <select
+                  value={formData.instruktur_id}
+                  onChange={(e) => setFormData({...formData, instruktur_id: e.target.value})}
+                  className="w-full neo-input p-2 font-bold text-sm bg-white"
+                >
+                  <option value="">-- Pilih Instruktur Pengajar --</option>
+                  {instrukturOptions.map(ins => (
+                    <option key={ins.id} value={ins.id}>👨‍🏫 {ins.name} ({ins.email})</option>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <label className="block text-sm font-black uppercase text-black mb-1">Deskripsi</label>
                 <textarea
                   value={formData.deskripsi}
@@ -330,7 +375,7 @@ export default function MasterKelasPage() {
                 <button type="submit" className="flex-1 bg-[#ffe600] text-black neo-btn py-2 text-xs font-black uppercase">
                   Simpan Kelas
                 </button>
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 bg-white text-black neo-btn py-2 text-xs font-black uppercase">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 bg-[#f4f4f0] text-black neo-btn py-2 text-xs font-black uppercase">
                   Batal
                 </button>
               </div>

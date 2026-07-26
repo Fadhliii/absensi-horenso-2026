@@ -7,13 +7,14 @@ export async function getAllKelasAction() {
   try {
     const { data, error } = await supabase
       .from('master_kelas')
-      .select('*, siswa:siswa(count)')
+      .select('*, instruktur:users!instruktur_id (id, name, email), siswa:siswa(count)')
       .order('nama_kelas', { ascending: true });
       
     if (error) throw error;
 
     const formattedData = (data || []).map((k: any) => ({
       ...k,
+      nama_instruktur: k.instruktur?.name || null,
       jumlah_siswa: k.siswa?.[0]?.count || 0,
     }));
 
@@ -23,17 +24,39 @@ export async function getAllKelasAction() {
   }
 }
 
+export async function getInstrukturListForAssignmentAction() {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name, email')
+      .eq('role', 'instruktur')
+      .eq('status_registrasi', 'approved')
+      .order('name', { ascending: true });
+
+    if (error) throw error;
+    return { success: true, data: data || [] };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
 export async function createKelasAction(formData: FormData) {
   try {
     const nama_kelas = formData.get('nama_kelas') as string;
     const deskripsi = formData.get('deskripsi') as string;
+    const instruktur_id = (formData.get('instruktur_id') as string) || null;
 
     if (!nama_kelas) throw new Error('Nama kelas wajib diisi');
 
     const now = new Date().toISOString();
     const { error } = await supabase
       .from('master_kelas')
-      .insert([{ nama_kelas, deskripsi, updated_at: now }]);
+      .insert([{ 
+        nama_kelas, 
+        deskripsi, 
+        instruktur_id: instruktur_id === '' ? null : instruktur_id,
+        updated_at: now 
+      }]);
 
     if (error) throw error;
     
@@ -49,13 +72,19 @@ export async function updateKelasAction(formData: FormData) {
     const id = formData.get('id') as string;
     const nama_kelas = formData.get('nama_kelas') as string;
     const deskripsi = formData.get('deskripsi') as string;
+    const instruktur_id = (formData.get('instruktur_id') as string) || null;
 
     if (!id || !nama_kelas) throw new Error('Data tidak lengkap');
 
     const now = new Date().toISOString();
     const { error } = await supabase
       .from('master_kelas')
-      .update({ nama_kelas, deskripsi, updated_at: now })
+      .update({ 
+        nama_kelas, 
+        deskripsi, 
+        instruktur_id: instruktur_id === '' ? null : instruktur_id,
+        updated_at: now 
+      })
       .eq('id', id);
 
     if (error) throw error;
