@@ -211,23 +211,49 @@ export default function SiswaDashboardPage() {
             )}
 
             <div className="grid grid-cols-2 gap-3">
-              <button 
-                onClick={handleMasukKelas}
-                disabled={masukLoading}
-                className="flex items-center justify-center gap-2 bg-[#00f0ff] hover:bg-[#00d8e6] text-black font-black py-3 px-3 neo-btn text-xs uppercase shadow-md active:scale-95 transition-transform"
-              >
-                {masukLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 shrink-0 animate-spin" />
-                    <span>Mendapatkan Lokasi...</span>
-                  </>
-                ) : (
-                  <>
-                    <DoorOpen className="w-5 h-5 shrink-0" />
-                    <span>Masuk Kelas</span>
-                  </>
-                )}
-              </button>
+              {data?.sudahMasukKelas ? (
+                /* STATE 3: SUDAH MASUK KELAS (WARNA HIJAU + TULISAN SUDAH MASUK) */
+                <button
+                  disabled
+                  className="flex items-center justify-center gap-2 bg-[#74ee15] text-black font-black py-3 px-3 neo-btn text-xs uppercase cursor-default shadow-sm"
+                >
+                  <CheckCircle className="w-5 h-5 shrink-0" />
+                  <span>
+                    {['pending_hadir', 'pending_telat'].includes(data?.statusAbsensiToday)
+                      ? 'Menunggu ACC Guru'
+                      : 'Sudah Masuk Kelas'}
+                  </span>
+                </button>
+              ) : data?.isSesiAktif ? (
+                /* STATE 2: SESI AKTIF & BELUM MASUK (WARNA BIRU INTERAKTIF) */
+                <button 
+                  onClick={handleMasukKelas}
+                  disabled={masukLoading}
+                  className="flex items-center justify-center gap-2 bg-[#00f0ff] hover:bg-[#00d8e6] text-black font-black py-3 px-3 neo-btn text-xs uppercase shadow-md active:scale-95 transition-transform"
+                >
+                  {masukLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 shrink-0 animate-spin" />
+                      <span>Mendapatkan Lokasi...</span>
+                    </>
+                  ) : (
+                    <>
+                      <DoorOpen className="w-5 h-5 shrink-0" />
+                      <span>Masuk Kelas</span>
+                    </>
+                  )}
+                </button>
+              ) : (
+                /* STATE 1: SESI BELUM DIBUKA / GA ADA KELAS (WARNA PUDAR ABU-ABU DISABLED) */
+                <button 
+                  disabled
+                  className="flex items-center justify-center gap-2 bg-gray-300 text-gray-600 font-black py-3 px-3 border-2 border-gray-400 text-xs uppercase cursor-not-allowed opacity-80"
+                  title="Sesi kelas belum dibuka oleh Admin atau Instruktur"
+                >
+                  <Clock className="w-5 h-5 shrink-0 text-gray-500" />
+                  <span>Sesi Belum Dibuka</span>
+                </button>
+              )}
 
               <button 
                 onClick={() => setIsIzinModalOpen(true)}

@@ -62,11 +62,17 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
     const startDateOnly = `${targetMonth}-01`;
     const endDateOnly = `${targetMonth}-${String(endOfMonth.getDate()).padStart(2, '0')}`;
 
-    // 2. Query Paralel: Absensi Aktual, Sesi Absensi, dan Izin Absen
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayISO = todayStart.toISOString();
+
+    // 2. Query Paralel: Absensi Aktual, Sesi Absensi, Izin Absen, Cek Sesi Aktif Hari Ini & Absensi Siswa Hari Ini
     const [
       { data: absensiList },
       { data: sesiList },
-      { data: izinList }
+      { data: izinList },
+      { data: sesiAktifData },
+      { data: absensiHariIniData }
     ] = await Promise.all([
       // Absensi yang di-scan siswa
       supabase
@@ -104,7 +110,23 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
         `)
         .eq('siswa_id', userId)
         .gte('tanggal', startDateOnly)
-        .lte('tanggal', endDateOnly)
+        .lte('tanggal', endDateOnly),
+
+      // Cek Sesi Aktif saat ini
+      supabase
+        .from('sesi_absensi')
+        .select('id')
+        .eq('status', 'aktif')
+        .limit(1),
+
+      // Cek Absensi Siswa hari ini
+      supabase
+        .from('absensi')
+        .select('id, status')
+        .eq('siswa_id', userId)
+        .gte('waktu_scan', todayISO)
+        .order('waktu_scan', { ascending: false })
+        .limit(1)
     ]);
 
     const { dateStr: todayWibStr, hour: currentWibHour } = getWibNow();
@@ -187,6 +209,11 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
     const kelasObj = siswaObj?.master_kelas;
     const namaKelas = Array.isArray(kelasObj) ? kelasObj[0]?.nama_kelas : (kelasObj as any)?.nama_kelas;
 
+    const isSesiAktif = (sesiAktifData && sesiAktifData.length > 0) || false;
+    const latestTodayAbsensi = absensiHariIniData && absensiHariIniData.length > 0 ? absensiHariIniData[0] : null;
+    const statusAbsensiToday = latestTodayAbsensi?.status || null;
+    const sudahMasukKelas = ['hadir', 'telat', 'pending_hadir', 'pending_telat'].includes(statusAbsensiToday || '');
+
     return { 
       success: true, 
       profile: {
@@ -196,6 +223,9 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
         namaPerusahaan: namaPerusahaan || null,
         namaKelas: namaKelas || null
       },
+      isSesiAktif,
+      sudahMasukKelas,
+      statusAbsensiToday,
       riwayat: combinedRiwayat 
     };
 
