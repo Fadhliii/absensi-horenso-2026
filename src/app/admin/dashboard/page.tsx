@@ -216,22 +216,27 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* BANNER 2: PERSETUJUAN MASUK KELAS (SETUJUI BERJAMAAH) */}
-              <div className="bg-[#00f0ff] neo-card p-5 border-4 border-black flex flex-col justify-between space-y-4">
+              <div className="bg-[#d1fae5] neo-card p-5 border-4 border-black flex flex-col justify-between space-y-4 shadow-sm">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-[#ffe600] neo-border flex items-center justify-center shrink-0">
-                      <CheckCircle2 className="w-7 h-7 text-black" />
+                    <div className="w-12 h-12 bg-white neo-border flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-7 h-7 text-emerald-700" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <h2 className="text-base font-black text-black uppercase tracking-tight">Persetujuan Masal</h2>
-                        {pendingMasukCount > 0 && (
-                          <span className="bg-[#ff003c] text-white text-[10px] font-black px-2 py-0.5 rounded-full neo-border animate-pulse">
-                            {pendingMasukCount} PENDING
+                        {pendingMasukCount > 0 ? (
+                          <span className="bg-[#ff003c] text-white text-[11px] font-black px-2.5 py-0.5 rounded-full neo-border animate-pulse flex items-center gap-1 shadow-sm">
+                            <span className="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                            {pendingMasukCount} SISWA MASUK
+                          </span>
+                        ) : (
+                          <span className="bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded">
+                            Semua Disetujui
                           </span>
                         )}
                       </div>
-                      <p className="text-xs font-bold text-gray-800 mt-0.5">
+                      <p className="text-xs font-bold text-gray-700 mt-0.5">
                         Setujui presensi banyak siswa sekaligus setelah mereka menekan tombol Masuk Kelas.
                       </p>
                     </div>
@@ -240,10 +245,15 @@ export default function AdminDashboardPage() {
 
                 <Link 
                   href="/admin/approval-absensi"
-                  className="w-full bg-[#ffe600] hover:bg-[#ebd300] text-black font-black py-3.5 px-4 neo-btn text-xs uppercase flex items-center justify-center gap-2 shadow-md active:scale-95"
+                  className="w-full bg-[#ffe600] hover:bg-[#ebd300] text-black font-black py-3.5 px-4 neo-btn text-xs uppercase flex items-center justify-center gap-2 shadow-md active:scale-95 relative"
                 >
-                  <ShieldCheck className="w-5 h-5" />
-                  <span className="text-sm font-black tracking-wide">PERSETUJUAN BERJAMAAH ({pendingMasukCount})</span>
+                  <ShieldCheck className="w-5 h-5 text-black" />
+                  <span className="text-sm font-black tracking-wide">PERSETUJUAN BERJAMAAH</span>
+                  {pendingMasukCount > 0 && (
+                    <span className="bg-[#ff003c] text-white text-xs font-black px-2 py-0.5 rounded-full neo-border shadow-sm ml-1">
+                      {pendingMasukCount}
+                    </span>
+                  )}
                 </Link>
               </div>
 
@@ -331,29 +341,24 @@ export default function AdminDashboardPage() {
 
               </div>
             ) : (
-              /* MENU RAPI KHUSUS INSTRUKTUR (TANPA DUPLIKASI KOTAK) */
+              /* MENU RAPI KHUSUS INSTRUKTUR (TANPA APPROVAL DUA KALI) */
               <div className="bg-white neo-card p-5 space-y-4">
                 <div className="flex items-center gap-2 border-b-3 border-black pb-2">
                   <BookOpen className="w-5 h-5 text-purple-700" />
                   <h3 className="text-sm font-black text-black uppercase tracking-wider">Menu Operasional Instruktur / Guru</h3>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                  <Link href="/admin/approval-absensi" className="bg-[#00f0ff] hover:bg-[#00d8e6] text-black p-3 neo-btn text-xs font-black uppercase flex items-center justify-between shadow-sm">
-                    <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Approval Masuk Kelas</span>
-                    {pendingMasukCount > 0 && <span className="bg-[#ff003c] text-white px-2 py-0.5 text-[10px] font-black rounded-full">{pendingMasukCount}</span>}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <Link href={data.assignedKelas ? `/admin/rekap?kelasId=${data.assignedKelas.id}` : '/admin/rekap'} className="bg-[#74ee15] hover:bg-[#62cb12] text-black p-3.5 neo-btn text-xs font-black uppercase flex items-center justify-between shadow-sm">
+                    <span className="flex items-center gap-2"><ClipboardList className="w-5 h-5" /> Rekap Grid Presensi</span>
                   </Link>
 
-                  <Link href={data.assignedKelas ? `/admin/rekap?kelasId=${data.assignedKelas.id}` : '/admin/rekap'} className="bg-[#74ee15] hover:bg-[#62cb12] text-black p-3 neo-btn text-xs font-black uppercase flex items-center justify-between shadow-sm">
-                    <span className="flex items-center gap-2"><ClipboardList className="w-4 h-4" /> Rekap Grid Presensi</span>
-                  </Link>
-
-                  <Link href="/admin/izin" className="bg-[#ff00c8] hover:bg-[#d600a8] text-white p-3 neo-btn text-xs font-black uppercase flex items-center justify-between shadow-sm">
-                    <span className="flex items-center gap-2"><Calendar className="w-4 h-4" /> Permohonan Izin / Sakit</span>
+                  <Link href="/admin/izin" className="bg-[#ff00c8] hover:bg-[#d600a8] text-white p-3.5 neo-btn text-xs font-black uppercase flex items-center justify-between shadow-sm">
+                    <span className="flex items-center gap-2"><Calendar className="w-5 h-5" /> Permohonan Izin / Sakit</span>
                     {data.stats.pendingIzin > 0 && <span className="bg-[#ff003c] text-white px-2 py-0.5 text-[10px] font-black rounded-full">{data.stats.pendingIzin}</span>}
                   </Link>
 
-                  <Link href="/admin/soft-skill" className="bg-[#ffe600] hover:bg-[#e6cf00] text-black p-3 neo-btn text-xs font-black uppercase flex items-center justify-between shadow-sm">
-                    <span className="flex items-center gap-2"><BookOpen className="w-4 h-4" /> Kelas Soft Skill</span>
+                  <Link href="/admin/soft-skill" className="bg-[#ffe600] hover:bg-[#e6cf00] text-black p-3.5 neo-btn text-xs font-black uppercase flex items-center justify-between shadow-sm">
+                    <span className="flex items-center gap-2"><BookOpen className="w-5 h-5" /> Kelas Soft Skill</span>
                   </Link>
                 </div>
               </div>
