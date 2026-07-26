@@ -3,10 +3,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getStudentDashboardDataAction } from '@/app/actions/siswa';
 import { ajukanIzinAction, getInstrukturAction } from '@/app/actions/izin';
+import { masukKelasDirectAction } from '@/app/actions/absensi';
 import { logoutAction } from '@/app/actions/auth';
 import IndonesianClock from '@/components/IndonesianClock';
 import { formatIndonesianDate, formatIndonesianTime } from '@/lib/date';
-import { QrCode, LogOut, Calendar, Clock, MapPin, CheckCircle, XCircle, AlertCircle, Building2, Filter } from 'lucide-react';
+import { QrCode, LogOut, Calendar, Clock, MapPin, CheckCircle, XCircle, AlertCircle, Building2, Filter, DoorOpen, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import SoftSkillHistoryAccordion from '@/components/SoftSkillHistoryAccordion';
 
@@ -15,6 +16,10 @@ export default function SiswaDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
+  // Masuk Kelas State
+  const [masukLoading, setMasukLoading] = useState(false);
+  const [masukMsg, setMasukMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   // Filter bulan & kategori
   const currentMonth = new Date().toISOString().slice(0, 7);
   const [monthFilter, setMonthFilter] = useState(currentMonth);
@@ -53,6 +58,39 @@ export default function SiswaDashboardPage() {
 
   const formatDate = (isoString: string) => formatIndonesianDate(isoString);
   const formatTime = (isoString: string) => formatIndonesianTime(isoString);
+
+  const handleMasukKelas = async () => {
+    if (!navigator.geolocation) {
+      setMasukMsg({ type: 'error', text: 'Browser Anda tidak mendukung Geolocation GPS.' });
+      return;
+    }
+
+    setMasukLoading(true);
+    setMasukMsg(null);
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const res = await masukKelasDirectAction(latitude, longitude);
+        if (res.error) {
+          setMasukMsg({ type: 'error', text: res.error });
+        } else {
+          setMasukMsg({ type: 'success', text: res.message || 'Permintaan Masuk Kelas berhasil dikirim!' });
+          await fetchData();
+        }
+        setMasukLoading(false);
+      },
+      (err) => {
+        console.error('Geolocation error:', err);
+        setMasukMsg({
+          type: 'error',
+          text: 'Gagal mendeteksi lokasi GPS. Pastikan izin lokasi (Location Permission) telah diizinkan di browser Anda.'
+        });
+        setMasukLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  };
 
   const handleAjukanIzin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,18 +197,37 @@ export default function SiswaDashboardPage() {
                 <span className="text-xl block">⚪ 🎓</span>
                 <h3 className="text-xs font-black text-black uppercase tracking-tight">Status: Belum Mulai Kelas</h3>
                 <p className="text-[11px] font-bold text-gray-700 max-w-md mx-auto">
-                  Silakan lakukan <b>Scan QR Absen</b> pada hari pertama kelas Anda untuk mengaktifkan akun secara otomatis!
+                  Silakan klik <b>Masuk Kelas</b> di bawah ini pada hari pertama kelas Anda untuk mengaktifkan akun secara otomatis!
                 </p>
               </div>
             )}
+
+            {masukMsg && (
+              <div className={`p-3 border-2 border-black neo-border text-xs font-bold mb-3 ${
+                masukMsg.type === 'error' ? 'bg-red-100 text-red-900' : 'bg-green-100 text-green-900'
+              }`}>
+                {masukMsg.text}
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-3">
-              <Link 
-                href="/siswa/scan"
-                className="flex items-center justify-center gap-2 bg-[#00f0ff] hover:bg-[#00d8e6] text-black font-black py-3 px-3 neo-btn text-xs uppercase"
+              <button 
+                onClick={handleMasukKelas}
+                disabled={masukLoading}
+                className="flex items-center justify-center gap-2 bg-[#00f0ff] hover:bg-[#00d8e6] text-black font-black py-3 px-3 neo-btn text-xs uppercase shadow-md active:scale-95 transition-transform"
               >
-                <QrCode className="w-5 h-5 shrink-0" />
-                <span>Scan QR Absen</span>
-              </Link>
+                {masukLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 shrink-0 animate-spin" />
+                    <span>Mendapatkan Lokasi...</span>
+                  </>
+                ) : (
+                  <>
+                    <DoorOpen className="w-5 h-5 shrink-0" />
+                    <span>Masuk Kelas</span>
+                  </>
+                )}
+              </button>
 
               <button 
                 onClick={() => setIsIzinModalOpen(true)}
@@ -205,7 +262,7 @@ export default function SiswaDashboardPage() {
                 >
                   <option value="semua">Semua Status</option>
                   <option value="hadir">Hadir / Telat</option>
-                  <option value="gagal">Gagal Scan</option>
+                  <option value="gagal">Gagal Presensi / Luar Radius</option>
                   <option value="tidak_masuk">Tidak Masuk / Alpha / Izin</option>
                 </select>
                 <Filter className="w-3.5 h-3.5 absolute left-2 top-2 text-black pointer-events-none" />
@@ -230,10 +287,10 @@ export default function SiswaDashboardPage() {
             ) : (() => {
               const filteredRiwayat = (data?.riwayat || []).filter((absen: any) => {
                 if (historyFilter === 'hadir') {
-                  return absen.status === 'hadir' || absen.status === 'telat';
+                  return ['hadir', 'telat', 'pending_hadir', 'pending_telat'].includes(absen.status);
                 }
                 if (historyFilter === 'gagal') {
-                  return absen.status === 'ditolak_lokasi' || absen.status === 'ditolak_expired';
+                  return ['ditolak_lokasi', 'ditolak_expired', 'pending_luar_radius'].includes(absen.status);
                 }
                 if (historyFilter === 'tidak_masuk') {
                   return ['alpha', 'izin_pending', 'izin', 'sakit', 'belum_absen'].includes(absen.status);
@@ -279,9 +336,24 @@ export default function SiswaDashboardPage() {
                               <Clock className="w-3 h-3 mr-1 text-yellow-600" /> Terlambat
                             </span>
                           )}
+                          {absen.status === 'pending_hadir' && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-400">
+                              <Clock className="w-3 h-3 mr-1 text-amber-600 animate-pulse" /> Pending Approval (Hadir)
+                            </span>
+                          )}
+                          {absen.status === 'pending_telat' && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-400">
+                              <Clock className="w-3 h-3 mr-1 text-amber-600 animate-pulse" /> Pending Approval (Telat)
+                            </span>
+                          )}
+                          {absen.status === 'pending_luar_radius' && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-red-100 text-red-900 border border-red-300">
+                              <MapPin className="w-3 h-3 mr-1 text-red-600" /> Pending (Luar Radius)
+                            </span>
+                          )}
                           {absen.status === 'ditolak_lokasi' && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-red-100 text-red-900 border border-red-300">
-                              <MapPin className="w-3 h-3 mr-1 text-red-600" /> Luar Radius
+                              <MapPin className="w-3 h-3 mr-1 text-red-600" /> Luar Radius (Ditolak)
                             </span>
                           )}
                           {absen.status === 'ditolak_expired' && (

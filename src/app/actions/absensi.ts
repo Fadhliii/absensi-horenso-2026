@@ -166,3 +166,122 @@ export async function submitAbsensiAction(qrToken: string, studentLat: number, s
     return { error: 'Terjadi kesalahan sistem internal.' };
   }
 }
+
+export async function masukKelasDirectAction(studentLat: number, studentLng: number) {
+  try {
+    await closeExpiredSessions();
+
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get('session')?.value;
+    
+    if (!sessionToken) return { error: 'Anda harus login terlebih dahulu.' };
+    
+    const session = await verifySessionToken(sessionToken);
+    if (!session || session.role !== 'siswa') return { error: 'Hanya siswa yang dapat melakukan presensi.' };
+    const userId = session.userId;
+
+    // Ambil sesi absensi aktif atau terbaru hari ini
+    const { data: sesiData, error: sesiError } = await supabase
+      .from('sesi_absensi')
+      .select('*')
+      .order('dibuat_pada', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (sesiError || !sesiData) {
+      return { error: 'Sesi kelas belum dibuka oleh Guru/Admin hari ini.' };
+    }
+
+    // Cek apakah sesi sudah ditutup
+    if (sesiData.status !== 'aktif') {
+      return { error: 'Sesi kelas hari ini sudah ditutup oleh Guru/Admin.' };
+    }
+
+    // Cek apakah siswa sudah absen hari ini di sesi ini
+    const { data: existingAbsen } = await supabase
+      .from('absensi')
+      .select('id, status')
+      .eq('sesi_id', sesiData.id)
+      .eq('siswa_id', userId)
+      .maybeSingle();
+
+    if (existingAbsen) {
+      if (existingAbsen.status === 'hadir' || existingAbsen.status === 'telat') {
+        return { error: 'Anda sudah tercatat HADIR/TELAT pada sesi hari ini.' };
+      }
+      if (['pending_hadir', 'pending_telat', 'pending_luar_radius'].includes(existingAbsen.status)) {
+        return { error: 'Permintaan Masuk Kelas Anda sedang menunggu persetujuan Admin/Instruktur.' };
+      }
+    }
+
+    // Validasi Jarak GPS
+    const distance = getDistanceFromLatLonInMeters(
+      sesiData.lokasi_lat,
+      sesiData.lokasi_lng,
+      studentLat,
+      studentLng
+    );
+
+    const allowedRadius = Math.max((sesiData.radius_meter || 50) + 30, 80);
+    const isTooFar = distance > allowedRadius;
+
+    // Tentukan status awal pending
+    let initialStatus = isTooFar ? 'pending_luar_radius' : 'pending_hadir';
+    
+    // Cek jam (WIB UTC+7) - Jika lewat dari jam 07:15 WIB, set ke pending_telat jika dalam radius
+    const nowWibHour = new Date(new Date().getTime() + (7 * 60 * 60 * 1000)).getUTCHours();
+    const nowWibMin = new Date(new Date().getTime() + (7 * 60 * 60 * 1000)).getUTCMinutes();
+    const totalWibMinutes = nowWibHour * 60 + nowWibMin;
+    const cutoffMinutes = 7 * 60 + 15; // 07:15 WIB
+
+    if (!isTooFar && totalWibMinutes > cutoffMinutes) {
+      initialStatus = 'pending_telat';
+    }
+
+    const { error: upsertError } = await supabase
+      .from('absensi')
+      .upsert(
+        {
+          sesi_id: sesiData.id,
+          siswa_id: userId,
+          status: initialStatus,
+          lat_siswa: studentLat,
+          lng_siswa: studentLng,
+          jarak_meter: Math.round(distance),
+          waktu_scan: new Date().toISOString()
+        },
+        { onConflict: 'siswa_id, sesi_id' }
+      );
+
+    if (upsertError) {
+      console.error('Error upserting masuk kelas:', upsertError);
+      return { error: upsertError.message || 'Gagal mengirim permintaan Masuk Kelas.' };
+    }
+
+    // Aktifkan status siswa jika belum_mulai
+    const { data: currentSiswa } = await supabase
+      .from('siswa')
+      .select('status_pendidikan')
+      .eq('user_id', userId)
+      .single();
+
+    if (!currentSiswa?.status_pendidikan || currentSiswa.status_pendidikan === 'belum_mulai') {
+      await supabase
+        .from('siswa')
+        .update({ status_pendidikan: 'aktif' })
+        .eq('user_id', userId);
+    }
+
+    return {
+      success: true,
+      message: isTooFar
+        ? `Berhasil mengirim lokasi! Anda berada ${Math.round(distance)}m (di luar radius ${allowedRadius}m). Menunggu persetujuan Admin/Instruktur.`
+        : 'Berhasil Masuk Kelas! Permintaan kehadiran Anda dikirim & menunggu persetujuan Admin/Instruktur.'
+    };
+
+  } catch (err: any) {
+    console.error('Error masukKelasDirectAction:', err);
+    return { error: err.message || 'Terjadi kesalahan sistem internal.' };
+  }
+}
+
