@@ -42,6 +42,7 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
       .from('users')
       .select(`
         name,
+        created_at,
         siswa (
           status_penempatan,
           status_pendidikan,
@@ -139,6 +140,10 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
     const izinByDateMap = new Map<string, any>();
     izinList?.forEach(i => izinByDateMap.set(i.tanggal, i));
 
+    // User registration / join date
+    const userCreatedAtDate = profile?.created_at ? new Date(profile.created_at) : new Date(0);
+    userCreatedAtDate.setHours(0, 0, 0, 0);
+
     const combinedRiwayat: any[] = [];
 
     // Proses Sesi Absensi untuk mendeteksi Hadir, Gagal Scan, atau Tidak Masuk / Pending Izin
@@ -146,6 +151,8 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
       const scanItem = absensiBySesiMap.get(sesi.id);
       const sessionDateStr = sesi.dibuat_pada.slice(0, 10);
       const izinItem = izinByDateMap.get(sessionDateStr);
+      const sessionDate = new Date(sesi.dibuat_pada);
+      sessionDate.setHours(0, 0, 0, 0);
 
       if (scanItem) {
         // Siswa melakukan scan
@@ -156,6 +163,11 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
           sesi_id: sesi.id
         });
       } else {
+        // Jika sesi ini dibuat SEBELUM siswa mendaftar/bergabung, jangan hitung Alpha!
+        if (sessionDate < userCreatedAtDate) {
+          return;
+        }
+
         // Siswa TIDAK melakukan scan pada sesi ini
         let finalStatus = 'alpha'; // Default: Tidak Masuk (Alpha)
 

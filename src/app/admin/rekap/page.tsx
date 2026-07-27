@@ -354,10 +354,18 @@ function RekapGridContent() {
 
       filteredData.forEach(siswa => {
         const rowData: any[] = [siswa.name];
+        const createdAtDate = new Date(siswa.created_at);
+        createdAtDate.setHours(0, 0, 0, 0);
+
         daysArray.forEach(day => {
           const statusObj = siswa.attendance[day];
+          const currentDate = new Date(selectedYear, selectedMonth - 1, day);
+          currentDate.setHours(0, 0, 0, 0);
+          const isNotJoinedYet = currentDate < createdAtDate;
+
           if (statusObj) {
             if (statusObj.status === 'H') rowData.push('1');
+            else if (statusObj.status === 'T') rowData.push('T');
             else if (statusObj.status === 'SS') rowData.push('SS');
             else if (statusObj.status === 'I') rowData.push('I');
             else if (statusObj.status === 'S') rowData.push('S');
@@ -365,8 +373,8 @@ function RekapGridContent() {
           } else {
             const weekend = isWeekend(day);
             const holidayName = getHolidayName(day);
-            if (weekend || holidayName) {
-              rowData.push('');
+            if (weekend || holidayName || isNotJoinedYet) {
+              rowData.push('-');
             } else {
               rowData.push('0');
             }
