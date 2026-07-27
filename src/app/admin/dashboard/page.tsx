@@ -28,6 +28,8 @@ export default function AdminDashboardPage() {
 
   // 1-Click Buka Kelas State
   const [sesiInfo, setSesiInfo] = useState<{ active: boolean; sessionId?: string }>({ active: false });
+  const [activeSesiMap, setActiveSesiMap] = useState<Record<string, { sessionId: string; remainingSeconds: number }>>({});
+  const [activeKelasSearch, setActiveKelasSearch] = useState('');
   const [bukaSesiLoading, setBukaSesiLoading] = useState(false);
   const [selectedKelasIdForSession, setSelectedKelasIdForSession] = useState('');
 
@@ -50,6 +52,7 @@ export default function AdminDashboardPage() {
 
       const sesiRes = await getActiveSesiInfoAction();
       setSesiInfo({ active: sesiRes.active, sessionId: sesiRes.sessionId });
+      setActiveSesiMap(sesiRes.activeMap || {});
     } catch (err: any) {
       setError(err.message || 'Error jaringan');
     }
@@ -71,6 +74,22 @@ export default function AdminDashboardPage() {
     } else {
       setSesiInfo({ active: true, sessionId: res.sessionId });
       alert(`🚀 BERHASIL! Presensi untuk ${res.namaKelas || 'Kelas'} telah DIBUKA (1-Click). Siswa kelas tersebut sudah bisa menekan tombol Masuk Kelas.`);
+      fetchData();
+    }
+    setBukaSesiLoading(false);
+  };
+
+  // 1-Click Tutup Presensi Kelas Spesifik
+  const handle1ClickTutupSesiKelas = async (sessionIdToClose: string, namaKelas: string) => {
+    if (!sessionIdToClose) return;
+    if (!confirm(`Apakah Anda yakin ingin menutup presensi untuk ${namaKelas}?`)) return;
+
+    setBukaSesiLoading(true);
+    const res = await selesaiSesiAction(sessionIdToClose);
+    if (res.error) {
+      alert('Gagal Tutup Presensi: ' + res.error);
+    } else {
+      alert(`Presensi untuk ${namaKelas} telah DITUTUP.`);
       fetchData();
     }
     setBukaSesiLoading(false);
@@ -112,10 +131,10 @@ export default function AdminDashboardPage() {
     );
   };
 
-  // 1-Click Tutup Kelas Handler
+  // 1-Click Tutup Kelas Handler (Global)
   const handle1ClickTutupKelas = async () => {
     if (!sesiInfo.sessionId) return;
-    if (!confirm('Apakah Anda yakin ingin menutup sesi kelas hari ini?')) return;
+    if (!confirm('Apakah Anda yakin ingin menutup semua sesi kelas aktif?')) return;
 
     setBukaSesiLoading(true);
     const res = await selesaiSesiAction(sesiInfo.sessionId);
@@ -128,6 +147,8 @@ export default function AdminDashboardPage() {
     }
     setBukaSesiLoading(false);
   };
+
+  const activeSesiCount = Object.keys(activeSesiMap).length;
 
   const formatTime = (isoString: string) => {
     const d = new Date(isoString);
@@ -180,127 +201,138 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         ) : data && (
-          <div className="space-y-6">
-            
-            {/* 2 MAIN HERO BANNERS: 1-CLICK BUKA KELAS & APPROVAL BERJAMAAH */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-6">            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               
-              {/* BANNER 1: BUKA / TUTUP KELAS SEKARANG (1-KLIK PER KELAS) */}
-              <div className={`neo-card p-5 border-4 border-black flex flex-col justify-between space-y-4 ${
-                sesiInfo.active ? 'bg-[#74ee15]' : 'bg-[#ffe600]'
-              }`}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-white neo-border flex items-center justify-center shrink-0">
-                      <DoorOpen className="w-7 h-7 text-black" />
-                    </div>
+              {/* BANNER 1: PANEL KONTROL KELAS MULTI-CLASS (Bisa Muat Banyak Kelas) */}
+              <div className="md:col-span-2 bg-white neo-card p-5 border-4 border-black space-y-4 flex flex-col justify-between">
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b-3 border-black pb-3">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h2 className="text-base font-black text-black uppercase tracking-tight">Buka Sesi Presensi (1-Klik)</h2>
-                        {sesiInfo.active ? (
-                          <span className="bg-green-800 text-white text-[10px] font-black px-2 py-0.5 rounded border border-black animate-pulse">
-                            🟢 PRESENSI KELAS AKTIF
+                        <DoorOpen className="w-6 h-6 text-purple-700" />
+                        <h2 className="text-base font-black text-black uppercase tracking-tight">
+                          Kontrol Presensi Kelas (1-Klik Per Kelas)
+                        </h2>
+                        {activeSesiCount > 0 ? (
+                          <span className="bg-green-700 text-white text-[11px] font-black px-2.5 py-0.5 rounded border border-black animate-pulse">
+                            🟢 {activeSesiCount} KELAS AKTIF
                           </span>
                         ) : (
-                          <span className="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded border border-black">
-                            🔴 SESI TUTUP
+                          <span className="bg-gray-200 text-gray-700 text-[11px] font-black px-2.5 py-0.5 rounded border border-black">
+                            ⚪ BELUM ADA KELAS BUKA
                           </span>
                         )}
                       </div>
+                      <p className="text-xs font-bold text-gray-600 mt-0.5">
+                        Buka & tutup presensi 1-klik untuk setiap kelas secara mandiri menggunakan lokasi koordinat per kelas.
+                      </p>
+                    </div>
 
-                      {/* Display Assigned Class / Instruktur Info */}
-                      {data?.assignedKelas ? (
-                        <div className="mt-1">
-                          <span className="bg-purple-900 text-white text-[11px] font-black px-2 py-0.5 rounded uppercase inline-block">
-                            🏫 Kelas Anda: {data.assignedKelas.nama_kelas} ({data.assignedKelas.total_siswa} Siswa)
-                          </span>
-                          {data.assignedKelas.lokasi_lat && data.assignedKelas.lokasi_lng ? (
-                            <p className="text-[11px] font-bold text-gray-800 mt-1 flex items-center gap-1">
-                              📍 Lokasi Terdaftar: {data.assignedKelas.lokasi_lat}, {data.assignedKelas.lokasi_lng} (Radius {data.assignedKelas.radius_meter || 100}m)
-                            </p>
-                          ) : (
-                            <p className="text-[11px] font-black text-red-700 mt-1">
-                              ⚠️ Koordinat belum di-set oleh Admin di Manajemen Kelas.
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-xs font-bold text-black mt-1">
-                          {sesiInfo.active 
-                            ? 'Siswa sudah dapat menekan tombol Masuk Kelas di HP mereka.' 
-                            : 'Pilih kelas di bawah lalu klik Buka Presensi (menggunakan koordinat per kelas).'}
-                        </p>
-                      )}
+                    {/* Search Bar & Global GPS Fallback Button */}
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <input
+                        type="text"
+                        placeholder="🔍 Cari Kelas..."
+                        value={activeKelasSearch}
+                        onChange={(e) => setActiveKelasSearch(e.target.value)}
+                        className="neo-input px-3 py-1.5 text-xs font-bold bg-gray-50 text-black flex-1 sm:w-40"
+                      />
+                      <button
+                        onClick={handle1ClickBukaKelas}
+                        disabled={bukaSesiLoading}
+                        className="bg-[#00f0ff] hover:bg-[#00d8e6] text-black px-3 py-1.5 neo-btn text-xs font-black uppercase shrink-0 flex items-center gap-1"
+                        title="Buka Presensi Menggunakan Sinyal GPS HP Saat Ini"
+                      >
+                        <MapPin className="w-4 h-4 text-black" /> GPS Instan
+                      </button>
                     </div>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  {sesiInfo.active ? (
-                    <button
-                      onClick={handle1ClickTutupKelas}
-                      disabled={bukaSesiLoading}
-                      className="w-full bg-[#ff003c] hover:bg-red-700 text-white font-black py-3.5 px-4 neo-btn text-xs uppercase flex items-center justify-center gap-2 shadow-md active:scale-95"
-                    >
-                      {bukaSesiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <XCircle className="w-5 h-5" />}
-                      <span>TUTUP PRESENSI KELAS SEKARANG</span>
-                    </button>
-                  ) : (
-                    <div className="space-y-2">
-                      {/* Opsi Pilihan Kelas untuk Admin atau Instruktur */}
-                      {data?.role === 'admin' && data?.allKelasList && data.allKelasList.length > 0 && (
-                        <div className="flex gap-2 items-center">
-                          <select
-                            value={selectedKelasIdForSession}
-                            onChange={(e) => setSelectedKelasIdForSession(e.target.value)}
-                            className="flex-1 px-3 py-2 neo-input text-xs font-black bg-white"
-                          >
-                            <option value="">-- Pilih Kelas --</option>
-                            {data.allKelasList.map((k: any) => (
-                              <option key={k.id} value={k.id}>
-                                🏫 {k.nama_kelas} {k.lokasi_lat ? `(📍 Set)` : `(⚠️ No GPS)`}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
+                  {/* GRID DAFTAR KELAS - DAPAT MEMUAT SANGAT BANYAK KELAS */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[360px] overflow-y-auto pr-1">
+                    {data?.allKelasList && data.allKelasList.length > 0 ? (
+                      data.allKelasList
+                        .filter((k: any) => k.nama_kelas.toLowerCase().includes(activeKelasSearch.toLowerCase()))
+                        .map((k: any) => {
+                          const activeSesiData = activeSesiMap[k.id];
+                          const isKelasActive = !!activeSesiData;
+                          const isMyClass = data?.assignedKelas?.id === k.id;
 
-                      {/* Tombol Utama 1-Click Buka Presensi Kelas */}
-                      {data?.assignedKelas?.id ? (
-                        <button
-                          onClick={() => handle1ClickBukaSesiKelas(data.assignedKelas.id)}
-                          disabled={bukaSesiLoading}
-                          className="w-full bg-[#00e676] hover:bg-green-500 text-black font-black py-3.5 px-4 neo-btn text-xs uppercase flex items-center justify-center gap-2 shadow-lg active:scale-95 scale-[1.01]"
-                        >
-                          {bukaSesiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5 fill-yellow-300" />}
-                          <span className="text-sm font-black tracking-wide">🚀 BUKA PRESENSI KELAS {data.assignedKelas.nama_kelas} (1-KLIK)</span>
-                        </button>
-                      ) : selectedKelasIdForSession ? (
-                        <button
-                          onClick={() => handle1ClickBukaSesiKelas(selectedKelasIdForSession)}
-                          disabled={bukaSesiLoading}
-                          className="w-full bg-[#00e676] hover:bg-green-500 text-black font-black py-3.5 px-4 neo-btn text-xs uppercase flex items-center justify-center gap-2 shadow-lg active:scale-95 scale-[1.01]"
-                        >
-                          {bukaSesiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5 fill-yellow-300" />}
-                          <span className="text-sm font-black tracking-wide">🚀 BUKA PRESENSI KELAS DIPILIH (1-KLIK)</span>
-                        </button>
-                      ) : (
-                        <button
-                          onClick={handle1ClickBukaKelas}
-                          disabled={bukaSesiLoading}
-                          className="w-full bg-[#00e676] hover:bg-green-500 text-black font-black py-3.5 px-4 neo-btn text-xs uppercase flex items-center justify-center gap-2 shadow-lg active:scale-95 scale-[1.01]"
-                        >
-                          {bukaSesiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <DoorOpen className="w-5 h-5" />}
-                          <span className="text-sm font-black tracking-wide">BUKA PRESENSI SEKARANG (GPS INSTAN)</span>
-                        </button>
-                      )}
-                    </div>
-                  )}
+                          return (
+                            <div 
+                              key={k.id}
+                              className={`p-3 neo-card border-2 border-black flex flex-col justify-between space-y-2.5 transition-all ${
+                                isKelasActive ? 'bg-[#74ee15] border-black' : isMyClass ? 'bg-[#fffde7]' : 'bg-white'
+                              }`}
+                            >
+                              <div>
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className="font-black text-sm text-black uppercase flex items-center gap-1">
+                                    🏫 {k.nama_kelas}
+                                    {isMyClass && <span className="text-[9px] bg-purple-900 text-white px-1.5 py-0.5 rounded font-black uppercase">Anda Guru</span>}
+                                  </span>
+                                  {isKelasActive ? (
+                                    <span className="bg-green-900 text-white text-[9px] font-black px-2 py-0.5 rounded border border-black animate-pulse">
+                                      🟢 AKTIF
+                                    </span>
+                                  ) : (
+                                    <span className="bg-gray-200 text-gray-600 text-[9px] font-black px-2 py-0.5 rounded border border-gray-400">
+                                      🔴 TUTUP
+                                    </span>
+                                  )}
+                                </div>
+
+                                <p className="text-[11px] font-bold text-gray-700 mt-0.5">
+                                  👥 {k.total_siswa} Siswa Terdaftar
+                                </p>
+
+                                {k.lokasi_lat && k.lokasi_lng ? (
+                                  <p className="text-[10px] font-bold text-black mt-0.5 flex items-center gap-1">
+                                    📍 {k.lokasi_lat}, {k.lokasi_lng} ({k.radius_meter || 100}m)
+                                  </p>
+                                ) : (
+                                  <p className="text-[10px] font-bold text-red-700 mt-0.5">
+                                    ⚠️ Koordinat belum di-set di Master Kelas
+                                  </p>
+                                )}
+                              </div>
+
+                              <div>
+                                {isKelasActive ? (
+                                  <button
+                                    onClick={() => handle1ClickTutupSesiKelas(activeSesiData.sessionId, k.nama_kelas)}
+                                    disabled={bukaSesiLoading}
+                                    className="w-full bg-[#ff003c] hover:bg-red-700 text-white font-black py-2 px-3 neo-btn text-[11px] uppercase flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                                  >
+                                    {bukaSesiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                                    <span>TUTUP PRESENSI</span>
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => handle1ClickBukaSesiKelas(k.id)}
+                                    disabled={bukaSesiLoading}
+                                    className="w-full bg-[#00e676] hover:bg-green-500 text-black font-black py-2 px-3 neo-btn text-[11px] uppercase flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                                  >
+                                    {bukaSesiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5 fill-black" />}
+                                    <span>🚀 BUKA PRESENSI (1-KLIK)</span>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                    ) : (
+                      <div className="col-span-full py-8 text-center text-xs font-bold text-gray-500">
+                        Belum ada data kelas yang terdaftar. Silakan tambahkan di menu Master Kelas.
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* BANNER 2: PERSETUJUAN MASUK KELAS (SETUJUI BERJAMAAH) */}
-              <div className="bg-[#d1fae5] neo-card p-5 border-4 border-black flex flex-col justify-between space-y-4 shadow-sm">
+              <div className="md:col-span-1 bg-[#d1fae5] neo-card p-5 border-4 border-black flex flex-col justify-between space-y-4 shadow-sm">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-white neo-border flex items-center justify-center shrink-0">
@@ -341,7 +373,7 @@ export default function AdminDashboardPage() {
                 </Link>
               </div>
 
-            </div>
+            </div>           
 
             {/* RINGKASAN MENU TERBAGI KATEGORI */}
             {data.role === 'admin' ? (

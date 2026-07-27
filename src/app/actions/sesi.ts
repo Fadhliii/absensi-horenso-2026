@@ -168,10 +168,11 @@ export async function mulaiSesiKelas1ClickAction(kelasId: string) {
     };
   }
 
-  // Tutup dulu semua sesi lama yang aktif
+  // Tutup dulu sesi aktif lama KHUSUS untuk kelas ini
   await supabase
     .from('sesi_absensi')
     .update({ status: 'selesai' })
+    .eq('kelas_id', kelasId)
     .eq('status', 'aktif');
 
   const { data, error } = await supabase
@@ -249,7 +250,7 @@ export async function getJumlahHadirAction(sessionId: string) {
   return { count: count || 0 };
 }
 
-// Action global untuk mengecek sesi aktif saat ini
+// Action global untuk mengecek sesi aktif saat ini (Per Kelas & General)
 export async function getActiveSesiInfoAction() {
   try {
     await closeExpiredSessions();
@@ -263,35 +264,50 @@ export async function getActiveSesiInfoAction() {
       if (session) userRole = session.role;
     }
 
-    const { data, error } = await supabase
+    const { data: activeList, error } = await supabase
       .from('sesi_absensi')
-      .select('id, dibuat_pada, radius_meter, status')
+      .select('id, dibuat_pada, radius_meter, status, kelas_id')
       .eq('status', 'aktif')
-      .order('dibuat_pada', { ascending: false })
-      .limit(1)
-      .single();
+      .order('dibuat_pada', { ascending: false });
 
-    if (error || !data) {
-      return { active: false, userRole };
+    if (error || !activeList || activeList.length === 0) {
+      return { active: false, activeMap: {}, activeCount: 0, userRole };
     }
 
-    const createdAt = new Date(data.dibuat_pada).getTime();
-    const elapsedSeconds = Math.floor((Date.now() - createdAt) / 1000);
-    const remainingSeconds = MAX_SESSION_DURATION_SECONDS - elapsedSeconds;
+    const activeMap: Record<string, { sessionId: string; remainingSeconds: number }> = {};
+    let globalActiveId: string | undefined = undefined;
 
-    if (remainingSeconds <= 0) {
-      await supabase.from('sesi_absensi').update({ status: 'selesai' }).eq('id', data.id);
-      return { active: false, userRole };
+    for (const item of activeList) {
+      const createdAt = new Date(item.dibuat_pada).getTime();
+      const elapsedSeconds = Math.floor((Date.now() - createdAt) / 1000);
+      const remainingSeconds = MAX_SESSION_DURATION_SECONDS - elapsedSeconds;
+
+      if (remainingSeconds <= 0) {
+        await supabase.from('sesi_absensi').update({ status: 'selesai' }).eq('id', item.id);
+      } else {
+        if (!globalActiveId) globalActiveId = item.id;
+        if (item.kelas_id) {
+          activeMap[item.kelas_id] = { sessionId: item.id, remainingSeconds };
+        } else {
+          activeMap['general'] = { sessionId: item.id, remainingSeconds };
+        }
+      }
     }
+
+    const activeCount = Object.keys(activeMap).length;
+    const firstActive = Object.values(activeMap)[0];
+    const globalRemainingSeconds = firstActive?.remainingSeconds;
 
     return {
-      active: true,
-      sessionId: data.id,
-      remainingSeconds,
+      active: activeCount > 0,
+      sessionId: globalActiveId,
+      remainingSeconds: globalRemainingSeconds,
+      activeMap,
+      activeCount,
       userRole
     };
   } catch (err: any) {
-    return { active: false, userRole: 'guest' };
+    return { active: false, activeMap: {}, activeCount: 0, userRole: 'guest' };
   }
 }
 

@@ -180,21 +180,31 @@ export async function masukKelasDirectAction(studentLat: number, studentLng: num
     if (!session || session.role !== 'siswa') return { error: 'Hanya siswa yang dapat melakukan presensi.' };
     const userId = session.userId;
 
-    // Ambil sesi absensi aktif atau terbaru hari ini
-    const { data: sesiData, error: sesiError } = await supabase
+    // Ambil kelas_id siswa terlebih dahulu
+    const { data: siswaInfo } = await supabase
+      .from('siswa')
+      .select('kelas_id')
+      .eq('id', userId)
+      .maybeSingle();
+
+    // Query sesi absensi yang sedang aktif untuk kelas siswa atau umum
+    let sesiQuery = supabase
       .from('sesi_absensi')
       .select('*')
+      .eq('status', 'aktif');
+
+    if (siswaInfo?.kelas_id) {
+      sesiQuery = sesiQuery.or(`kelas_id.eq.${siswaInfo.kelas_id},kelas_id.is.null`);
+    }
+
+    const { data: sesiList, error: sesiError } = await sesiQuery
       .order('dibuat_pada', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(1);
+
+    const sesiData = sesiList?.[0];
 
     if (sesiError || !sesiData) {
       return { error: 'Sesi kelas belum dibuka oleh Guru/Admin hari ini.' };
-    }
-
-    // Cek apakah sesi sudah ditutup
-    if (sesiData.status !== 'aktif') {
-      return { error: 'Sesi kelas hari ini sudah ditutup oleh Guru/Admin.' };
     }
 
     // Cek apakah siswa sudah absen hari ini di sesi ini
