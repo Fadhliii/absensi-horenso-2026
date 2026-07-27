@@ -128,12 +128,12 @@ export async function getDashboardStatsAction() {
     const isSesiAktif = sesiAktif && sesiAktif.length > 0;
 
     let assignedKelas: { id: string; nama_kelas: string; total_siswa: number; lokasi_lat?: number | null; lokasi_lng?: number | null; radius_meter?: number | null } | null = null;
-    let allKelasList: { id: string; nama_kelas: string; total_siswa: number; lokasi_lat?: number | null; lokasi_lng?: number | null; radius_meter?: number | null }[] = [];
+    let allKelasList: { id: string; nama_kelas: string; total_siswa: number; lokasi_lat?: number | null; lokasi_lng?: number | null; radius_meter?: number | null; instruktur_id?: string | null }[] = [];
 
     // Fetch all classes for quick selection
     const { data: kAll } = await supabase
       .from('master_kelas')
-      .select('id, nama_kelas, lokasi_lat, lokasi_lng, radius_meter, siswa:siswa(count)')
+      .select('id, nama_kelas, lokasi_lat, lokasi_lng, radius_meter, instruktur_id, siswa:siswa(count)')
       .order('nama_kelas', { ascending: true });
 
     if (kAll) {
@@ -143,11 +143,15 @@ export async function getDashboardStatsAction() {
         lokasi_lat: k.lokasi_lat,
         lokasi_lng: k.lokasi_lng,
         radius_meter: k.radius_meter,
+        instruktur_id: k.instruktur_id,
         total_siswa: k.siswa?.[0]?.count || 0
       }));
     }
 
     if (role === 'instruktur' && userId) {
+      // Guru HANYA dapat melihat dan membuka kelas yang ditugaskan (assigned) kepadanya
+      allKelasList = allKelasList.filter(k => k.instruktur_id === userId);
+
       const { data: kData } = await supabase
         .from('master_kelas')
         .select('id, nama_kelas, lokasi_lat, lokasi_lng, radius_meter, siswa:siswa(count)')
@@ -166,6 +170,11 @@ export async function getDashboardStatsAction() {
       }
     }
 
+    const { data: presetList } = await supabase
+      .from('lokasi_preset')
+      .select('id, nama_lokasi, latitude, longitude, radius_meter')
+      .order('nama_lokasi', { ascending: true });
+
     return {
       success: true,
       stats: {
@@ -176,6 +185,7 @@ export async function getDashboardStatsAction() {
       },
       assignedKelas,
       allKelasList,
+      lokasiPresets: presetList || [],
       logAbsensi: logAbsensi || [],
       chartData,
       isSesiAktif,

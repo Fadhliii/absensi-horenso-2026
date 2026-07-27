@@ -91,13 +91,13 @@ async function getAdminOrInstrukturId() {
   if (!token) throw new Error('Unauthorized');
   const session = await verifySessionToken(token);
   if (!session || (session.role !== 'admin' && session.role !== 'instruktur')) throw new Error('Unauthorized');
-  return session.userId;
+  return { userId: session.userId, role: session.role };
 }
 
 export async function mulaiSesiAction(formData: FormData) {
-  let userId;
+  let userAuth;
   try {
-    userId = await getAdminOrInstrukturId();
+    userAuth = await getAdminOrInstrukturId();
   } catch (e) {
     return { error: 'Anda tidak memiliki akses.' };
   }
@@ -122,7 +122,7 @@ export async function mulaiSesiAction(formData: FormData) {
     .from('sesi_absensi')
     .insert([
       {
-        dibuat_oleh: userId,
+        dibuat_oleh: userAuth.userId,
         kelas_id: kelas_id === '' ? null : kelas_id,
         lokasi_lat: lat,
         lokasi_lng: lng,
@@ -141,9 +141,9 @@ export async function mulaiSesiAction(formData: FormData) {
 
 // 1-Click Buka Presensi Kelas untuk Instruktur / Admin berdasarkan Koordinat Kelas yang Ditentukan
 export async function mulaiSesiKelas1ClickAction(kelasId: string) {
-  let userId;
+  let userAuth;
   try {
-    userId = await getAdminOrInstrukturId();
+    userAuth = await getAdminOrInstrukturId();
   } catch (e) {
     return { error: 'Anda tidak memiliki akses.' };
   }
@@ -156,6 +156,11 @@ export async function mulaiSesiKelas1ClickAction(kelasId: string) {
 
   if (kelasErr || !kelasData) {
     return { error: 'Data kelas tidak ditemukan.' };
+  }
+
+  // Jika user adalah Instruktur / Guru, pastikan kelas ini ditugaskan kepadanya!
+  if (userAuth.role === 'instruktur' && kelasData.instruktur_id !== userAuth.userId) {
+    return { error: 'Anda hanya dapat membuka presensi untuk kelas yang ditugaskan kepada Anda.' };
   }
 
   const lat = kelasData.lokasi_lat;
@@ -179,7 +184,7 @@ export async function mulaiSesiKelas1ClickAction(kelasId: string) {
     .from('sesi_absensi')
     .insert([
       {
-        dibuat_oleh: userId,
+        dibuat_oleh: userAuth.userId,
         kelas_id: kelasId,
         lokasi_lat: lat,
         lokasi_lng: lng,

@@ -12,8 +12,9 @@ import {
   removeSiswaFromKelasAction,
   getInstrukturListForAssignmentAction
 } from '@/app/actions/kelas';
+import { getLokasiPresetsAction } from '@/app/actions/sesi';
 import IndonesianClock from '@/components/IndonesianClock';
-import { ArrowLeft, Plus, Edit2, Trash2, Users, UserPlus, UserMinus, X, UserCheck } from 'lucide-react';
+import { ArrowLeft, Plus, Edit2, Trash2, Users, UserPlus, UserMinus, X, UserCheck, MapPin } from 'lucide-react';
 import Link from 'next/link';
 
 type KelasItem = {
@@ -62,9 +63,18 @@ type InstrukturOption = {
   email: string;
 };
 
+type LokasiPresetItem = {
+  id: string;
+  nama_lokasi: string;
+  latitude: number;
+  longitude: number;
+  radius_meter: number;
+};
+
 export default function MasterKelasPage() {
   const [data, setData] = useState<KelasItem[]>([]);
   const [instrukturOptions, setInstrukturOptions] = useState<InstrukturOption[]>([]);
+  const [lokasiPresets, setLokasiPresets] = useState<LokasiPresetItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -429,6 +439,37 @@ export default function MasterKelasPage() {
                     {gpsDetecting ? 'Mendeteksi...' : '🎯 Deteksi GPS Saya'}
                   </button>
                 </div>
+
+                {/* Dropdown Preset Lokasi */}
+                {lokasiPresets.length > 0 && (
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-700 uppercase mb-0.5">
+                      ⭐ Gunakan Preset Lokasi Tersimpan:
+                    </label>
+                    <select
+                      onChange={(e) => {
+                        const pId = e.target.value;
+                        const preset = lokasiPresets.find(p => p.id === pId);
+                        if (preset) {
+                          setFormData(prev => ({
+                            ...prev,
+                            lokasi_lat: String(preset.latitude),
+                            lokasi_lng: String(preset.longitude),
+                            radius_meter: String(preset.radius_meter || 100)
+                          }));
+                        }
+                      }}
+                      className="w-full neo-input p-1.5 text-xs font-bold bg-white"
+                    >
+                      <option value="">-- Pilih Preset Lokasi (Contoh: PT PAKO, ICHIKOH, dll) --</option>
+                      {lokasiPresets.map(p => (
+                        <option key={p.id} value={p.id}>
+                          🏢 {p.nama_lokasi} ({p.latitude}, {p.longitude})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>

@@ -110,6 +110,29 @@ export async function updateKelasAction(formData: FormData) {
     if (error) throw error;
     
     revalidatePath('/admin/kelas');
+    revalidatePath('/admin/dashboard');
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function updateKelasLocationAction(kelasId: string, lat: number, lng: number, radius: number = 100) {
+  try {
+    const { error } = await supabase
+      .from('master_kelas')
+      .update({
+        lokasi_lat: lat,
+        lokasi_lng: lng,
+        radius_meter: radius,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', kelasId);
+
+    if (error) throw error;
+
+    revalidatePath('/admin/kelas');
+    revalidatePath('/admin/dashboard');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };

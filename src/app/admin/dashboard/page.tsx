@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { getDashboardStatsAction } from '@/app/actions/dashboard';
 import { getPendingCountAction } from '@/app/actions/approval';
 import { mulaiSesiAction, selesaiSesiAction, getActiveSesiInfoAction, mulaiSesiKelas1ClickAction } from '@/app/actions/sesi';
+import { updateKelasLocationAction } from '@/app/actions/kelas';
 import { logoutAction } from '@/app/actions/auth';
 import IndonesianClock from '@/components/IndonesianClock';
-import { Users, UserCheck, UserPlus, LogOut, ExternalLink, MapPin, CheckCircle2, ShieldCheck, DoorOpen, Calendar, Building2, BookOpen, UserCog, ClipboardList, Layers, Loader2, XCircle, Zap, Settings } from 'lucide-react';
+import { Users, UserCheck, UserPlus, LogOut, ExternalLink, MapPin, CheckCircle2, ShieldCheck, DoorOpen, Calendar, Building2, BookOpen, UserCog, ClipboardList, Layers, Loader2, XCircle, Zap, Settings, X } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 
@@ -32,6 +33,10 @@ export default function AdminDashboardPage() {
   const [activeKelasSearch, setActiveKelasSearch] = useState('');
   const [bukaSesiLoading, setBukaSesiLoading] = useState(false);
   const [selectedKelasIdForSession, setSelectedKelasIdForSession] = useState('');
+
+  // Modal Set GPS Kelas Quick Action
+  const [gpsModalKelas, setGpsModalKelas] = useState<{ id: string; nama_kelas: string; lat: string; lng: string; radius: string } | null>(null);
+  const [savingGps, setSavingGps] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -62,6 +67,48 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Quick Save GPS for Class
+  const handleSaveGpsForKelas = async () => {
+    if (!gpsModalKelas) return;
+    const lat = parseFloat(gpsModalKelas.lat);
+    const lng = parseFloat(gpsModalKelas.lng);
+    const radius = parseInt(gpsModalKelas.radius) || 100;
+
+    if (isNaN(lat) || isNaN(lng)) {
+      alert('Koordinat Latitude dan Longitude wajib diisi!');
+      return;
+    }
+
+    setSavingGps(true);
+    const res = await updateKelasLocationAction(gpsModalKelas.id, lat, lng, radius);
+    if (res.success) {
+      alert(`📍 Titik Lokasi GPS untuk ${gpsModalKelas.nama_kelas} BERHASIL DISIMPAN & DITERAPKAN!`);
+      setGpsModalKelas(null);
+      fetchData();
+    } else {
+      alert('Gagal menyimpan lokasi: ' + res.error);
+    }
+    setSavingGps(false);
+  };
+
+  const handleDetectGpsForModal = () => {
+    if (!navigator.geolocation) {
+      alert('Browser Anda tidak mendukung GPS.');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGpsModalKelas(prev => prev ? {
+          ...prev,
+          lat: pos.coords.latitude.toFixed(6),
+          lng: pos.coords.longitude.toFixed(6)
+        } : null);
+      },
+      (err) => alert('Gagal mendeteksi lokasi GPS: ' + err.message),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   // 1-Click Buka Presensi Kelas (Menggunakan Koordinat Kelas yang ditentukan Admin)
   const handle1ClickBukaSesiKelas = async (targetKelasId: string) => {
@@ -287,14 +334,38 @@ export default function AdminDashboardPage() {
                                   👥 {k.total_siswa} Siswa Terdaftar
                                 </p>
 
-                                {k.lokasi_lat && k.lokasi_lng ? (
-                                  <p className="text-[10px] font-bold text-black mt-0.5 flex items-center gap-1">
-                                    📍 {k.lokasi_lat}, {k.lokasi_lng} ({k.radius_meter || 100}m)
-                                  </p>
+                                {k.lokasi_lat !== null && k.lokasi_lat !== undefined && k.lokasi_lng !== null && k.lokasi_lng !== undefined ? (
+                                  <div className="flex items-center justify-between gap-1 mt-1 bg-white/80 p-1.5 border border-black/30 rounded text-[10px] font-bold">
+                                    <span>📍 {k.lokasi_lat}, {k.lokasi_lng} ({k.radius_meter || 100}m)</span>
+                                    <button
+                                      onClick={() => setGpsModalKelas({
+                                        id: k.id,
+                                        nama_kelas: k.nama_kelas,
+                                        lat: String(k.lokasi_lat || ''),
+                                        lng: String(k.lokasi_lng || ''),
+                                        radius: String(k.radius_meter || 100)
+                                      })}
+                                      className="text-black hover:text-purple-700 underline font-black text-[10px] shrink-0"
+                                    >
+                                      ⚙️ Edit
+                                    </button>
+                                  </div>
                                 ) : (
-                                  <p className="text-[10px] font-bold text-red-700 mt-0.5">
-                                    ⚠️ Koordinat belum di-set di Master Kelas
-                                  </p>
+                                  <div className="flex items-center justify-between gap-1 mt-1 bg-red-100 p-1.5 neo-border border-red-400 text-[10px] font-bold text-red-900">
+                                    <span>⚠️ Belum Set GPS</span>
+                                    <button
+                                      onClick={() => setGpsModalKelas({
+                                        id: k.id,
+                                        nama_kelas: k.nama_kelas,
+                                        lat: '',
+                                        lng: '',
+                                        radius: '100'
+                                      })}
+                                      className="bg-black text-white px-1.5 py-0.5 rounded font-black text-[9px] uppercase hover:bg-purple-900"
+                                    >
+                                      📍 Set GPS
+                                    </button>
+                                  </div>
                                 )}
                               </div>
 
@@ -619,6 +690,121 @@ export default function AdminDashboardPage() {
           </div>
         )}
       </main>
+
+      {/* MODAL SET LOKASI GPS KELAS QUICK ACTION */}
+      {gpsModalKelas && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={() => setGpsModalKelas(null)}></div>
+          <div className="relative z-50 w-full max-w-md bg-white neo-card shadow-none space-y-4 p-6 border-4 border-black">
+            <div className="flex justify-between items-center border-b-3 border-black pb-3">
+              <h3 className="text-sm font-black text-black uppercase flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-purple-700" />
+                <span>Atur Lokasi GPS: {gpsModalKelas.nama_kelas}</span>
+              </h3>
+              <button onClick={() => setGpsModalKelas(null)} className="p-1 hover:bg-black hover:text-white neo-border">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs font-bold">
+              {/* Opsi 1: Pilih dari Preset Lokasi Tersimpan */}
+              {data?.lokasiPresets && data.lokasiPresets.length > 0 && (
+                <div className="p-3 bg-[#fffde7] neo-border space-y-1.5">
+                  <label className="block text-[11px] font-black text-black uppercase">
+                    ⭐ Pilih dari Preset Lokasi Tersimpan:
+                  </label>
+                  <select
+                    onChange={(e) => {
+                      const selectedId = e.target.value;
+                      const preset = data.lokasiPresets.find((p: any) => p.id === selectedId);
+                      if (preset) {
+                        setGpsModalKelas(prev => prev ? {
+                          ...prev,
+                          lat: String(preset.latitude),
+                          lng: String(preset.longitude),
+                          radius: String(preset.radius_meter || 100)
+                        } : null);
+                      }
+                    }}
+                    className="w-full neo-input p-2 text-xs font-bold bg-white"
+                  >
+                    <option value="">-- Pilih Lokasi Preset --</option>
+                    {data.lokasiPresets.map((p: any) => (
+                      <option key={p.id} value={p.id}>
+                        🏢 {p.nama_lokasi} ({p.latitude}, {p.longitude})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Opsi 2: Ambil GPS HP */}
+              <button
+                type="button"
+                onClick={handleDetectGpsForModal}
+                className="w-full bg-[#74ee15] hover:bg-[#60d60e] text-black font-black py-2.5 px-3 neo-btn text-xs uppercase flex items-center justify-center gap-2"
+              >
+                🎯 Gunakan Posisi GPS HP Saya Saat Ini
+              </button>
+
+              {/* Opsi 3: Input Manual */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-700 uppercase mb-0.5">Latitude *</label>
+                  <input
+                    type="number"
+                    step="any"
+                    placeholder="-6.200000"
+                    value={gpsModalKelas.lat}
+                    onChange={(e) => setGpsModalKelas({...gpsModalKelas, lat: e.target.value})}
+                    className="w-full neo-input p-2 text-xs font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-gray-700 uppercase mb-0.5">Longitude *</label>
+                  <input
+                    type="number"
+                    step="any"
+                    placeholder="106.800000"
+                    value={gpsModalKelas.lng}
+                    onChange={(e) => setGpsModalKelas({...gpsModalKelas, lng: e.target.value})}
+                    className="w-full neo-input p-2 text-xs font-bold"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-gray-700 uppercase mb-0.5">Radius Toleransi (Meter)</label>
+                <input
+                  type="number"
+                  min="10"
+                  max="5000"
+                  value={gpsModalKelas.radius}
+                  onChange={(e) => setGpsModalKelas({...gpsModalKelas, radius: e.target.value})}
+                  className="w-full neo-input p-2 text-xs font-bold"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t-2 border-black">
+              <button
+                onClick={handleSaveGpsForKelas}
+                disabled={savingGps}
+                className="flex-1 bg-[#ffe600] text-black font-black py-2.5 text-xs neo-btn uppercase"
+              >
+                {savingGps ? 'Menyimpan...' : 'Simpan Lokasi Kelas'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setGpsModalKelas(null)}
+                className="bg-gray-200 text-black font-black px-4 py-2.5 text-xs neo-btn uppercase"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
