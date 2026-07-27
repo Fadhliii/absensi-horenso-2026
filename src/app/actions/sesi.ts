@@ -112,6 +112,7 @@ export async function mulaiSesiAction(formData: FormData) {
   const lng = parseFloat(formData.get('longitude') as string);
   const radius = parseInt(formData.get('radius') as string);
   const interval = parseInt(formData.get('interval') as string);
+  const kelas_id = (formData.get('kelas_id') as string) || null;
 
   if (isNaN(lat) || isNaN(lng)) {
     return { error: 'Lokasi GPS tidak valid. Pastikan Anda mengizinkan akses lokasi browser.' };
@@ -122,6 +123,7 @@ export async function mulaiSesiAction(formData: FormData) {
     .insert([
       {
         dibuat_oleh: userId,
+        kelas_id: kelas_id === '' ? null : kelas_id,
         lokasi_lat: lat,
         lokasi_lng: lng,
         radius_meter: radius || 50,
@@ -135,6 +137,62 @@ export async function mulaiSesiAction(formData: FormData) {
   if (error) return { error: error.message };
 
   return { success: true, sessionId: data.id };
+}
+
+// 1-Click Buka Presensi Kelas untuk Instruktur / Admin berdasarkan Koordinat Kelas yang Ditentukan
+export async function mulaiSesiKelas1ClickAction(kelasId: string) {
+  let userId;
+  try {
+    userId = await getAdminOrInstrukturId();
+  } catch (e) {
+    return { error: 'Anda tidak memiliki akses.' };
+  }
+
+  const { data: kelasData, error: kelasErr } = await supabase
+    .from('master_kelas')
+    .select('*')
+    .eq('id', kelasId)
+    .single();
+
+  if (kelasErr || !kelasData) {
+    return { error: 'Data kelas tidak ditemukan.' };
+  }
+
+  const lat = kelasData.lokasi_lat;
+  const lng = kelasData.lokasi_lng;
+  const radius = kelasData.radius_meter || 100;
+
+  if (lat === null || lng === null) {
+    return { 
+      error: `Kelas ${kelasData.nama_kelas} belum di-set titik lokasi koordinatnya oleh Admin. Silakan atur koordinat di menu Manajemen Kelas terlebih dahulu.` 
+    };
+  }
+
+  // Tutup dulu semua sesi lama yang aktif
+  await supabase
+    .from('sesi_absensi')
+    .update({ status: 'selesai' })
+    .eq('status', 'aktif');
+
+  const { data, error } = await supabase
+    .from('sesi_absensi')
+    .insert([
+      {
+        dibuat_oleh: userId,
+        kelas_id: kelasId,
+        lokasi_lat: lat,
+        lokasi_lng: lng,
+        radius_meter: radius,
+        interval_qr_detik: 10,
+        status: 'aktif',
+      }
+    ])
+    .select('id')
+    .single();
+
+  if (error) return { error: error.message };
+
+  return { success: true, sessionId: data.id, namaKelas: kelasData.nama_kelas };
 }
 
 export async function selesaiSesiAction(sessionId: string) {

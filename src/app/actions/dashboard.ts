@@ -127,11 +127,30 @@ export async function getDashboardStatsAction() {
 
     const isSesiAktif = sesiAktif && sesiAktif.length > 0;
 
-    let assignedKelas: { id: string; nama_kelas: string; total_siswa: number } | null = null;
+    let assignedKelas: { id: string; nama_kelas: string; total_siswa: number; lokasi_lat?: number | null; lokasi_lng?: number | null; radius_meter?: number | null } | null = null;
+    let allKelasList: { id: string; nama_kelas: string; total_siswa: number; lokasi_lat?: number | null; lokasi_lng?: number | null; radius_meter?: number | null }[] = [];
+
+    // Fetch all classes for quick selection
+    const { data: kAll } = await supabase
+      .from('master_kelas')
+      .select('id, nama_kelas, lokasi_lat, lokasi_lng, radius_meter, siswa:siswa(count)')
+      .order('nama_kelas', { ascending: true });
+
+    if (kAll) {
+      allKelasList = kAll.map((k: any) => ({
+        id: k.id,
+        nama_kelas: k.nama_kelas,
+        lokasi_lat: k.lokasi_lat,
+        lokasi_lng: k.lokasi_lng,
+        radius_meter: k.radius_meter,
+        total_siswa: k.siswa?.[0]?.count || 0
+      }));
+    }
+
     if (role === 'instruktur' && userId) {
       const { data: kData } = await supabase
         .from('master_kelas')
-        .select('id, nama_kelas, siswa:siswa(count)')
+        .select('id, nama_kelas, lokasi_lat, lokasi_lng, radius_meter, siswa:siswa(count)')
         .eq('instruktur_id', userId)
         .maybeSingle();
 
@@ -139,6 +158,9 @@ export async function getDashboardStatsAction() {
         assignedKelas = {
           id: kData.id,
           nama_kelas: kData.nama_kelas,
+          lokasi_lat: kData.lokasi_lat,
+          lokasi_lng: kData.lokasi_lng,
+          radius_meter: kData.radius_meter,
           total_siswa: (kData.siswa as any)?.[0]?.count || 0
         };
       }
@@ -153,6 +175,7 @@ export async function getDashboardStatsAction() {
         pendingIzin: pendingIzin || 0,
       },
       assignedKelas,
+      allKelasList,
       logAbsensi: logAbsensi || [],
       chartData,
       isSesiAktif,

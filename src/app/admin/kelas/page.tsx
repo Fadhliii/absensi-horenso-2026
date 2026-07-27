@@ -23,6 +23,9 @@ type KelasItem = {
   instruktur_id?: string | null;
   nama_instruktur?: string | null;
   jumlah_siswa: number;
+  lokasi_lat?: number | null;
+  lokasi_lng?: number | null;
+  radius_meter?: number | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -69,7 +72,15 @@ export default function MasterKelasPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [currentId, setCurrentId] = useState('');
-  const [formData, setFormData] = useState({ nama_kelas: '', deskripsi: '', instruktur_id: '' });
+  const [formData, setFormData] = useState({ 
+    nama_kelas: '', 
+    deskripsi: '', 
+    instruktur_id: '',
+    lokasi_lat: '',
+    lokasi_lng: '',
+    radius_meter: '100'
+  });
+  const [gpsDetecting, setGpsDetecting] = useState(false);
 
   // Modal Kelola Siswa di Kelas
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -105,7 +116,7 @@ export default function MasterKelasPage() {
 
   function openCreateModal() {
     setModalMode('create');
-    setFormData({ nama_kelas: '', deskripsi: '', instruktur_id: '' });
+    setFormData({ nama_kelas: '', deskripsi: '', instruktur_id: '', lokasi_lat: '', lokasi_lng: '', radius_meter: '100' });
     setIsModalOpen(true);
   }
 
@@ -116,9 +127,35 @@ export default function MasterKelasPage() {
     setFormData({ 
       nama_kelas: kelas.nama_kelas, 
       deskripsi: kelas.deskripsi || '',
-      instruktur_id: kelas.instruktur_id || '' 
+      instruktur_id: kelas.instruktur_id || '',
+      lokasi_lat: kelas.lokasi_lat !== null && kelas.lokasi_lat !== undefined ? String(kelas.lokasi_lat) : '',
+      lokasi_lng: kelas.lokasi_lng !== null && kelas.lokasi_lng !== undefined ? String(kelas.lokasi_lng) : '',
+      radius_meter: kelas.radius_meter ? String(kelas.radius_meter) : '100'
     });
     setIsModalOpen(true);
+  }
+
+  function handleAutoDetectGps() {
+    if (!navigator.geolocation) {
+      alert('Browser Anda tidak mendukung Geolocation GPS.');
+      return;
+    }
+    setGpsDetecting(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setFormData(prev => ({
+          ...prev,
+          lokasi_lat: pos.coords.latitude.toFixed(6),
+          lokasi_lng: pos.coords.longitude.toFixed(6)
+        }));
+        setGpsDetecting(false);
+      },
+      (err) => {
+        alert('Gagal mendeteksi lokasi GPS: ' + err.message);
+        setGpsDetecting(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -127,6 +164,9 @@ export default function MasterKelasPage() {
     fd.append('nama_kelas', formData.nama_kelas);
     fd.append('deskripsi', formData.deskripsi);
     fd.append('instruktur_id', formData.instruktur_id);
+    fd.append('lokasi_lat', formData.lokasi_lat);
+    fd.append('lokasi_lng', formData.lokasi_lng);
+    fd.append('radius_meter', formData.radius_meter);
     
     if (modalMode === 'edit') {
       fd.append('id', currentId);
@@ -253,17 +293,16 @@ export default function MasterKelasPage() {
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-black text-black uppercase tracking-wider">Nama Kelas</th>
                   <th className="px-6 py-4 text-left text-xs font-black text-black uppercase tracking-wider">Instruktur Pengajar</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-black uppercase tracking-wider">Deskripsi</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-black uppercase tracking-wider">Titik Koordinat Lokasi & Radius</th>
                   <th className="px-6 py-4 text-center text-xs font-black text-black uppercase tracking-wider">Jumlah Siswa</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-black uppercase tracking-wider">Terakhir Diedit</th>
                   <th className="px-6 py-4 text-right text-xs font-black text-black uppercase tracking-wider">Aksi</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y-2 divide-gray-200">
                 {loading ? (
-                  <tr><td colSpan={6} className="px-6 py-10 text-center font-bold">Memuat data kelas...</td></tr>
+                  <tr><td colSpan={5} className="px-6 py-10 text-center font-bold">Memuat data kelas...</td></tr>
                 ) : data.length === 0 ? (
-                  <tr><td colSpan={6} className="px-6 py-10 text-center font-bold">Belum ada data kelas.</td></tr>
+                  <tr><td colSpan={5} className="px-6 py-10 text-center font-bold">Belum ada data kelas.</td></tr>
                 ) : (
                   data.map(item => (
                     <tr 
@@ -272,7 +311,10 @@ export default function MasterKelasPage() {
                       className="hover:bg-[#ffe600] hover:text-black font-bold cursor-pointer transition-colors"
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="font-black text-sm uppercase">{item.nama_kelas}</span>
+                        <div className="flex flex-col">
+                          <span className="font-black text-sm uppercase">{item.nama_kelas}</span>
+                          {item.deskripsi && <span className="text-[11px] text-gray-600 font-normal">{item.deskripsi}</span>}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {item.nama_instruktur ? (
@@ -285,14 +327,24 @@ export default function MasterKelasPage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 font-medium text-gray-700 max-w-xs truncate">{item.deskripsi || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {item.lokasi_lat !== null && item.lokasi_lng !== null && item.lokasi_lat !== undefined ? (
+                          <div className="flex items-center gap-1.5 bg-emerald-100 text-emerald-950 px-2.5 py-1 neo-border border-emerald-400 text-xs font-black w-fit">
+                            <span>📍 {item.lokasi_lat}, {item.lokasi_lng}</span>
+                            <span className="bg-emerald-600 text-white px-1.5 py-0.5 rounded text-[10px]">
+                              {item.radius_meter || 100}m
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded text-[11px] font-bold">
+                            ⚠️ Belum Ditinggalkan Koordinat
+                          </span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <span className="bg-[#74ee15] text-black px-2.5 py-1 neo-border text-xs font-black">
                           👥 {item.jumlah_siswa} Siswa
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-600 font-bold">
-                        {formatDateStr(item.updated_at || item.created_at)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right space-x-2">
                         <button 
@@ -327,8 +379,8 @@ export default function MasterKelasPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
-          <div className="relative z-50 w-full max-w-md bg-white neo-card shadow-none">
-            <div className="bg-[#00f0ff] p-4 border-b-3 border-black flex justify-between items-center">
+          <div className="relative z-50 w-full max-w-lg bg-white neo-card shadow-none max-h-[90vh] overflow-y-auto">
+            <div className="bg-[#00f0ff] p-4 border-b-3 border-black flex justify-between items-center sticky top-0 z-10">
               <h3 className="text-lg font-black uppercase text-black">
                 {modalMode === 'create' ? 'Tambah Kelas Baru' : 'Edit Kelas'}
               </h3>
@@ -361,21 +413,80 @@ export default function MasterKelasPage() {
                   ))}
                 </select>
               </div>
+
+              {/* Titik Koordinat GPS & Radius Per Kelas */}
+              <div className="p-4 bg-[#fffde7] neo-border space-y-3">
+                <div className="flex justify-between items-center">
+                  <label className="block text-xs font-black text-black uppercase">
+                    📍 Koordinat GPS Lokasi Kelas Ini
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAutoDetectGps}
+                    disabled={gpsDetecting}
+                    className="bg-[#74ee15] hover:bg-[#60d60e] text-black px-2.5 py-1 neo-border text-[11px] font-black uppercase flex items-center gap-1"
+                  >
+                    {gpsDetecting ? 'Mendeteksi...' : '🎯 Deteksi GPS Saya'}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-700 uppercase mb-0.5">Latitude</label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="Contoh: -6.200000"
+                      value={formData.lokasi_lat}
+                      onChange={(e) => setFormData({...formData, lokasi_lat: e.target.value})}
+                      className="w-full neo-input p-2 text-xs font-bold bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-700 uppercase mb-0.5">Longitude</label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="Contoh: 106.800000"
+                      value={formData.lokasi_lng}
+                      onChange={(e) => setFormData({...formData, lokasi_lng: e.target.value})}
+                      className="w-full neo-input p-2 text-xs font-bold bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-gray-700 uppercase mb-0.5">Radius Presensi (Meter)</label>
+                  <input
+                    type="number"
+                    min="10"
+                    max="5000"
+                    value={formData.radius_meter}
+                    onChange={(e) => setFormData({...formData, radius_meter: e.target.value})}
+                    className="w-full neo-input p-2 text-xs font-bold bg-white"
+                  />
+                  <p className="text-[10px] text-gray-500 font-bold mt-1">
+                    Batas jarak maksimal siswa dari lokasi kelas saat menekan Masuk Kelas.
+                  </p>
+                </div>
+              </div>
+
               <div>
-                <label className="block text-sm font-black uppercase text-black mb-1">Deskripsi</label>
+                <label className="block text-sm font-black uppercase text-black mb-1">Deskripsi / Catatan</label>
                 <textarea
                   value={formData.deskripsi}
                   onChange={(e) => setFormData({...formData, deskripsi: e.target.value})}
                   className="w-full neo-input p-2 font-bold text-sm"
-                  rows={3}
-                  placeholder="Contoh: Angkatan Musim Gugur 2026"
+                  rows={2}
+                  placeholder="Contoh: Gedung LPK Lantai 2"
                 ></textarea>
               </div>
-              <div className="mt-6 flex gap-3">
-                <button type="submit" className="flex-1 bg-[#ffe600] text-black neo-btn py-2 text-xs font-black uppercase">
+
+              <div className="mt-6 flex gap-3 pt-2">
+                <button type="submit" className="flex-1 bg-[#ffe600] text-black neo-btn py-2.5 text-xs font-black uppercase">
                   Simpan Kelas
                 </button>
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 bg-[#f4f4f0] text-black neo-btn py-2 text-xs font-black uppercase">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 bg-[#f4f4f0] text-black neo-btn py-2.5 text-xs font-black uppercase">
                   Batal
                 </button>
               </div>

@@ -45,8 +45,15 @@ export async function createKelasAction(formData: FormData) {
     const nama_kelas = formData.get('nama_kelas') as string;
     const deskripsi = formData.get('deskripsi') as string;
     const instruktur_id = (formData.get('instruktur_id') as string) || null;
+    const latStr = formData.get('lokasi_lat') as string;
+    const lngStr = formData.get('lokasi_lng') as string;
+    const radiusStr = formData.get('radius_meter') as string;
 
     if (!nama_kelas) throw new Error('Nama kelas wajib diisi');
+
+    const lokasi_lat = latStr && !isNaN(parseFloat(latStr)) ? parseFloat(latStr) : null;
+    const lokasi_lng = lngStr && !isNaN(parseFloat(lngStr)) ? parseFloat(lngStr) : null;
+    const radius_meter = radiusStr && !isNaN(parseInt(radiusStr)) ? parseInt(radiusStr) : 100;
 
     const now = new Date().toISOString();
     const { error } = await supabase
@@ -55,6 +62,9 @@ export async function createKelasAction(formData: FormData) {
         nama_kelas, 
         deskripsi, 
         instruktur_id: instruktur_id === '' ? null : instruktur_id,
+        lokasi_lat,
+        lokasi_lng,
+        radius_meter,
         updated_at: now 
       }]);
 
@@ -73,8 +83,15 @@ export async function updateKelasAction(formData: FormData) {
     const nama_kelas = formData.get('nama_kelas') as string;
     const deskripsi = formData.get('deskripsi') as string;
     const instruktur_id = (formData.get('instruktur_id') as string) || null;
+    const latStr = formData.get('lokasi_lat') as string;
+    const lngStr = formData.get('lokasi_lng') as string;
+    const radiusStr = formData.get('radius_meter') as string;
 
     if (!id || !nama_kelas) throw new Error('Data tidak lengkap');
+
+    const lokasi_lat = latStr && !isNaN(parseFloat(latStr)) ? parseFloat(latStr) : null;
+    const lokasi_lng = lngStr && !isNaN(parseFloat(lngStr)) ? parseFloat(lngStr) : null;
+    const radius_meter = radiusStr && !isNaN(parseInt(radiusStr)) ? parseInt(radiusStr) : 100;
 
     const now = new Date().toISOString();
     const { error } = await supabase
@@ -83,6 +100,9 @@ export async function updateKelasAction(formData: FormData) {
         nama_kelas, 
         deskripsi, 
         instruktur_id: instruktur_id === '' ? null : instruktur_id,
+        lokasi_lat,
+        lokasi_lng,
+        radius_meter,
         updated_at: now 
       })
       .eq('id', id);

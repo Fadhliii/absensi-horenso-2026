@@ -3,10 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getDashboardStatsAction } from '@/app/actions/dashboard';
 import { getPendingCountAction } from '@/app/actions/approval';
-import { mulaiSesiAction, selesaiSesiAction, getActiveSesiInfoAction } from '@/app/actions/sesi';
+import { mulaiSesiAction, selesaiSesiAction, getActiveSesiInfoAction, mulaiSesiKelas1ClickAction } from '@/app/actions/sesi';
 import { logoutAction } from '@/app/actions/auth';
 import IndonesianClock from '@/components/IndonesianClock';
-import { Users, UserCheck, UserPlus, LogOut, ExternalLink, MapPin, CheckCircle2, ShieldCheck, DoorOpen, Calendar, Building2, BookOpen, UserCog, ClipboardList, Layers, Loader2, XCircle } from 'lucide-react';
+import { Users, UserCheck, UserPlus, LogOut, ExternalLink, MapPin, CheckCircle2, ShieldCheck, DoorOpen, Calendar, Building2, BookOpen, UserCog, ClipboardList, Layers, Loader2, XCircle, Zap, Settings } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 
@@ -29,12 +29,18 @@ export default function AdminDashboardPage() {
   // 1-Click Buka Kelas State
   const [sesiInfo, setSesiInfo] = useState<{ active: boolean; sessionId?: string }>({ active: false });
   const [bukaSesiLoading, setBukaSesiLoading] = useState(false);
+  const [selectedKelasIdForSession, setSelectedKelasIdForSession] = useState('');
 
   const fetchData = useCallback(async () => {
     try {
       const result = await getDashboardStatsAction();
       if (result.success) {
         setData(result);
+        if (result.assignedKelas?.id) {
+          setSelectedKelasIdForSession(result.assignedKelas.id);
+        } else if (result.allKelasList && result.allKelasList.length > 0) {
+          setSelectedKelasIdForSession(result.allKelasList[0].id);
+        }
       } else {
         setError(result.error || 'Terjadi kesalahan saat memuat data');
       }
@@ -54,7 +60,23 @@ export default function AdminDashboardPage() {
     fetchData();
   }, [fetchData]);
 
-  // 1-Click Buka Kelas Handler
+  // 1-Click Buka Presensi Kelas (Menggunakan Koordinat Kelas yang ditentukan Admin)
+  const handle1ClickBukaSesiKelas = async (targetKelasId: string) => {
+    if (!targetKelasId) return;
+    setBukaSesiLoading(true);
+
+    const res = await mulaiSesiKelas1ClickAction(targetKelasId);
+    if (res.error) {
+      alert('⚠️ ' + res.error);
+    } else {
+      setSesiInfo({ active: true, sessionId: res.sessionId });
+      alert(`🚀 BERHASIL! Presensi untuk ${res.namaKelas || 'Kelas'} telah DIBUKA (1-Click). Siswa kelas tersebut sudah bisa menekan tombol Masuk Kelas.`);
+      fetchData();
+    }
+    setBukaSesiLoading(false);
+  };
+
+  // 1-Click Buka Kelas Handler (Gps Manual / Current Position)
   const handle1ClickBukaKelas = async () => {
     if (!navigator.geolocation) {
       alert('Browser Anda tidak mendukung GPS!');
@@ -76,7 +98,8 @@ export default function AdminDashboardPage() {
           alert('Gagal Buka Kelas: ' + res.error);
         } else {
           setSesiInfo({ active: true, sessionId: res.sessionId });
-          alert('BERHASIL! Kelas hari ini telah DIBUKA. Siswa sudah bisa menekan tombol Masuk Kelas.');
+          alert('BERHASIL! Presensi lokasi GPS instan telah DIBUKA.');
+          fetchData();
         }
         setBukaSesiLoading(false);
       },
@@ -100,7 +123,8 @@ export default function AdminDashboardPage() {
       alert('Gagal Tutup Kelas: ' + res.error);
     } else {
       setSesiInfo({ active: false });
-      alert('Kelas telah DITUTUP.');
+      alert('Sesi Presensi telah DITUTUP.');
+      fetchData();
     }
     setBukaSesiLoading(false);
   };
@@ -161,7 +185,7 @@ export default function AdminDashboardPage() {
             {/* 2 MAIN HERO BANNERS: 1-CLICK BUKA KELAS & APPROVAL BERJAMAAH */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               
-              {/* BANNER 1: BUKA / TUTUP KELAS SEKARANG (1-KLIK) */}
+              {/* BANNER 1: BUKA / TUTUP KELAS SEKARANG (1-KLIK PER KELAS) */}
               <div className={`neo-card p-5 border-4 border-black flex flex-col justify-between space-y-4 ${
                 sesiInfo.active ? 'bg-[#74ee15]' : 'bg-[#ffe600]'
               }`}>
@@ -171,46 +195,106 @@ export default function AdminDashboardPage() {
                       <DoorOpen className="w-7 h-7 text-black" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-base font-black text-black uppercase tracking-tight">Buka Sesi Kelas (1-Klik)</h2>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="text-base font-black text-black uppercase tracking-tight">Buka Sesi Presensi (1-Klik)</h2>
                         {sesiInfo.active ? (
                           <span className="bg-green-800 text-white text-[10px] font-black px-2 py-0.5 rounded border border-black animate-pulse">
-                            🟢 KELAS DIBUKA
+                            🟢 PRESENSI KELAS AKTIF
                           </span>
                         ) : (
                           <span className="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded border border-black">
-                            🔴 KELAS TUTUP
+                            🔴 SESI TUTUP
                           </span>
                         )}
                       </div>
-                      <p className="text-xs font-bold text-black mt-0.5">
-                        {sesiInfo.active 
-                          ? 'Siswa sudah dapat menekan tombol Masuk Kelas di HP mereka.' 
-                          : 'Tekan 1-Klik Buka Kelas di bawah untuk mendeteksi GPS lokasi mengajar Anda.'}
-                      </p>
+
+                      {/* Display Assigned Class / Instruktur Info */}
+                      {data?.assignedKelas ? (
+                        <div className="mt-1">
+                          <span className="bg-purple-900 text-white text-[11px] font-black px-2 py-0.5 rounded uppercase inline-block">
+                            🏫 Kelas Anda: {data.assignedKelas.nama_kelas} ({data.assignedKelas.total_siswa} Siswa)
+                          </span>
+                          {data.assignedKelas.lokasi_lat && data.assignedKelas.lokasi_lng ? (
+                            <p className="text-[11px] font-bold text-gray-800 mt-1 flex items-center gap-1">
+                              📍 Lokasi Terdaftar: {data.assignedKelas.lokasi_lat}, {data.assignedKelas.lokasi_lng} (Radius {data.assignedKelas.radius_meter || 100}m)
+                            </p>
+                          ) : (
+                            <p className="text-[11px] font-black text-red-700 mt-1">
+                              ⚠️ Koordinat belum di-set oleh Admin di Manajemen Kelas.
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-xs font-bold text-black mt-1">
+                          {sesiInfo.active 
+                            ? 'Siswa sudah dapat menekan tombol Masuk Kelas di HP mereka.' 
+                            : 'Pilih kelas di bawah lalu klik Buka Presensi (menggunakan koordinat per kelas).'}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                <div>
+                <div className="space-y-2">
                   {sesiInfo.active ? (
                     <button
                       onClick={handle1ClickTutupKelas}
                       disabled={bukaSesiLoading}
-                      className="w-full bg-[#ff003c] hover:bg-red-700 text-white font-black py-3 px-4 neo-btn text-xs uppercase flex items-center justify-center gap-2 shadow-md active:scale-95"
+                      className="w-full bg-[#ff003c] hover:bg-red-700 text-white font-black py-3.5 px-4 neo-btn text-xs uppercase flex items-center justify-center gap-2 shadow-md active:scale-95"
                     >
                       {bukaSesiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <XCircle className="w-5 h-5" />}
-                      <span>TUTUP KELAS HARI INI</span>
+                      <span>TUTUP PRESENSI KELAS SEKARANG</span>
                     </button>
                   ) : (
-                    <button
-                      onClick={handle1ClickBukaKelas}
-                      disabled={bukaSesiLoading}
-                      className="w-full bg-[#00e676] hover:bg-green-500 text-black font-black py-3.5 px-4 neo-btn text-xs uppercase flex items-center justify-center gap-2 shadow-lg active:scale-95 scale-[1.01]"
-                    >
-                      {bukaSesiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <DoorOpen className="w-5 h-5" />}
-                      <span className="text-sm font-black tracking-wide">BUKA KELAS SEKARANG (1-KLIK)</span>
-                    </button>
+                    <div className="space-y-2">
+                      {/* Opsi Pilihan Kelas untuk Admin atau Instruktur */}
+                      {data?.role === 'admin' && data?.allKelasList && data.allKelasList.length > 0 && (
+                        <div className="flex gap-2 items-center">
+                          <select
+                            value={selectedKelasIdForSession}
+                            onChange={(e) => setSelectedKelasIdForSession(e.target.value)}
+                            className="flex-1 px-3 py-2 neo-input text-xs font-black bg-white"
+                          >
+                            <option value="">-- Pilih Kelas --</option>
+                            {data.allKelasList.map((k: any) => (
+                              <option key={k.id} value={k.id}>
+                                🏫 {k.nama_kelas} {k.lokasi_lat ? `(📍 Set)` : `(⚠️ No GPS)`}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {/* Tombol Utama 1-Click Buka Presensi Kelas */}
+                      {data?.assignedKelas?.id ? (
+                        <button
+                          onClick={() => handle1ClickBukaSesiKelas(data.assignedKelas.id)}
+                          disabled={bukaSesiLoading}
+                          className="w-full bg-[#00e676] hover:bg-green-500 text-black font-black py-3.5 px-4 neo-btn text-xs uppercase flex items-center justify-center gap-2 shadow-lg active:scale-95 scale-[1.01]"
+                        >
+                          {bukaSesiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5 fill-yellow-300" />}
+                          <span className="text-sm font-black tracking-wide">🚀 BUKA PRESENSI KELAS {data.assignedKelas.nama_kelas} (1-KLIK)</span>
+                        </button>
+                      ) : selectedKelasIdForSession ? (
+                        <button
+                          onClick={() => handle1ClickBukaSesiKelas(selectedKelasIdForSession)}
+                          disabled={bukaSesiLoading}
+                          className="w-full bg-[#00e676] hover:bg-green-500 text-black font-black py-3.5 px-4 neo-btn text-xs uppercase flex items-center justify-center gap-2 shadow-lg active:scale-95 scale-[1.01]"
+                        >
+                          {bukaSesiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5 fill-yellow-300" />}
+                          <span className="text-sm font-black tracking-wide">🚀 BUKA PRESENSI KELAS DIPILIH (1-KLIK)</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handle1ClickBukaKelas}
+                          disabled={bukaSesiLoading}
+                          className="w-full bg-[#00e676] hover:bg-green-500 text-black font-black py-3.5 px-4 neo-btn text-xs uppercase flex items-center justify-center gap-2 shadow-lg active:scale-95 scale-[1.01]"
+                        >
+                          {bukaSesiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <DoorOpen className="w-5 h-5" />}
+                          <span className="text-sm font-black tracking-wide">BUKA PRESENSI SEKARANG (GPS INSTAN)</span>
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
