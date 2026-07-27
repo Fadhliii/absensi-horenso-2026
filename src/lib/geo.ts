@@ -1,7 +1,8 @@
 /**
- * Helper Geolocation Cepat & Presisi
- * Menggunakan pendekatan hybrid: coba getCurrentPosition cepat terlebih dahulu (2 detik).
- * Jika belum cukup akurat, tingkatkan dengan watchPosition berdurasi pendek (maks 3.5 detik).
+ * Helper Geolocation Cepat & Presisi (Optimized for Android Chrome & iOS Safari)
+ * Menggunakan pendekatan hybrid: 
+ * 1. Coba High Accuracy (GPS murni).
+ * 2. Jika timeout / gagal di HP Android (terutama dalam ruangan), fallback otomatis ke Low Accuracy (WiFi / Cell Tower).
  */
 
 export interface AccurateLocationResult {
@@ -10,14 +11,29 @@ export interface AccurateLocationResult {
   accuracy: number; // Dalam meter
 }
 
+export interface AccurateLocationError {
+  message: string;
+  code?: number;
+  type?: 'permission' | 'disabled' | 'timeout' | 'other';
+}
+
 export function getAccurateLocation(
   onSuccess: (result: AccurateLocationResult) => void,
-  onError: (error: { message: string }) => void,
+  onError: (error: AccurateLocationError) => void,
   onProgress?: (currentAccuracy: number) => void,
-  maxWaitMs = 6000
+  maxWaitMs = 7000
 ) {
   if (typeof window === 'undefined' || !navigator.geolocation) {
-    onError({ message: 'Browser Anda tidak mendukung deteksi lokasi (GPS).' });
+    onError({ message: 'Browser Anda tidak mendukung fitur lokasi GPS.', type: 'other' });
+    return;
+  }
+
+  // Cek apakah koneksi HTTPS
+  if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    onError({
+      message: 'Fitur lokasi GPS membutuhkan koneksi HTTPS aman. Pastikan alamat website menggunakan https://',
+      type: 'other'
+    });
     return;
   }
 
@@ -33,28 +49,71 @@ export function getAccurateLocation(
     });
   };
 
-  // 1. Coba percakapan cepat dengan getCurrentPosition (MaxAge 10 detik, Timeout 5 detik)
+  const tryLowAccuracyFallback = (originalErr?: GeolocationPositionError) => {
+    if (resolved) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => handleSuccess(pos),
+      (fallbackErr) => {
+        if (resolved) return;
+        resolved = true;
+        onError({
+          message: 'Pencarian lokasi GPS di HP Anda waktu habis (Timeout). Pastikan lokasi/GPS HP aktif dan buka di tempat terbuka.',
+          code: fallbackErr.code || originalErr?.code,
+          type: 'timeout'
+        });
+      },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+    );
+  };
+
+  const handleCustomError = (err: GeolocationPositionError) => {
+    if (resolved) return;
+
+    // Code 1: PERMISSION_DENIED
+    if (err.code === err.PERMISSION_DENIED) {
+      resolved = true;
+      onError({
+        message: 'Izin lokasi diblokir di browser HP Anda. Silakan izinkan akses lokasi pada setelan browser Chrome/Safari.',
+        code: err.code,
+        type: 'permission'
+      });
+      return;
+    }
+
+    // Code 2: POSITION_UNAVAILABLE
+    if (err.code === err.POSITION_UNAVAILABLE) {
+      resolved = true;
+      onError({
+        message: 'Layanan Lokasi / GPS di HP Android Anda tidak aktif. Mohon aktifkan "Lokasi/GPS" di menu atas HP Anda.',
+        code: err.code,
+        type: 'disabled'
+      });
+      return;
+    }
+
+    // Code 3: TIMEOUT atau error lainnya -> Coba fallback lokasi jaringan
+    tryLowAccuracyFallback(err);
+  };
+
+  // 1. Percobaan Cepat (High Accuracy = true)
   navigator.geolocation.getCurrentPosition(
     (position) => {
       const acc = Math.round(position.coords.accuracy);
       if (onProgress) onProgress(acc);
 
-      // Jika akurasi sudah cukup baik (<= 45m), langsung return instan
-      if (acc <= 45) {
+      if (acc <= 50) {
         handleSuccess(position);
         return;
       }
-      
       startWatch(position);
     },
     (err) => {
-      // Jika getCurrentPosition gagal/timeout di iPhone, langsung coba watchPosition & fallback
-      startWatch(null);
+      handleCustomError(err);
     },
     {
       enableHighAccuracy: true,
-      maximumAge: 10000,
-      timeout: 5000
+      maximumAge: 15000,
+      timeout: 4000
     }
   );
 
@@ -68,12 +127,7 @@ export function getAccurateLocation(
       if (bestPosition) {
         handleSuccess(bestPosition);
       } else {
-        // Fallback panggil sekali lagi tanpa HighAccuracy jika iOS memblokir GPS murni
-        navigator.geolocation.getCurrentPosition(
-          (pos) => handleSuccess(pos),
-          () => onError({ message: 'Gagal mendapatkan data GPS. Di iPhone, pastikan Pengaturan > Privasi > Layanan Lokasi > Situs Web Safari diizinkan & Lokasi Tepat (Precise Location) aktif.' }),
-          { enableHighAccuracy: false, timeout: 3000 }
-        );
+        tryLowAccuracyFallback();
       }
     }, maxWaitMs);
 
@@ -92,7 +146,7 @@ export function getAccurateLocation(
             bestPosition = position;
           }
 
-          if (position.coords.accuracy <= 25) {
+          if (position.coords.accuracy <= 30) {
             clearTimeout(timer);
             if (watchId !== null) navigator.geolocation.clearWatch(watchId);
             handleSuccess(position);
@@ -102,17 +156,12 @@ export function getAccurateLocation(
           if (!bestPosition) {
             clearTimeout(timer);
             if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-            // Fallback tanpa high accuracy
-            navigator.geolocation.getCurrentPosition(
-              (pos) => handleSuccess(pos),
-              () => onError({ message: err.message || 'Gagal mengambil sinyal GPS dari perangkat Anda.' }),
-              { enableHighAccuracy: false, timeout: 3000 }
-            );
+            handleCustomError(err);
           }
         },
         {
           enableHighAccuracy: true,
-          maximumAge: 5000,
+          maximumAge: 10000,
           timeout: maxWaitMs
         }
       );
@@ -121,7 +170,7 @@ export function getAccurateLocation(
       if (bestPosition) {
         handleSuccess(bestPosition);
       } else {
-        onError({ message: e.message || 'Gagal menyalakan sensor GPS.' });
+        tryLowAccuracyFallback();
       }
     }
   }

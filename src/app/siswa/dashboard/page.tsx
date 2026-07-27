@@ -7,7 +7,8 @@ import { masukKelasDirectAction } from '@/app/actions/absensi';
 import { logoutAction } from '@/app/actions/auth';
 import IndonesianClock from '@/components/IndonesianClock';
 import { formatIndonesianDate, formatIndonesianTime } from '@/lib/date';
-import { QrCode, LogOut, Calendar, Clock, MapPin, CheckCircle, XCircle, AlertCircle, Building2, Filter, DoorOpen, Loader2 } from 'lucide-react';
+import { getAccurateLocation } from '@/lib/geo';
+import { QrCode, LogOut, Calendar, Clock, MapPin, CheckCircle, XCircle, AlertCircle, Building2, Filter, DoorOpen, Loader2, HelpCircle, Smartphone, X } from 'lucide-react';
 import Link from 'next/link';
 import SoftSkillHistoryAccordion from '@/components/SoftSkillHistoryAccordion';
 
@@ -19,6 +20,9 @@ export default function SiswaDashboardPage() {
   // Masuk Kelas State
   const [masukLoading, setMasukLoading] = useState(false);
   const [masukMsg, setMasukMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Modal Bantuan GPS Android / iPhone
+  const [isGpsHelpOpen, setIsGpsHelpOpen] = useState(false);
 
   // Filter bulan & kategori
   const currentMonth = new Date().toISOString().slice(0, 7);
@@ -60,18 +64,12 @@ export default function SiswaDashboardPage() {
   const formatTime = (isoString: string) => formatIndonesianTime(isoString);
 
   const handleMasukKelas = async () => {
-    if (!navigator.geolocation) {
-      setMasukMsg({ type: 'error', text: 'Browser Anda tidak mendukung Geolocation GPS.' });
-      return;
-    }
-
     setMasukLoading(true);
     setMasukMsg(null);
 
-    navigator.geolocation.getCurrentPosition(
+    getAccurateLocation(
       async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        const res = await masukKelasDirectAction(latitude, longitude);
+        const res = await masukKelasDirectAction(pos.latitude, pos.longitude);
         if (res.error) {
           setMasukMsg({ type: 'error', text: res.error });
         } else {
@@ -84,11 +82,10 @@ export default function SiswaDashboardPage() {
         console.error('Geolocation error:', err);
         setMasukMsg({
           type: 'error',
-          text: 'Gagal mendeteksi lokasi GPS. Pastikan izin lokasi (Location Permission) telah diizinkan di browser Anda.'
+          text: err.message || 'Gagal mendeteksi lokasi GPS.'
         });
         setMasukLoading(false);
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      }
     );
   };
 
@@ -203,10 +200,19 @@ export default function SiswaDashboardPage() {
             )}
 
             {masukMsg && (
-              <div className={`p-3 border-2 border-black neo-border text-xs font-bold mb-3 ${
-                masukMsg.type === 'error' ? 'bg-red-100 text-red-900' : 'bg-green-100 text-green-900'
+              <div className={`p-3 border-2 border-black neo-border text-xs font-bold mb-3 space-y-2 ${
+                masukMsg.type === 'error' ? 'bg-red-100 text-red-900 border-red-400' : 'bg-green-100 text-green-900'
               }`}>
-                {masukMsg.text}
+                <div>{masukMsg.text}</div>
+                {masukMsg.type === 'error' && (
+                  <button
+                    type="button"
+                    onClick={() => setIsGpsHelpOpen(true)}
+                    className="inline-flex items-center gap-1.5 bg-red-600 text-white px-2.5 py-1 rounded text-[11px] font-black uppercase hover:bg-red-700 transition-colors shadow-sm"
+                  >
+                    <HelpCircle className="w-3.5 h-3.5" /> 💡 Panduan Solusi Lokasi HP Android / iPhone
+                  </button>
+                )}
               </div>
             )}
 
@@ -508,6 +514,68 @@ export default function SiswaDashboardPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Bantuan Solusi GPS Android & iPhone */}
+      {isGpsHelpOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border-4 border-black neo-card max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start border-b-3 border-black pb-3">
+              <div className="flex items-center gap-2 text-black font-black uppercase text-base">
+                <Smartphone className="w-6 h-6 text-purple-700" />
+                <h2>Solusi Error Lokasi HP Android & iPhone</h2>
+              </div>
+              <button 
+                onClick={() => setIsGpsHelpOpen(false)}
+                className="p-1 text-black hover:bg-black hover:text-white neo-border"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs font-bold text-gray-800 leading-relaxed">
+              {/* Langkah 1: Android Chrome */}
+              <div className="bg-purple-50 p-3 neo-border border-purple-300 space-y-1.5">
+                <h3 className="font-black text-purple-900 uppercase text-xs flex items-center gap-1.5">
+                  📱 Solusi HP Android (Google Chrome / Browser):
+                </h3>
+                <ol className="list-decimal list-inside space-y-1 pl-1 text-[11px] text-gray-700">
+                  <li><b>Nyalakan GPS HP</b>: Usap layar dari atas ke bawah, aktifkan tombol <b>Lokasi / GPS</b>.</li>
+                  <li><b>Izinkan Akses Lokasi di Chrome</b>: Klik tombol <b>Gembok 🔒</b> atau <b>Info ℹ️</b> di samping kiri URL/alamat web di bagian atas browser Chrome Anda.</li>
+                  <li>Pilih <b>Izin Situs (Site Settings)</b> ➔ <b>Lokasi (Location)</b> ➔ Ubah menjadi <b>IZINKAN (Allow)</b>.</li>
+                  <li><b>Matikan Mode Hemat Baterai</b> (Baterai Saver) jika aktif karena dapat mematikan sensor GPS HP.</li>
+                  <li>Kembali ke web lalu <b>Refresh/Muat Ulang Halaman</b> dan coba klik <b>Masuk Kelas</b> kembali.</li>
+                </ol>
+              </div>
+
+              {/* Langkah 2: iPhone iOS Safari */}
+              <div className="bg-blue-50 p-3 neo-border border-blue-300 space-y-1.5">
+                <h3 className="font-black text-blue-900 uppercase text-xs flex items-center gap-1.5">
+                  🍎 Solusi iPhone (Safari):
+                </h3>
+                <ol className="list-decimal list-inside space-y-1 pl-1 text-[11px] text-gray-700">
+                  <li>Buka <b>Pengaturan (Settings) iPhone</b> ➔ <b>Privasi & Keamanan (Privacy & Security)</b> ➔ <b>Layanan Lokasi (Location Services)</b>. Pastikan AKTIF.</li>
+                  <li>Scroll ke bawah, pilih <b>Situs Web Safari (Safari Websites)</b> ➔ Pilih <b>Saat Menggunakan Pengaplikasian</b> & aktifkan <b>Lokasi Tepat (Precise Location)</b>.</li>
+                  <li>Buka kembali Safari, refresh halaman lalu coba klik <b>Masuk Kelas</b>.</li>
+                </ol>
+              </div>
+
+              {/* Catatan Penting HTTPS */}
+              <div className="bg-amber-50 p-2.5 neo-border border-amber-300 text-[11px] text-amber-900 font-bold">
+                ⚠️ <b>Penting</b>: Pastikan Anda membuka web menggunakan koneksi aman (alamat diawali <code>https://</code>). Browser Android & iPhone secara otomatis memblokir GPS jika diawali <code>http://</code> biasa.
+              </div>
+            </div>
+
+            <div className="pt-3 border-t-2 border-black text-right">
+              <button
+                onClick={() => setIsGpsHelpOpen(false)}
+                className="bg-[#ffe600] text-black font-black uppercase text-xs px-5 py-2 neo-btn"
+              >
+                Saya Mengerti, Tutup
+              </button>
+            </div>
           </div>
         </div>
       )}
