@@ -6,10 +6,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   try {
     const { id } = await params;
 
-    // 1. Dapatkan detail kelas soft skill (untuk mengambil tanggal)
+    // 1. Dapatkan detail kelas soft skill (untuk mengambil tanggal & target kelas)
     const { data: classDetail, error: classError } = await supabaseAdmin
       .from('kelas_soft_skill')
-      .select('id, tanggal')
+      .select('id, tanggal, target_kelas_id')
       .eq('id', id)
       .single();
 
@@ -20,7 +20,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const classDateStr = classDetail.tanggal;
 
     // 2. Dapatkan daftar siswa aktif (belum berangkat ke Jepang)
-    const { data: activeStudents, error: studentsError } = await supabaseAdmin
+    let queryStudents = supabaseAdmin
       .from('siswa')
       .select(`
         user_id, 
@@ -36,12 +36,18 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       `)
       .eq('status_penempatan', 'belum');
 
+    if (classDetail.target_kelas_id) {
+      queryStudents = queryStudents.eq('kelas_id', classDetail.target_kelas_id);
+    }
+
+    const { data: activeStudents, error: studentsError } = await queryStudents;
+
     if (studentsError) {
       console.error('Error fetching active students:', studentsError);
       return NextResponse.json({ error: studentsError.message }, { status: 500 });
     }
 
-    // 3. Dapatkan data absensi pagi (QR scan) pada tanggal kelas ini
+    // 3. Dapatkan data absensi harian (Masuk Kelas) pada tanggal kelas ini
     const startOfDay = `${classDateStr}T00:00:00Z`;
     const endOfDay = `${classDateStr}T23:59:59Z`;
 
@@ -72,7 +78,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       attendanceMap.set(record.siswa_id, record);
     });
 
-    // 5. Gabungkan data
+    // 5. Gabungkan data (Siswa yang sudah hadir harian OTOMATIS dimasukkan sebagai HADIR soft skill)
     const mergedList = activeStudents?.map((student: any) => {
       const savedRecord = attendanceMap.get(student.user_id);
       const morningStatus = morningMap.get(student.user_id);
@@ -80,9 +86,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       let computedStatus = 'belum_diabsen';
 
       if (savedRecord) {
+        // Jika sudah pernah disimpan/diubah manual oleh Guru/Admin, gunakan status yang disimpan
         computedStatus = savedRecord.status;
-      } else if (morningStatus === 'hadir' || morningStatus === 'telat') {
-        // Otomatis default Hadir jika tadi pagi sudah scan QR!
+      } else if (morningStatus && ['hadir', 'telat', 'pending_hadir', 'pending_telat'].includes(morningStatus)) {
+        // Otomatis default HADIR jika hari itu siswa sudah Masuk Kelas!
         computedStatus = 'hadir';
       }
 

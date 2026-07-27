@@ -228,49 +228,59 @@ export default function SoftSkillDetailPage() {
         
         {/* Detail Sesi Info Card */}
         {classDetail && (
-          <div className="bg-[#ffe600] neo-card p-5 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-            <div className="flex items-center gap-3">
-              <Calendar className="w-7 h-7 text-black shrink-0" />
-              <div>
-                <span className="text-[10px] font-black text-black uppercase block">Tanggal Sesi</span>
-                <span className="font-black text-sm text-black uppercase">
-                  {new Date(classDetail.tanggal).toLocaleDateString('id-ID', {
-                    weekday: 'short',
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                  })}
-                </span>
+          <div className="space-y-3">
+            <div className="bg-[#ffe600] neo-card p-5 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+              <div className="flex items-center gap-3">
+                <Calendar className="w-7 h-7 text-black shrink-0" />
+                <div>
+                  <span className="text-[10px] font-black text-black uppercase block">Tanggal Sesi</span>
+                  <span className="font-black text-sm text-black uppercase">
+                    {new Date(classDetail.tanggal).toLocaleDateString('id-ID', {
+                      weekday: 'short',
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Clock className="w-7 h-7 text-black shrink-0" />
+                <div>
+                  <span className="text-[10px] font-black text-black uppercase block">Waktu Sesi</span>
+                  <span className="font-black text-sm text-black uppercase">
+                    {classDetail.waktu_mulai.slice(0, 5)}{' '}
+                    {classDetail.waktu_selesai ? `- ${classDetail.waktu_selesai.slice(0, 5)}` : ''} WIB
+                  </span>
+                </div>
+              </div>
+
+              <div className="md:col-span-2 flex items-center justify-around bg-white p-3 neo-border text-black">
+                <div className="text-center">
+                  <span className="block text-xl font-black">{students.length}</span>
+                  <span className="text-[10px] font-black uppercase">Total Siswa</span>
+                </div>
+                <div className="text-center border-l-2 border-black pl-3">
+                  <span className="block text-xl font-black text-green-600">{totalHadir}</span>
+                  <span className="text-[10px] font-black uppercase">Hadir</span>
+                </div>
+                <div className="text-center border-l-2 border-black pl-3">
+                  <span className="block text-xl font-black text-red-600">{totalTidakHadir}</span>
+                  <span className="text-[10px] font-black uppercase">Tdk Hadir</span>
+                </div>
+                <div className="text-center border-l-2 border-black pl-3">
+                  <span className="block text-xl font-black text-blue-600">{totalIzinSakit}</span>
+                  <span className="text-[10px] font-black uppercase">Izin/Sakit</span>
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Clock className="w-7 h-7 text-black shrink-0" />
+            <div className="bg-emerald-50 border-2 border-emerald-500 p-3 neo-card flex items-start gap-2 text-xs font-bold text-emerald-950">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
               <div>
-                <span className="text-[10px] font-black text-black uppercase block">Waktu Sesi</span>
-                <span className="font-black text-sm text-black uppercase">
-                  {classDetail.waktu_mulai.slice(0, 5)}{' '}
-                  {classDetail.waktu_selesai ? `- ${classDetail.waktu_selesai.slice(0, 5)}` : ''} WIB
-                </span>
-              </div>
-            </div>
-
-            <div className="md:col-span-2 flex items-center justify-around bg-white p-3 neo-border text-black">
-              <div className="text-center">
-                <span className="block text-xl font-black">{students.length}</span>
-                <span className="text-[10px] font-black uppercase">Total Siswa</span>
-              </div>
-              <div className="text-center border-l-2 border-black pl-3">
-                <span className="block text-xl font-black text-green-600">{totalHadir}</span>
-                <span className="text-[10px] font-black uppercase">Hadir</span>
-              </div>
-              <div className="text-center border-l-2 border-black pl-3">
-                <span className="block text-xl font-black text-red-600">{totalTidakHadir}</span>
-                <span className="text-[10px] font-black uppercase">Tdk Hadir</span>
-              </div>
-              <div className="text-center border-l-2 border-black pl-3">
-                <span className="block text-xl font-black text-blue-600">{totalIzinSakit}</span>
-                <span className="text-[10px] font-black uppercase">Izin/Sakit</span>
+                <span className="font-black text-emerald-900 block uppercase">✨ Integrasi Presensi Otomatis</span>
+                Siswa yang menekan <b>"Masuk Kelas"</b> pada hari yang sama <b>otomatis dimasukkan sebagai HADIR</b> di kelas Soft Skill ini. Anda tetap dapat mengubah status individual setiap siswa kapan saja (Hadir, Tidak Hadir, Izin, Sakit) dengan tombol aksi cepat.
               </div>
             </div>
           </div>

@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
-// GET list of soft skill classes with attendance summary
+// GET list of soft skill classes with attendance summary & target class
 export async function GET() {
   try {
     const { data, error } = await supabaseAdmin
       .from('kelas_soft_skill')
-      .select('*, dibuat_oleh(name), absensi_soft_skill(status)')
+      .select('*, dibuat_oleh(name), master_kelas:target_kelas_id(id, nama_kelas), absensi_soft_skill(status)')
       .order('tanggal', { ascending: false });
 
     if (error) {
@@ -20,9 +20,11 @@ export async function GET() {
       const totalTidakHadir = absensi.filter((a: any) => a.status === 'tidak_hadir').length;
       const totalIzinSakit = absensi.filter((a: any) => a.status === 'izin' || a.status === 'sakit').length;
       const totalTerdaftar = absensi.length;
+      const targetKelas = Array.isArray(item.master_kelas) ? item.master_kelas[0] : item.master_kelas;
 
       return {
         ...item,
+        target_kelas_nama: targetKelas?.nama_kelas || 'Semua Kelas (Gabungan)',
         summary: {
           totalHadir,
           totalTidakHadir,
@@ -42,7 +44,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { judul_materi, pengisi_acara, tanggal, waktu_mulai, waktu_selesai, dibuat_oleh } = body;
+    const { judul_materi, pengisi_acara, tanggal, waktu_mulai, waktu_selesai, dibuat_oleh, target_kelas_id } = body;
 
     if (!judul_materi || !pengisi_acara || !tanggal || !waktu_mulai) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -57,7 +59,8 @@ export async function POST(req: Request) {
           tanggal,
           waktu_mulai,
           waktu_selesai: waktu_selesai || null,
-          dibuat_oleh,
+          dibuat_oleh: dibuat_oleh || null,
+          target_kelas_id: target_kelas_id || null,
         },
       ])
       .select()

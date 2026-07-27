@@ -11,6 +11,8 @@ interface SoftSkillClass {
   tanggal: string;
   waktu_mulai: string;
   waktu_selesai?: string;
+  target_kelas_id?: string | null;
+  target_kelas_nama?: string;
   dibuat_oleh?: {
     name: string;
   };
@@ -28,6 +30,8 @@ export default function SoftSkillPage() {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'semua' | 'selesai' | 'mendatang'>('semua');
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterKelas, setFilterKelas] = useState('');
+  const [kelasList, setKelasList] = useState<{ id: string; nama_kelas: string }[]>([]);
 
   const todayStr = new Date().toISOString().slice(0, 10);
 
@@ -50,6 +54,8 @@ export default function SoftSkillPage() {
 
   useEffect(() => {
     fetchClasses();
+    fetch('/api/soft-skill/route') // or getAllKelasAction
+      .catch(() => {});
   }, []);
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
@@ -206,21 +212,27 @@ export default function SoftSkillPage() {
                   className="bg-white border-4 border-black p-5 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex flex-col justify-between hover:translate-x-[-2px] hover:translate-y-[-2px] transition-transform space-y-4"
                 >
                   <div>
-                    {/* Status Badge */}
-                    <div className="flex justify-between items-start mb-3">
-                      {isToday ? (
-                        <span className="bg-[#ff003c] text-white text-[10px] font-black uppercase px-2.5 py-1 neo-border flex items-center gap-1 animate-pulse">
-                          🔴 HARI INI
+                    {/* Status & Target Class Badge */}
+                    <div className="flex flex-wrap justify-between items-center gap-2 mb-3">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {isToday ? (
+                          <span className="bg-[#ff003c] text-white text-[10px] font-black uppercase px-2.5 py-1 neo-border flex items-center gap-1 animate-pulse">
+                            🔴 HARI INI
+                          </span>
+                        ) : isPast ? (
+                          <span className="bg-[#74ee15] text-black text-[10px] font-black uppercase px-2.5 py-1 neo-border flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> SUDAH SELESAI
+                          </span>
+                        ) : (
+                          <span className="bg-[#00f0ff] text-black text-[10px] font-black uppercase px-2.5 py-1 neo-border flex items-center gap-1">
+                            🗓️ MENDATANG
+                          </span>
+                        )}
+
+                        <span className="bg-purple-100 text-purple-900 border border-purple-300 text-[10px] font-black uppercase px-2 py-1 rounded">
+                          {item.target_kelas_nama || 'Semua Kelas'}
                         </span>
-                      ) : isPast ? (
-                        <span className="bg-[#74ee15] text-black text-[10px] font-black uppercase px-2.5 py-1 neo-border flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> SUDAH SELESAI
-                        </span>
-                      ) : (
-                        <span className="bg-[#00f0ff] text-black text-[10px] font-black uppercase px-2.5 py-1 neo-border flex items-center gap-1">
-                          🗓️ MENDATANG
-                        </span>
-                      )}
+                      </div>
 
                       <button
                         onClick={(e) => handleDelete(item.id, e)}

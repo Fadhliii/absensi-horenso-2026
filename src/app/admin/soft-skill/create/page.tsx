@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Layers } from 'lucide-react';
+import { getAllKelasAction } from '@/app/actions/kelas';
 
 export default function CreateSoftSkillPage() {
   const router = useRouter();
@@ -12,8 +13,21 @@ export default function CreateSoftSkillPage() {
   const [tanggal, setTanggal] = useState('');
   const [waktuMulai, setWaktuMulai] = useState('');
   const [waktuSelesai, setWaktuSelesai] = useState('');
+  const [targetKelasId, setTargetKelasId] = useState('');
+  const [kelasList, setKelasList] = useState<{ id: string; nama_kelas: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetchKelas();
+  }, []);
+
+  const fetchKelas = async () => {
+    const res = await getAllKelasAction();
+    if (res.success && res.data) {
+      setKelasList(res.data);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +48,7 @@ export default function CreateSoftSkillPage() {
           tanggal,
           waktu_mulai: waktuMulai,
           waktu_selesai: waktuSelesai || null,
+          target_kelas_id: targetKelasId || null,
         }),
       });
 
@@ -99,6 +114,27 @@ export default function CreateSoftSkillPage() {
                 required
                 className="w-full px-4 py-3 border-3 border-black font-bold focus:outline-none focus:bg-[#ffe700]/20 text-black placeholder:text-gray-400"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-black uppercase text-black mb-2 flex items-center gap-1.5">
+                <Layers className="w-4 h-4 text-purple-700" /> Target Kelas Pengikut <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={targetKelasId}
+                onChange={(e) => setTargetKelasId(e.target.value)}
+                className="w-full px-4 py-3 border-3 border-black font-bold focus:outline-none focus:bg-[#ffe700]/20 text-black cursor-pointer"
+              >
+                <option value="">🌐 Semua Kelas (Gabungan Seluruh Siswa)</option>
+                {kelasList.map((k) => (
+                  <option key={k.id} value={k.id}>
+                    🏫 Khusus {k.nama_kelas}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] text-gray-500 font-bold mt-1">
+                Pilih "Semua Kelas" untuk menggabungkan seluruh siswa, atau pilih kelas spesifik untuk menyatukan jadwal kelas tersebut.
+              </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
