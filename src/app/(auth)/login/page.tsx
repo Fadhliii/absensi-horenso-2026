@@ -5,10 +5,12 @@ import { loginAction } from '@/app/actions/auth';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import IndonesianClock from '@/components/IndonesianClock';
+import { Eye, EyeOff } from 'lucide-react';
 
 function LoginForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const searchParams = useSearchParams();
   const pendingError = searchParams.get('error') === 'pending' ? 'Akun kamu sedang menunggu persetujuan admin.' : null;
 
@@ -51,26 +53,36 @@ function LoginForm() {
               type="email" 
               name="email" 
               required
-              className="w-full px-3.5 py-2.5 neo-input"
+              className="w-full px-3.5 py-2.5 neo-input font-bold"
               placeholder="contoh@email.com"
             />
           </div>
 
           <div>
             <label className="block text-xs font-black text-black uppercase mb-1">Password</label>
-            <input 
-              type="password" 
-              name="password" 
-              required
-              className="w-full px-3.5 py-2.5 neo-input"
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <input 
+                type={showPassword ? 'text' : 'password'} 
+                name="password" 
+                required
+                className="w-full px-3.5 py-2.5 pr-10 neo-input font-bold"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-3 text-black hover:text-gray-700 transition-colors"
+                title={showPassword ? 'Sembunyikan Password' : 'Tampilkan Password'}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4 stroke-[2.5]" /> : <Eye className="w-4 h-4 stroke-[2.5]" />}
+              </button>
+            </div>
           </div>
 
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full bg-[#ffe600] hover:bg-[#ebd300] text-black neo-btn py-3 text-sm"
+            className="w-full bg-[#00f0ff] hover:bg-[#00d8e6] text-black font-black uppercase neo-btn py-3 text-sm shadow-md"
           >
             {loading ? 'Memproses...' : 'Masuk'}
           </button>

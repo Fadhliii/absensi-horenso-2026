@@ -22,9 +22,52 @@ export async function registerAction(formData: FormData) {
 
   try {
     const passwordHash = await hashPassword(password);
-    const perusahaan_id = (formData.get('perusahaan_id') as string) || null;
-    const batch_id = (formData.get('batch_id') as string) || null;
-    
+    let perusahaan_id = (formData.get('perusahaan_id') as string) || null;
+    let batch_id = (formData.get('batch_id') as string) || null;
+    const customPerusahaan = (formData.get('nama_perusahaan_baru') as string)?.trim();
+    const customBatch = (formData.get('nama_batch_baru') as string)?.trim();
+
+    // Jika siswa memasukkan nama perusahaan baru secara manual
+    if (perusahaan_id === 'other' || (!perusahaan_id && customPerusahaan)) {
+      if (customPerusahaan) {
+        const { data: existingP } = await supabase
+          .from('perusahaan')
+          .select('id')
+          .ilike('nama', customPerusahaan)
+          .maybeSingle();
+
+        if (existingP) {
+          perusahaan_id = existingP.id;
+        } else {
+          const { data: newP, error: errP } = await supabase
+            .from('perusahaan')
+            .insert([{ nama: customPerusahaan }])
+            .select('id')
+            .single();
+
+          if (errP) {
+            console.error('Gagal membuat perusahaan baru:', errP);
+            return { error: 'Gagal mendaftarkan perusahaan baru. Silakan coba nama lain.' };
+          }
+          perusahaan_id = newP.id;
+        }
+
+        if (customBatch && perusahaan_id) {
+          const { data: newB } = await supabase
+            .from('perusahaan_batch')
+            .insert([{ perusahaan_id, nama_batch: customBatch }])
+            .select('id')
+            .single();
+
+          if (newB) {
+            batch_id = newB.id;
+          }
+        }
+      } else {
+        perusahaan_id = null;
+      }
+    }
+
     // Status 'pending' until approved by admin
     const { data: newUser, error } = await supabase
       .from('users')
@@ -50,10 +93,10 @@ export async function registerAction(formData: FormData) {
     }
 
     if (role === 'siswa' && newUser?.id) {
-      let batchName = null;
+      let batchName = customBatch || null;
       let tglBerangkat = null;
 
-      if (batch_id) {
+      if (batch_id && !customBatch) {
         const { data: bData } = await supabase
           .from('perusahaan_batch')
           .select('nama_batch, tanggal_berangkat')

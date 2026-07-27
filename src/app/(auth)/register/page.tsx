@@ -5,7 +5,7 @@ import { registerAction } from '@/app/actions/auth';
 import { getPublicPerusahaanWithBatchesAction } from '@/app/actions/master';
 import IndonesianClock from '@/components/IndonesianClock';
 import Link from 'next/link';
-import { Building2, Layers } from 'lucide-react';
+import { Building2, Layers, Eye, EyeOff, PlusCircle } from 'lucide-react';
 
 type Perusahaan = {
   id: string;
@@ -24,12 +24,18 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Password visibility states
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   // Form selections
   const [role, setRole] = useState<'siswa' | 'instruktur'>('siswa');
   const [perusahaanList, setPerusahaanList] = useState<Perusahaan[]>([]);
   const [allBatches, setAllBatches] = useState<Batch[]>([]);
   const [selectedPerusahaanId, setSelectedPerusahaanId] = useState('');
   const [selectedBatchId, setSelectedBatchId] = useState('');
+  const [customPerusahaanNama, setCustomPerusahaanNama] = useState('');
+  const [customBatchNama, setCustomBatchNama] = useState('');
 
   useEffect(() => {
     async function loadPerusahaanAndBatches() {
@@ -64,6 +70,12 @@ export default function RegisterPage() {
       return;
     }
 
+    if (role === 'siswa' && selectedPerusahaanId === 'other' && !customPerusahaanNama.trim()) {
+      setError('Harap isi nama perusahaan baru kamu!');
+      setLoading(false);
+      return;
+    }
+
     const result = await registerAction(formData);
 
     if (result?.error) {
@@ -85,7 +97,7 @@ export default function RegisterPage() {
           <div className="w-16 h-16 bg-[#00e676] text-black neo-border neo-shadow-sm flex items-center justify-center mx-auto mb-4 text-2xl font-black">✓</div>
           <h2 className="text-2xl font-black text-black uppercase mb-2">Registrasi Berhasil!</h2>
           <p className="text-black font-bold text-sm mb-6">Akun kamu sedang menunggu persetujuan admin. Kamu baru bisa login setelah akun di-approve.</p>
-          <Link href="/login" className="inline-block bg-[#ffe600] text-black neo-btn py-3 px-8 text-sm">
+          <Link href="/login" className="inline-block bg-[#ffe600] text-black neo-btn py-3 px-8 text-sm font-black uppercase">
             Kembali ke Login
           </Link>
         </div>
@@ -120,7 +132,7 @@ export default function RegisterPage() {
               required
               value={role}
               onChange={(e) => setRole(e.target.value as any)}
-              className="w-full px-3.5 py-2.5 neo-input"
+              className="w-full px-3.5 py-2.5 neo-input font-bold"
             >
               <option value="siswa">Siswa (Peserta Pelatihan)</option>
               <option value="instruktur">Instruktur (Pengajar)</option>
@@ -134,7 +146,7 @@ export default function RegisterPage() {
               name="name" 
               required
               placeholder="Masukkan nama lengkap"
-              className="w-full px-3.5 py-2.5 neo-input"
+              className="w-full px-3.5 py-2.5 neo-input font-bold"
             />
           </div>
 
@@ -145,7 +157,7 @@ export default function RegisterPage() {
               name="email" 
               required
               placeholder="contoh@email.com"
-              className="w-full px-3.5 py-2.5 neo-input"
+              className="w-full px-3.5 py-2.5 neo-input font-bold"
             />
           </div>
 
@@ -156,7 +168,7 @@ export default function RegisterPage() {
               name="phone" 
               required
               placeholder="08123456789"
-              className="w-full px-3.5 py-2.5 neo-input"
+              className="w-full px-3.5 py-2.5 neo-input font-bold"
             />
           </div>
 
@@ -171,16 +183,50 @@ export default function RegisterPage() {
                   name="perusahaan_id"
                   value={selectedPerusahaanId}
                   onChange={handlePerusahaanChange}
-                  className="w-full px-3 py-2 neo-input text-xs"
+                  className="w-full px-3 py-2 neo-input text-xs font-bold"
                 >
                   <option value="">-- Belum Memiliki Perusahaan / LPK Only --</option>
                   {perusahaanList.map(p => (
                     <option key={p.id} value={p.id}>{p.nama}</option>
                   ))}
+                  <option value="other">➕ Lainnya (Tuliskan Perusahaan Baru...)</option>
                 </select>
               </div>
 
-              {selectedPerusahaanId && (
+              {/* Input Perusahaan Baru jika memilih Lainnya */}
+              {selectedPerusahaanId === 'other' && (
+                <div className="p-3 bg-white neo-border space-y-3 animate-fadeIn">
+                  <div>
+                    <label className="block text-[11px] font-black text-purple-900 uppercase mb-1 flex items-center gap-1">
+                      <PlusCircle className="w-3.5 h-3.5 text-purple-700" /> Nama Perusahaan Baru *
+                    </label>
+                    <input 
+                      type="text"
+                      name="nama_perusahaan_baru"
+                      required
+                      value={customPerusahaanNama}
+                      onChange={(e) => setCustomPerusahaanNama(e.target.value)}
+                      placeholder="Masukkan nama perusahaan..."
+                      className="w-full px-3 py-2 neo-input text-xs font-bold bg-purple-50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-black text-purple-900 uppercase mb-1">
+                      Nama Batch / Angkatan (Opsional)
+                    </label>
+                    <input 
+                      type="text"
+                      name="nama_batch_baru"
+                      value={customBatchNama}
+                      onChange={(e) => setCustomBatchNama(e.target.value)}
+                      placeholder="Contoh: Batch 1 / Angkatan 2026"
+                      className="w-full px-3 py-2 neo-input text-xs font-bold bg-purple-50"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {selectedPerusahaanId && selectedPerusahaanId !== 'other' && (
                 <div>
                   <label className="block text-xs font-black text-black uppercase mb-1 flex items-center gap-1.5">
                     <Layers className="w-4 h-4 text-black" /> Pilih Batch / Angkatan *
@@ -190,7 +236,7 @@ export default function RegisterPage() {
                     value={selectedBatchId}
                     onChange={(e) => setSelectedBatchId(e.target.value)}
                     required={availableBatches.length > 0}
-                    className="w-full px-3 py-2 neo-input text-xs"
+                    className="w-full px-3 py-2 neo-input text-xs font-bold"
                   >
                     {availableBatches.length === 0 ? (
                       <option value="">-- Tidak ada batch tersedia --</option>
@@ -210,36 +256,58 @@ export default function RegisterPage() {
             </div>
           )}
 
+          {/* Password Input dengan Toggle Show Password */}
           <div>
             <label className="block text-xs font-black text-black uppercase mb-1">Password *</label>
-            <input 
-              type="password" 
-              name="password" 
-              required
-              minLength={6}
-              placeholder="Minimal 6 karakter"
-              className="w-full px-3.5 py-2.5 neo-input"
-            />
+            <div className="relative">
+              <input 
+                type={showPassword ? 'text' : 'password'} 
+                name="password" 
+                required
+                minLength={6}
+                placeholder="Minimal 6 karakter"
+                className="w-full px-3.5 py-2.5 pr-10 neo-input font-bold"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-3 text-black hover:text-gray-700 transition-colors"
+                title={showPassword ? 'Sembunyikan Password' : 'Tampilkan Password'}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4 stroke-[2.5]" /> : <Eye className="w-4 h-4 stroke-[2.5]" />}
+              </button>
+            </div>
           </div>
 
+          {/* Confirm Password Input dengan Toggle Show Password */}
           <div>
             <label className="block text-xs font-black text-black uppercase mb-1">Konfirmasi Password *</label>
-            <input 
-              type="password" 
-              name="confirm_password" 
-              required
-              minLength={6}
-              placeholder="Ulangi password"
-              className="w-full px-3.5 py-2.5 neo-input"
-            />
+            <div className="relative">
+              <input 
+                type={showConfirmPassword ? 'text' : 'password'} 
+                name="confirm_password" 
+                required
+                minLength={6}
+                placeholder="Ulangi password"
+                className="w-full px-3.5 py-2.5 pr-10 neo-input font-bold"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-3 text-black hover:text-gray-700 transition-colors"
+                title={showConfirmPassword ? 'Sembunyikan Password' : 'Tampilkan Password'}
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4 stroke-[2.5]" /> : <Eye className="w-4 h-4 stroke-[2.5]" />}
+              </button>
+            </div>
           </div>
 
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full bg-[#00f0ff] hover:bg-[#00e5ff] text-black neo-btn py-3 mt-2 text-sm"
+            className="w-full bg-[#ffe600] hover:bg-[#ebd300] text-black font-black uppercase neo-btn py-3 mt-2 text-sm shadow-md"
           >
-            {loading ? 'Memproses...' : 'Daftar Sekarang'}
+            {loading ? 'Memproses Registrasi...' : 'Daftar Sekarang'}
           </button>
         </form>
 
