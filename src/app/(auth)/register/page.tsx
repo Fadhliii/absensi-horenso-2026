@@ -229,20 +229,19 @@ export default function RegisterPage() {
               {selectedPerusahaanId && selectedPerusahaanId !== 'other' && (
                 <div>
                   <label className="block text-xs font-black text-black uppercase mb-1 flex items-center gap-1.5">
-                    <Layers className="w-4 h-4 text-black" /> Pilih Batch / Angkatan *
+                    <Layers className="w-4 h-4 text-black" /> Pilih Batch / Angkatan (Opsional)
                   </label>
                   <select
                     name="batch_id"
                     value={selectedBatchId}
                     onChange={(e) => setSelectedBatchId(e.target.value)}
-                    required={availableBatches.length > 0}
                     className="w-full px-3 py-2 neo-input text-xs font-bold"
                   >
                     {availableBatches.length === 0 ? (
-                      <option value="">-- Tidak ada batch tersedia --</option>
+                      <option value="">-- Belum ada batch tersedia --</option>
                     ) : (
                       <>
-                        <option value="">-- Pilih Batch --</option>
+                        <option value="">-- Belum / Tanpa Batch (Opsional) --</option>
                         {availableBatches.map(b => (
                           <option key={b.id} value={b.id}>
                             {b.nama_batch} {b.tanggal_berangkat ? `(Berangkat: ${new Date(b.tanggal_berangkat).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })})` : ''}
