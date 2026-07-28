@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import { getRekapAbsensiAction, getRekapSoftSkillAction, getStudentDetailSummaryAction, updateCellAttendanceAction } from '@/app/actions/rekap';
 import { inputIzinManualAction } from '@/app/actions/izin';
 import { getAllPerusahaanAction } from '@/app/actions/master';
@@ -15,6 +15,7 @@ function RekapGridContent() {
 
   const [activeTab, setActiveTab] = useState<'harian' | 'soft_skill'>('harian');
   const [loading, setLoading] = useState(true);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   // Rekap Absensi Harian Data
   const [rekapData, setRekapData] = useState<{
@@ -143,6 +144,32 @@ function RekapGridContent() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Otomatis Scroll ke Kolom Hari Ini (jika melihat bulan dan tahun berjalan)
+  useEffect(() => {
+    if (!loading && activeTab === 'harian' && tableContainerRef.current) {
+      const today = new Date();
+      const currentYear = today.getFullYear();
+      const currentMonth = today.getMonth() + 1;
+      const currentDay = today.getDate();
+
+      if (selectedYear === currentYear && selectedMonth === currentMonth) {
+        const timer = setTimeout(() => {
+          const todayElem = document.getElementById(`day-header-${currentDay}`);
+          if (todayElem && tableContainerRef.current) {
+            const container = tableContainerRef.current;
+            const containerWidth = container.clientWidth;
+            const elemLeft = todayElem.offsetLeft;
+            container.scrollTo({
+              left: Math.max(0, elemLeft - containerWidth / 2 + 60),
+              behavior: 'smooth'
+            });
+          }
+        }, 150);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [selectedYear, selectedMonth, loading, activeTab]);
 
   // Clickable Student Name Handler
   const handleOpenStudentDetail = async (studentId: string) => {
@@ -398,9 +425,9 @@ function RekapGridContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+    <div className="min-h-screen bg-gray-50 flex flex-col font-sans w-full">
+      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30 w-full">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4">
             <Link href="/admin/dashboard" className="text-gray-500 hover:text-gray-700">
               <ArrowLeft className="w-5 h-5" />
@@ -418,7 +445,7 @@ function RekapGridContent() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-[100vw] overflow-hidden flex flex-col p-4 sm:p-6 lg:p-8 space-y-4">
+      <main className="flex-1 w-full overflow-hidden flex flex-col px-4 sm:px-6 py-4 space-y-4">
         
         {/* Navigation Tabs (Neo-Brutalist) */}
         <div className="flex items-center gap-2 border-b-4 border-black pb-2">
@@ -552,34 +579,44 @@ function RekapGridContent() {
 
         {/* TAB 1: ABSENSI HARIAN GRID */}
         {activeTab === 'harian' && (
-          <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col relative">
-            <div className="overflow-x-auto h-full max-h-[82vh]">
+          <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col relative w-full">
+            <div ref={tableContainerRef} className="overflow-x-auto h-full max-h-[82vh] w-full">
               <table className="w-full text-sm text-left whitespace-nowrap border-collapse">
                 <thead className="text-xs text-gray-700 bg-gray-100 sticky top-0 z-20">
                   <tr>
-                    <th scope="col" className="px-4 py-3 sticky left-0 bg-gray-100 z-30 border-r border-b border-gray-200 min-w-[200px] align-bottom uppercase font-black">
+                    <th scope="col" className="px-2 py-3 sticky left-0 bg-gray-100 z-30 border-r border-b border-gray-300 w-10 min-w-[40px] text-center uppercase font-black">
+                      No
+                    </th>
+                    <th scope="col" className="px-4 py-3 sticky left-[40px] bg-gray-100 z-30 border-r border-b border-gray-300 min-w-[200px] align-bottom uppercase font-black shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                       Nama Siswa (Klik utk Detail)
                     </th>
                     {daysArray.map(day => {
                       const isWknd = isWeekend(day);
                       const holidayName = getHolidayName(day);
                       const isHoliday = !!holidayName;
+
+                      const today = new Date();
+                      const isTodayCol = selectedYear === today.getFullYear() && 
+                                         selectedMonth === (today.getMonth() + 1) && 
+                                         day === today.getDate();
+
                       return (
                         <th 
                           key={day} 
+                          id={`day-header-${day}`}
                           scope="col" 
                           onClick={() => { setSelectedDetailDay(day); setDailyTabFilter('all'); setDailySearchQuery(''); }}
                           title={holidayName ? `${holidayName} - Klik untuk rincian kehadiran` : `Klik untuk rincian kehadiran tanggal ${day}`}
                           className={`px-2 py-2 border-b border-gray-200 text-center w-10 min-w-[44px] cursor-pointer hover:bg-[#ffe600] hover:text-black transition-colors ${
-                            (isWknd || isHoliday) ? 'bg-gray-200 text-gray-500' : ''
+                            isTodayCol ? 'bg-[#74ee15] text-black border-2 border-black font-black' : (isWknd || isHoliday) ? 'bg-gray-200 text-gray-500' : ''
                           }`}
                         >
-                          <div className={`text-[10px] uppercase font-bold ${(isWknd || isHoliday) ? 'text-red-500' : 'text-gray-500'}`}>
+                          <div className={`text-[10px] uppercase font-bold ${isTodayCol ? 'text-black font-black underline' : (isWknd || isHoliday) ? 'text-red-500' : 'text-gray-500'}`}>
                             {getDayName(day)}
                           </div>
                           <div className="text-xs font-black mt-1 flex items-center justify-center gap-0.5">
                             <span>{day}</span>
-                            <span className="text-[9px] text-blue-600">🔍</span>
+                            {isTodayCol ? <span className="text-[9px] bg-black text-white px-1 rounded">HARI INI</span> : <span className="text-[9px] text-blue-600">🔍</span>}
                           </div>
                         </th>
                       );
@@ -589,15 +626,20 @@ function RekapGridContent() {
                 <tbody>
                   {filteredData.length === 0 && !loading ? (
                     <tr>
-                      <td colSpan={daysInMonth + 1} className="px-6 py-8 text-center text-gray-500">
+                      <td colSpan={daysInMonth + 2} className="px-6 py-8 text-center text-gray-500">
                         Tidak ada data siswa untuk filter tersebut.
                       </td>
                     </tr>
                   ) : (
-                    filteredData.map((siswa) => (
+                    filteredData.map((siswa, idx) => (
                       <tr key={siswa.id} className="border-b border-gray-100 hover:bg-[#ffe600] hover:text-black font-black transition-colors">
-                        {/* Clickable Student Name */}
-                        <td className="px-4 py-2 font-medium text-gray-900 sticky left-0 bg-white z-10 border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] group-hover:bg-[#ffe600] hover:text-black font-black">
+                        {/* Kolom 1: Nomor Urut */}
+                        <td className="px-2 py-2 text-center text-xs font-black text-gray-700 sticky left-0 bg-white z-10 border-r border-gray-200 w-10">
+                          {idx + 1}
+                        </td>
+
+                        {/* Kolom 2: Clickable Student Name */}
+                        <td className="px-4 py-2 font-medium text-gray-900 sticky left-[40px] bg-white z-10 border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] group-hover:bg-[#ffe600] hover:text-black font-black">
                           <button
                             onClick={() => handleOpenStudentDetail(siswa.id)}
                             className="font-black text-blue-600 hover:text-blue-800 hover:underline text-left truncate max-w-[200px] flex items-center gap-1"
@@ -694,7 +736,7 @@ function RekapGridContent() {
                 {/* Footer Total Kehadiran per Hari */}
                 <tfoot className="bg-gray-100 font-black text-xs sticky bottom-0 z-20 border-t-3 border-black">
                   <tr>
-                    <td className="px-4 py-2.5 sticky left-0 bg-[#ffe600] text-black z-30 border-r-2 border-black uppercase font-black">
+                    <td colSpan={2} className="px-4 py-2.5 sticky left-0 bg-[#ffe600] text-black z-30 border-r-2 border-black uppercase font-black shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                       Total Hadir (H/T)
                     </td>
                     {daysArray.map(day => {
