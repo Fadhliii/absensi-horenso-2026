@@ -762,20 +762,34 @@ export default function MasterKelasPage() {
                               const currentKelasNama = s.siswa?.master_kelas?.nama_kelas;
 
                               return (
-                                <tr key={s.id} className="hover:bg-[#fffde7] transition-colors">
+                                <tr 
+                                  key={s.id} 
+                                  onClick={() => {
+                                    if (!sId) return;
+                                    if (isChecked) {
+                                      setSelectedBulkSiswaIds(prev => prev.filter(id => id !== sId));
+                                    } else {
+                                      setSelectedBulkSiswaIds(prev => [...prev, sId]);
+                                    }
+                                  }}
+                                  className={`cursor-pointer transition-colors select-none ${
+                                    isChecked ? 'bg-[#fffde7] font-black border-l-4 border-l-black' : 'hover:bg-gray-100'
+                                  }`}
+                                >
                                   <td className="px-3 py-2 text-center border-r border-gray-200">
                                     {sId && (
                                       <input
                                         type="checkbox"
                                         checked={isChecked}
                                         onChange={(e) => {
+                                          e.stopPropagation();
                                           if (e.target.checked) {
                                             setSelectedBulkSiswaIds(prev => [...prev, sId]);
                                           } else {
                                             setSelectedBulkSiswaIds(prev => prev.filter(id => id !== sId));
                                           }
                                         }}
-                                        className="w-4 h-4 accent-purple-800"
+                                        className="w-4 h-4 accent-purple-800 cursor-pointer"
                                       />
                                     )}
                                   </td>
@@ -798,7 +812,10 @@ export default function MasterKelasPage() {
                                   <td className="px-4 py-2 text-center">
                                     {sId && (
                                       <button
-                                        onClick={() => handleAddSingleSiswa(sId)}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleAddSingleSiswa(sId);
+                                        }}
                                         className="bg-[#74ee15] hover:bg-[#60d60e] text-black font-black px-3 py-1 neo-btn text-[11px] uppercase flex items-center justify-center gap-1 mx-auto"
                                       >
                                         <Plus className="w-3.5 h-3.5" /> Tambahkan
