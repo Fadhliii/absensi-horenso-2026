@@ -108,9 +108,10 @@ export default function MasterKelasPage() {
 
   async function fetchData() {
     setLoading(true);
-    const [resKelas, resInstruktur] = await Promise.all([
+    const [resKelas, resInstruktur, resPresets] = await Promise.all([
       getAllKelasAction(),
-      getInstrukturListForAssignmentAction()
+      getInstrukturListForAssignmentAction(),
+      getLokasiPresetsAction()
     ]);
 
     if (resKelas.success && resKelas.data) {
@@ -121,6 +122,10 @@ export default function MasterKelasPage() {
 
     if (resInstruktur.success && resInstruktur.data) {
       setInstrukturOptions(resInstruktur.data);
+    }
+
+    if (resPresets && resPresets.data) {
+      setLokasiPresets(resPresets.data);
     }
 
     setLoading(false);
@@ -473,35 +478,38 @@ export default function MasterKelasPage() {
                 </div>
 
                 {/* Dropdown Preset Lokasi */}
-                {lokasiPresets.length > 0 && (
-                  <div>
-                    <label className="block text-[10px] font-black text-gray-700 uppercase mb-0.5">
-                      ⭐ Gunakan Preset Lokasi Tersimpan:
-                    </label>
-                    <select
-                      onChange={(e) => {
-                        const pId = e.target.value;
-                        const preset = lokasiPresets.find(p => p.id === pId);
-                        if (preset) {
-                          setFormData(prev => ({
-                            ...prev,
-                            lokasi_lat: String(preset.latitude),
-                            lokasi_lng: String(preset.longitude),
-                            radius_meter: String(preset.radius_meter || 100)
-                          }));
-                        }
-                      }}
-                      className="w-full neo-input p-1.5 text-xs font-bold bg-white"
-                    >
-                      <option value="">-- Pilih Preset Lokasi (Contoh: PT PAKO, ICHIKOH, dll) --</option>
-                      {lokasiPresets.map(p => (
-                        <option key={p.id} value={p.id}>
-                          🏢 {p.nama_lokasi} ({p.latitude}, {p.longitude})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                <div>
+                  <label className="block text-[10px] font-black text-black uppercase mb-1 flex items-center gap-1">
+                    <span>⭐ Pilih dari Preset Lokasi yang Sudah Ditentukan:</span>
+                  </label>
+                  <select
+                    onChange={(e) => {
+                      const pId = e.target.value;
+                      const preset = lokasiPresets.find(p => p.id === pId);
+                      if (preset) {
+                        setFormData(prev => ({
+                          ...prev,
+                          lokasi_lat: String(preset.latitude),
+                          lokasi_lng: String(preset.longitude),
+                          radius_meter: String(preset.radius_meter || 100)
+                        }));
+                      }
+                    }}
+                    className="w-full neo-input p-2 text-xs font-black bg-white border-2 border-black"
+                  >
+                    <option value="">-- Click/Pilih Lokasi Preset (Contoh: PT PAKO, VASANTA, dll) --</option>
+                    {lokasiPresets.map(p => (
+                      <option key={p.id} value={p.id}>
+                        🏢 {p.nama_lokasi} (Lat: {p.latitude}, Lng: {p.longitude}, {p.radius_meter || 100}m)
+                      </option>
+                    ))}
+                  </select>
+                  {lokasiPresets.length === 0 && (
+                    <p className="text-[10px] text-gray-500 italic mt-1">
+                      Belum ada preset lokasi diset. Anda bisa tambah preset di menu Pengaturan Sesi & Lokasi.
+                    </p>
+                  )}
+                </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
