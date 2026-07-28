@@ -14,7 +14,7 @@ import {
 } from '@/app/actions/kelas';
 import { getLokasiPresetsAction } from '@/app/actions/sesi';
 import IndonesianClock from '@/components/IndonesianClock';
-import { ArrowLeft, Plus, Edit2, Trash2, Users, UserPlus, UserMinus, X, UserCheck, MapPin } from 'lucide-react';
+import { ArrowLeft, Plus, Edit2, Trash2, Users, UserPlus, UserMinus, X, UserCheck, MapPin, Search } from 'lucide-react';
 import Link from 'next/link';
 
 type KelasItem = {
@@ -100,7 +100,12 @@ export default function MasterKelasPage() {
   const [siswaInKelas, setSiswaInKelas] = useState<SiswaInKelas[]>([]);
   const [availableSiswa, setAvailableSiswa] = useState<AllSiswaOption[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
-  const [selectedAddSiswaId, setSelectedAddSiswaId] = useState('');
+  
+  // Interactive Add Siswa Modal State
+  const [detailActiveTab, setDetailActiveTab] = useState<'tambah' | 'anggota'>('tambah');
+  const [addSiswaSearch, setAddSiswaSearch] = useState('');
+  const [addSiswaFilter, setAddSiswaFilter] = useState<'tanpa_kelas' | 'semua'>('tanpa_kelas');
+  const [selectedBulkSiswaIds, setSelectedBulkSiswaIds] = useState<string[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -213,6 +218,10 @@ export default function MasterKelasPage() {
   // Open Detail / Student Management Modal
   async function openDetailModal(kelas: KelasItem) {
     setSelectedKelas(kelas);
+    setSelectedBulkSiswaIds([]);
+    setAddSiswaSearch('');
+    setAddSiswaFilter('tanpa_kelas');
+    setDetailActiveTab('tambah'); // Direct to interactive add table!
     setIsDetailModalOpen(true);
     await refreshDetailSiswa(kelas.id);
   }
@@ -233,16 +242,28 @@ export default function MasterKelasPage() {
     setLoadingDetail(false);
   }
 
-  async function handleAddSiswa() {
-    if (!selectedAddSiswaId || !selectedKelas) return;
-    const res = await addSiswaToKelasAction(selectedAddSiswaId, selectedKelas.id);
+  async function handleAddSingleSiswa(siswaId: string) {
+    if (!siswaId || !selectedKelas) return;
+    const res = await addSiswaToKelasAction(siswaId, selectedKelas.id);
     if (res.success) {
-      setSelectedAddSiswaId('');
       await refreshDetailSiswa(selectedKelas.id);
       fetchData(); // refresh count
     } else {
       alert('Gagal menambahkan siswa: ' + res.error);
     }
+  }
+
+  async function handleAddBulkSiswa() {
+    if (!selectedKelas || selectedBulkSiswaIds.length === 0) return;
+    setLoadingDetail(true);
+    for (const sId of selectedBulkSiswaIds) {
+      await addSiswaToKelasAction(sId, selectedKelas.id);
+    }
+    const countAdded = selectedBulkSiswaIds.length;
+    setSelectedBulkSiswaIds([]);
+    await refreshDetailSiswa(selectedKelas.id);
+    fetchData();
+    alert(`🚀 BERHASIL! ${countAdded} Siswa telah ditambahkan ke kelas ${selectedKelas.nama_kelas}`);
   }
 
   async function handleRemoveSiswa(siswaId: string) {
@@ -576,129 +597,292 @@ export default function MasterKelasPage() {
         </div>
       )}
 
-      {/* Modal Kelola Siswa di Kelas */}
+      {/* Modal Kelola Siswa di Kelas (Interactive Table View) */}
       {isDetailModalOpen && selectedKelas && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={() => setIsDetailModalOpen(false)}></div>
-          <div className="relative z-50 w-full max-w-2xl bg-white neo-card shadow-none overflow-hidden max-h-[90vh] flex flex-col">
+          <div className="relative z-50 w-full max-w-4xl bg-white neo-card shadow-none overflow-hidden max-h-[90vh] flex flex-col border-4 border-black">
             {/* Header Modal Detail */}
-            <div className="bg-[#ffe600] p-4 border-b-3 border-black flex justify-between items-center shrink-0">
+            <div className="bg-[#ffe600] p-4 border-b-4 border-black flex justify-between items-center shrink-0">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-xl font-black text-black uppercase">🎓 {selectedKelas.nama_kelas}</span>
-                  <span className="bg-black text-white px-2 py-0.5 text-xs font-bold uppercase">
-                    {siswaInKelas.length} Siswa
+                  <span className="bg-black text-white px-2.5 py-1 text-xs font-black uppercase rounded">
+                    {siswaInKelas.length} Siswa Terdaftar
                   </span>
                 </div>
                 {selectedKelas.deskripsi && (
                   <p className="text-xs font-bold text-black mt-0.5">{selectedKelas.deskripsi}</p>
                 )}
               </div>
-              <button onClick={() => setIsDetailModalOpen(false)} className="p-1 hover:bg-black hover:text-white neo-border">
+              <button onClick={() => setIsDetailModalOpen(false)} className="p-1.5 hover:bg-black hover:text-white neo-border">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto space-y-6 flex-1">
-              {/* Form Tambah Siswa Ke Kelas */}
-              <div className="bg-[#f4f4f0] neo-card p-4 space-y-3">
-                <h4 className="text-xs font-black text-black uppercase tracking-tight flex items-center">
-                  <UserPlus className="w-4 h-4 mr-1 text-black" /> Tambahkan Siswa Ke Kelas Ini
-                </h4>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <select
-                    value={selectedAddSiswaId}
-                    onChange={(e) => setSelectedAddSiswaId(e.target.value)}
-                    className="flex-1 neo-input p-2 text-xs font-bold bg-white"
-                  >
-                    <option value="">-- Pilih Siswa Untuk Ditambahkan --</option>
-                    {availableSiswa.map(s => {
-                      const inCurrentClass = s.siswa?.kelas_id === selectedKelas.id;
-                      if (inCurrentClass) return null; // jangan tampilkan jika sudah di kelas ini
-
-                      const currentClassLabel = s.siswa?.master_kelas?.nama_kelas 
-                        ? `(Kelas Saat Ini: ${s.siswa.master_kelas.nama_kelas})` 
-                        : '(Tanpa Kelas)';
-
-                      return (
-                        <option key={s.siswa?.id || s.id} value={s.siswa?.id}>
-                          {s.name} - {s.email} {currentClassLabel}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  <button
-                    onClick={handleAddSiswa}
-                    disabled={!selectedAddSiswaId}
-                    className="bg-[#00f0ff] hover:bg-[#00d8e6] text-black font-black px-4 py-2 neo-btn text-xs uppercase disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-                  >
-                    + Tambahkan
-                  </button>
-                </div>
-              </div>
-
-              {/* Daftar Siswa di Kelas Ini */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-black text-black uppercase tracking-tight flex items-center justify-between">
-                  <span>Daftar Anggota Kelas ({siswaInKelas.length} Siswa)</span>
-                </h4>
-
-                {loadingDetail ? (
-                  <div className="text-center py-6 font-bold text-gray-500 animate-pulse text-xs">
-                    Memuat daftar siswa...
-                  </div>
-                ) : siswaInKelas.length === 0 ? (
-                  <div className="bg-white neo-card p-6 text-center text-xs font-bold text-gray-500">
-                    Belum ada siswa yang dimasukkan ke dalam kelas ini.
-                  </div>
-                ) : (
-                  <div className="bg-white neo-card divide-y-2 divide-gray-200 overflow-hidden">
-                    {siswaInKelas.map((item) => (
-                      <div key={item.id} className="p-3 flex items-center justify-between hover:bg-[#fffde7] transition-colors">
-                        <div>
-                          <p className="text-xs font-black text-black uppercase">{item.users?.name || 'Tanpa Nama'}</p>
-                          <p className="text-[11px] font-bold text-gray-500">{item.users?.email}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {item.status_pendidikan === 'tunggu_terbang' ? (
-                            <span className="text-[9px] font-black text-black bg-[#ffe600] px-2 py-0.5 border border-black uppercase">
-                              🟡 Tunggu Terbang
-                            </span>
-                          ) : item.status_pendidikan === 'alumni' ? (
-                            <span className="text-[9px] font-black text-white bg-[#00f0ff] px-2 py-0.5 border border-black uppercase">
-                              🔵 Alumni
-                            </span>
-                          ) : item.status_pendidikan === 'belum_mulai' ? (
-                            <span className="text-[9px] font-black text-black bg-gray-200 px-2 py-0.5 border border-black uppercase">
-                              ⚪ Belum Mulai
-                            </span>
-                          ) : (
-                            <span className="text-[9px] font-black text-black bg-[#74ee15] px-2 py-0.5 border border-black uppercase">
-                              🟢 Aktif
-                            </span>
-                          )}
-
-                          <button
-                            onClick={() => handleRemoveSiswa(item.id)}
-                            className="bg-[#ff003c] text-white hover:bg-black p-1.5 neo-border text-[10px] font-black uppercase flex items-center"
-                            title="Keluarkan dari Kelas"
-                          >
-                            <UserMinus className="w-3.5 h-3.5 mr-1" /> Keluarkan
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+            {/* Sub Nav Tabs inside Modal */}
+            <div className="flex border-b-4 border-black bg-gray-100 shrink-0">
+              <button
+                onClick={() => setDetailActiveTab('tambah')}
+                className={`flex-1 py-3 px-4 font-black text-xs uppercase flex items-center justify-center gap-2 border-r-2 border-black transition-colors ${
+                  detailActiveTab === 'tambah'
+                    ? 'bg-[#00f0ff] text-black border-b-4 border-b-black font-black'
+                    : 'bg-white text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>➕ Tambah Siswa Ke Kelas</span>
+                <span className="bg-black text-white text-[10px] px-1.5 py-0.5 rounded font-black">
+                  {availableSiswa.filter(s => !s.siswa?.kelas_id).length} Tanpa Kelas
+                </span>
+              </button>
+              <button
+                onClick={() => setDetailActiveTab('anggota')}
+                className={`flex-1 py-3 px-4 font-black text-xs uppercase flex items-center justify-center gap-2 transition-colors ${
+                  detailActiveTab === 'anggota'
+                    ? 'bg-[#74ee15] text-black border-b-4 border-b-black font-black'
+                    : 'bg-white text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                <span>👥 Anggota Kelas Saat Ini ({siswaInKelas.length})</span>
+              </button>
             </div>
 
-            <div className="bg-gray-100 p-4 border-t-3 border-black text-right shrink-0">
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1 bg-gray-50">
+              
+              {/* TAB TAMBAH SISWA (INTERACTIVE TABLE FOR UNASSIGNED STUDENTS) */}
+              {detailActiveTab === 'tambah' && (
+                <div className="space-y-4">
+                  {/* Filter & Search Bar */}
+                  <div className="bg-white p-3 neo-border space-y-2 sm:space-y-0 sm:flex sm:items-center sm:justify-between gap-3">
+                    <div className="flex-1 relative">
+                      <Search className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+                      <input
+                        type="text"
+                        placeholder="🔍 Cari nama atau email siswa..."
+                        value={addSiswaSearch}
+                        onChange={(e) => setAddSiswaSearch(e.target.value)}
+                        className="w-full neo-input pl-9 pr-3 py-1.5 text-xs font-bold bg-white"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={addSiswaFilter}
+                        onChange={(e: any) => setAddSiswaFilter(e.target.value)}
+                        className="neo-input p-1.5 text-xs font-bold bg-white shrink-0"
+                      >
+                        <option value="tanpa_kelas">⚪ Khusus Siswa Tanpa Kelas (Default)</option>
+                        <option value="semua">Semua Siswa Approved</option>
+                      </select>
+
+                      {selectedBulkSiswaIds.length > 0 && (
+                        <button
+                          onClick={handleAddBulkSiswa}
+                          className="bg-[#00f0ff] hover:bg-[#00d8e6] text-black font-black px-3 py-1.5 neo-btn text-xs uppercase shrink-0 flex items-center gap-1.5"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>+ Tambahkan ({selectedBulkSiswaIds.length}) Siswa</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Table View Tambah Siswa */}
+                  <div className="bg-white neo-border overflow-hidden">
+                    <div className="overflow-x-auto max-h-[50vh]">
+                      <table className="w-full text-xs text-left whitespace-nowrap border-collapse">
+                        <thead className="text-[11px] uppercase bg-gray-100 sticky top-0 z-10 border-b-2 border-black font-black text-black">
+                          <tr>
+                            <th scope="col" className="px-3 py-2.5 text-center w-10 border-r border-black">
+                              <input
+                                type="checkbox"
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    const filtered = availableSiswa.filter(s => {
+                                      if (s.siswa?.kelas_id === selectedKelas.id) return false;
+                                      if (addSiswaFilter === 'tanpa_kelas' && s.siswa?.kelas_id) return false;
+                                      if (addSiswaSearch.trim()) {
+                                        const query = addSiswaSearch.toLowerCase();
+                                        return s.name.toLowerCase().includes(query) || s.email.toLowerCase().includes(query);
+                                      }
+                                      return true;
+                                    });
+                                    setSelectedBulkSiswaIds(filtered.map(f => f.siswa?.id || '').filter(Boolean));
+                                  } else {
+                                    setSelectedBulkSiswaIds([]);
+                                  }
+                                }}
+                                checked={
+                                  availableSiswa.filter(s => s.siswa?.kelas_id !== selectedKelas.id && (addSiswaFilter === 'semua' || !s.siswa?.kelas_id)).length > 0 &&
+                                  selectedBulkSiswaIds.length === availableSiswa.filter(s => s.siswa?.kelas_id !== selectedKelas.id && (addSiswaFilter === 'semua' || !s.siswa?.kelas_id)).length
+                                }
+                                className="w-4 h-4 accent-purple-800"
+                              />
+                            </th>
+                            <th scope="col" className="px-3 py-2.5 text-center w-10 border-r border-black">No</th>
+                            <th scope="col" className="px-4 py-2.5 border-r border-black">Nama Siswa & Email</th>
+                            <th scope="col" className="px-4 py-2.5 border-r border-black">Status Kelas Saat Ini</th>
+                            <th scope="col" className="px-4 py-2.5 text-center">Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y border-black font-bold">
+                          {loadingDetail ? (
+                            <tr>
+                              <td colSpan={5} className="px-4 py-8 text-center text-gray-500 animate-pulse font-bold">
+                                Memuat data siswa...
+                              </td>
+                            </tr>
+                          ) : (() => {
+                            const list = availableSiswa.filter(s => {
+                              if (s.siswa?.kelas_id === selectedKelas.id) return false; // skip siswa yang sudah di kelas ini
+                              if (addSiswaFilter === 'tanpa_kelas' && s.siswa?.kelas_id) return false;
+                              if (addSiswaSearch.trim()) {
+                                const q = addSiswaSearch.toLowerCase();
+                                return s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q);
+                              }
+                              return true;
+                            });
+
+                            if (list.length === 0) {
+                              return (
+                                <tr>
+                                  <td colSpan={5} className="px-4 py-8 text-center text-gray-500 font-bold">
+                                    {addSiswaFilter === 'tanpa_kelas' 
+                                      ? '🎉 Tidak ada siswa yang belum punya kelas. Semua siswa sudah terdistribusi!'
+                                      : 'Tidak ditemukan siswa sesuai pencarian.'}
+                                  </td>
+                                </tr>
+                              );
+                            }
+
+                            return list.map((s, idx) => {
+                              const sId = s.siswa?.id;
+                              const isChecked = sId ? selectedBulkSiswaIds.includes(sId) : false;
+                              const currentKelasNama = s.siswa?.master_kelas?.nama_kelas;
+
+                              return (
+                                <tr key={s.id} className="hover:bg-[#fffde7] transition-colors">
+                                  <td className="px-3 py-2 text-center border-r border-gray-200">
+                                    {sId && (
+                                      <input
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        onChange={(e) => {
+                                          if (e.target.checked) {
+                                            setSelectedBulkSiswaIds(prev => [...prev, sId]);
+                                          } else {
+                                            setSelectedBulkSiswaIds(prev => prev.filter(id => id !== sId));
+                                          }
+                                        }}
+                                        className="w-4 h-4 accent-purple-800"
+                                      />
+                                    )}
+                                  </td>
+                                  <td className="px-3 py-2 text-center border-r border-gray-200 text-gray-600">{idx + 1}</td>
+                                  <td className="px-4 py-2 border-r border-gray-200">
+                                    <p className="font-black text-black uppercase">{s.name}</p>
+                                    <p className="text-[11px] text-gray-500 font-medium">{s.email}</p>
+                                  </td>
+                                  <td className="px-4 py-2 border-r border-gray-200">
+                                    {currentKelasNama ? (
+                                      <span className="bg-amber-100 text-amber-900 border border-amber-400 px-2 py-0.5 text-[10px] font-black rounded uppercase">
+                                        🏫 {currentKelasNama}
+                                      </span>
+                                    ) : (
+                                      <span className="bg-gray-200 text-gray-700 border border-gray-400 px-2 py-0.5 text-[10px] font-black rounded uppercase">
+                                        ⚪ Tanpa Kelas
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-2 text-center">
+                                    {sId && (
+                                      <button
+                                        onClick={() => handleAddSingleSiswa(sId)}
+                                        className="bg-[#74ee15] hover:bg-[#60d60e] text-black font-black px-3 py-1 neo-btn text-[11px] uppercase flex items-center justify-center gap-1 mx-auto"
+                                      >
+                                        <Plus className="w-3.5 h-3.5" /> Tambahkan
+                                      </button>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            });
+                          })()}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB ANGGOTA KELAS SAAT INI */}
+              {detailActiveTab === 'anggota' && (
+                <div className="space-y-3">
+                  <h4 className="text-xs font-black text-black uppercase tracking-tight flex items-center justify-between">
+                    <span>Daftar Anggota Kelas ({siswaInKelas.length} Siswa)</span>
+                  </h4>
+
+                  {loadingDetail ? (
+                    <div className="text-center py-6 font-bold text-gray-500 animate-pulse text-xs">
+                      Memuat daftar siswa...
+                    </div>
+                  ) : siswaInKelas.length === 0 ? (
+                    <div className="bg-white neo-card p-6 text-center text-xs font-bold text-gray-500">
+                      Belum ada siswa yang dimasukkan ke dalam kelas ini.
+                    </div>
+                  ) : (
+                    <div className="bg-white neo-card divide-y-2 divide-gray-200 overflow-hidden">
+                      {siswaInKelas.map((item, idx) => (
+                        <div key={item.id} className="p-3 flex items-center justify-between hover:bg-[#fffde7] transition-colors">
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs font-black text-gray-500 w-5">{idx + 1}.</span>
+                            <div>
+                              <p className="text-xs font-black text-black uppercase">{item.users?.name || 'Tanpa Nama'}</p>
+                              <p className="text-[11px] font-bold text-gray-500">{item.users?.email}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {item.status_pendidikan === 'tunggu_terbang' ? (
+                              <span className="text-[9px] font-black text-black bg-[#ffe600] px-2 py-0.5 border border-black uppercase">
+                                🟡 Tunggu Terbang
+                              </span>
+                            ) : item.status_pendidikan === 'alumni' ? (
+                              <span className="text-[9px] font-black text-white bg-[#00f0ff] px-2 py-0.5 border border-black uppercase">
+                                🔵 Alumni
+                              </span>
+                            ) : item.status_pendidikan === 'belum_mulai' ? (
+                              <span className="text-[9px] font-black text-black bg-gray-200 px-2 py-0.5 border border-black uppercase">
+                                ⚪ Belum Mulai
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-black text-black bg-[#74ee15] px-2 py-0.5 border border-black uppercase">
+                                🟢 Aktif
+                              </span>
+                            )}
+
+                            <button
+                              onClick={() => handleRemoveSiswa(item.id)}
+                              className="bg-[#ff003c] text-white hover:bg-black p-1.5 neo-border text-[10px] font-black uppercase flex items-center"
+                              title="Keluarkan dari Kelas"
+                            >
+                              <UserMinus className="w-3.5 h-3.5 mr-1" /> Keluarkan
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-gray-100 p-4 border-t-4 border-black text-right shrink-0">
               <button 
                 onClick={() => setIsDetailModalOpen(false)} 
-                className="bg-black text-white px-5 py-2 neo-btn text-xs font-black uppercase"
+                className="bg-black text-white px-6 py-2 neo-btn text-xs font-black uppercase"
               >
-                Tutup
+                Selesai / Tutup
               </button>
             </div>
           </div>
