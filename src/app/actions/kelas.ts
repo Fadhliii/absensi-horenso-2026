@@ -5,18 +5,42 @@ import { revalidatePath } from 'next/cache';
 
 export async function getAllKelasAction() {
   try {
-    const { data, error } = await supabase
+    const { data: kelasData, error: kelasErr } = await supabase
       .from('master_kelas')
-      .select('*, instruktur:users!instruktur_id (id, name, email), siswa:siswa(count)')
+      .select('*, siswa:siswa(count)')
       .order('nama_kelas', { ascending: true });
       
-    if (error) throw error;
+    if (kelasErr) throw kelasErr;
 
-    const formattedData = (data || []).map((k: any) => ({
-      ...k,
-      nama_instruktur: k.instruktur?.name || null,
-      jumlah_siswa: k.siswa?.[0]?.count || 0,
-    }));
+    // Fetch multi-instructor mappings
+    const { data: mappingData } = await supabase
+      .from('kelas_instruktur')
+      .select('kelas_id, instruktur_id, users:instruktur_id(id, name, email)');
+
+    const instructorMap: Record<string, { id: string; name: string; email: string }[]> = {};
+    mappingData?.forEach((m: any) => {
+      if (!instructorMap[m.kelas_id]) {
+        instructorMap[m.kelas_id] = [];
+      }
+      if (m.users) {
+        instructorMap[m.kelas_id].push({
+          id: m.users.id,
+          name: m.users.name,
+          email: m.users.email
+        });
+      }
+    });
+
+    const formattedData = (kelasData || []).map((k: any) => {
+      const list = instructorMap[k.id] || [];
+      return {
+        ...k,
+        instruktur_list: list,
+        instruktur_ids: list.map(i => i.id),
+        nama_instruktur: list.map(i => i.name).join(', ') || null,
+        jumlah_siswa: k.siswa?.[0]?.count || 0,
+      };
+    });
 
     return { success: true, data: formattedData };
   } catch (error: any) {
@@ -44,7 +68,7 @@ export async function createKelasAction(formData: FormData) {
   try {
     const nama_kelas = formData.get('nama_kelas') as string;
     const deskripsi = formData.get('deskripsi') as string;
-    const instruktur_id = (formData.get('instruktur_id') as string) || null;
+    const instrukturIds = formData.getAll('instruktur_ids') as string[];
     const latStr = formData.get('lokasi_lat') as string;
     const lngStr = formData.get('lokasi_lng') as string;
     const radiusStr = formData.get('radius_meter') as string;
@@ -56,21 +80,37 @@ export async function createKelasAction(formData: FormData) {
     const radius_meter = radiusStr && !isNaN(parseInt(radiusStr)) ? parseInt(radiusStr) : 100;
 
     const now = new Date().toISOString();
-    const { error } = await supabase
+    const primaryInstruktur = instrukturIds.find(id => id.trim() !== '') || null;
+
+    const { data: created, error } = await supabase
       .from('master_kelas')
       .insert([{ 
         nama_kelas, 
         deskripsi, 
-        instruktur_id: instruktur_id === '' ? null : instruktur_id,
+        instruktur_id: primaryInstruktur,
         lokasi_lat,
         lokasi_lng,
         radius_meter,
         updated_at: now 
-      }]);
+      }])
+      .select('id')
+      .single();
 
     if (error) throw error;
+
+    if (created && instrukturIds.length > 0) {
+      const validIds = Array.from(new Set(instrukturIds.filter(id => id.trim() !== '')));
+      if (validIds.length > 0) {
+        const rows = validIds.map(instruktur_id => ({
+          kelas_id: created.id,
+          instruktur_id
+        }));
+        await supabase.from('kelas_instruktur').insert(rows);
+      }
+    }
     
     revalidatePath('/admin/kelas');
+    revalidatePath('/admin/dashboard');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -82,7 +122,7 @@ export async function updateKelasAction(formData: FormData) {
     const id = formData.get('id') as string;
     const nama_kelas = formData.get('nama_kelas') as string;
     const deskripsi = formData.get('deskripsi') as string;
-    const instruktur_id = (formData.get('instruktur_id') as string) || null;
+    const instrukturIds = formData.getAll('instruktur_ids') as string[];
     const latStr = formData.get('lokasi_lat') as string;
     const lngStr = formData.get('lokasi_lng') as string;
     const radiusStr = formData.get('radius_meter') as string;
@@ -94,12 +134,14 @@ export async function updateKelasAction(formData: FormData) {
     const radius_meter = radiusStr && !isNaN(parseInt(radiusStr)) ? parseInt(radiusStr) : 100;
 
     const now = new Date().toISOString();
+    const primaryInstruktur = instrukturIds.find(iId => iId.trim() !== '') || null;
+
     const { error } = await supabase
       .from('master_kelas')
       .update({ 
         nama_kelas, 
         deskripsi, 
-        instruktur_id: instruktur_id === '' ? null : instruktur_id,
+        instruktur_id: primaryInstruktur,
         lokasi_lat,
         lokasi_lng,
         radius_meter,
@@ -108,6 +150,18 @@ export async function updateKelasAction(formData: FormData) {
       .eq('id', id);
 
     if (error) throw error;
+
+    // Update junction mappings in kelas_instruktur
+    await supabase.from('kelas_instruktur').delete().eq('kelas_id', id);
+
+    const validIds = Array.from(new Set(instrukturIds.filter(iId => iId.trim() !== '')));
+    if (validIds.length > 0) {
+      const rows = validIds.map(instruktur_id => ({
+        kelas_id: id,
+        instruktur_id
+      }));
+      await supabase.from('kelas_instruktur').insert(rows);
+    }
     
     revalidatePath('/admin/kelas');
     revalidatePath('/admin/dashboard');

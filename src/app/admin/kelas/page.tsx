@@ -22,6 +22,8 @@ type KelasItem = {
   nama_kelas: string;
   deskripsi: string | null;
   instruktur_id?: string | null;
+  instruktur_ids?: string[];
+  instruktur_list?: { id: string; name: string; email: string }[];
   nama_instruktur?: string | null;
   jumlah_siswa: number;
   lokasi_lat?: number | null;
@@ -85,7 +87,7 @@ export default function MasterKelasPage() {
   const [formData, setFormData] = useState({ 
     nama_kelas: '', 
     deskripsi: '', 
-    instruktur_id: '',
+    instruktur_ids: [] as string[],
     lokasi_lat: '',
     lokasi_lng: '',
     radius_meter: '100'
@@ -126,18 +128,22 @@ export default function MasterKelasPage() {
 
   function openCreateModal() {
     setModalMode('create');
-    setFormData({ nama_kelas: '', deskripsi: '', instruktur_id: '', lokasi_lat: '', lokasi_lng: '', radius_meter: '100' });
+    setFormData({ nama_kelas: '', deskripsi: '', instruktur_ids: [], lokasi_lat: '', lokasi_lng: '', radius_meter: '100' });
     setIsModalOpen(true);
   }
 
-  function openEditModal(kelas: KelasItem, e?: React.MouseEvent) {
+  function openEditModal(kelas: any, e?: React.MouseEvent) {
     if (e) e.stopPropagation();
     setModalMode('edit');
     setCurrentId(kelas.id);
+    const ids = kelas.instruktur_ids && kelas.instruktur_ids.length > 0
+      ? kelas.instruktur_ids
+      : (kelas.instruktur_id ? [kelas.instruktur_id] : []);
+
     setFormData({ 
       nama_kelas: kelas.nama_kelas, 
       deskripsi: kelas.deskripsi || '',
-      instruktur_id: kelas.instruktur_id || '',
+      instruktur_ids: ids,
       lokasi_lat: kelas.lokasi_lat !== null && kelas.lokasi_lat !== undefined ? String(kelas.lokasi_lat) : '',
       lokasi_lng: kelas.lokasi_lng !== null && kelas.lokasi_lng !== undefined ? String(kelas.lokasi_lng) : '',
       radius_meter: kelas.radius_meter ? String(kelas.radius_meter) : '100'
@@ -173,7 +179,7 @@ export default function MasterKelasPage() {
     const fd = new FormData();
     fd.append('nama_kelas', formData.nama_kelas);
     fd.append('deskripsi', formData.deskripsi);
-    fd.append('instruktur_id', formData.instruktur_id);
+    formData.instruktur_ids.forEach(id => fd.append('instruktur_ids', id));
     fd.append('lokasi_lat', formData.lokasi_lat);
     fd.append('lokasi_lng', formData.lokasi_lng);
     fd.append('radius_meter', formData.radius_meter);
@@ -327,7 +333,15 @@ export default function MasterKelasPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {item.nama_instruktur ? (
+                        {item.instruktur_list && item.instruktur_list.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 max-w-[220px]">
+                            {item.instruktur_list.map((ins: any) => (
+                              <span key={ins.id} className="bg-[#00f0ff] text-black px-2 py-0.5 neo-border text-[11px] font-black flex items-center gap-1">
+                                👨‍🏫 {ins.name}
+                              </span>
+                            ))}
+                          </div>
+                        ) : item.nama_instruktur ? (
                           <span className="bg-[#00f0ff] text-black px-2.5 py-1 neo-border text-xs font-black flex items-center w-fit">
                             👨‍🏫 {item.nama_instruktur}
                           </span>
@@ -411,17 +425,35 @@ export default function MasterKelasPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-black uppercase text-black mb-1">Instruktur Pengajar / Wali Kelas</label>
-                <select
-                  value={formData.instruktur_id}
-                  onChange={(e) => setFormData({...formData, instruktur_id: e.target.value})}
-                  className="w-full neo-input p-2 font-bold text-sm bg-white"
-                >
-                  <option value="">-- Pilih Instruktur Pengajar --</option>
-                  {instrukturOptions.map(ins => (
-                    <option key={ins.id} value={ins.id}>👨‍🏫 {ins.name} ({ins.email})</option>
-                  ))}
-                </select>
+                <label className="block text-xs font-black uppercase text-black mb-1">
+                  👨‍🏫 Instruktur Pengajar (Dapat Pilih Lebih Dari 1 Guru)
+                </label>
+                <div className="space-y-1.5 max-h-40 overflow-y-auto border-2 border-black p-2 bg.gray-50 rounded">
+                  {instrukturOptions.length === 0 ? (
+                    <p className="text-xs text-gray-500 italic p-1">Belum ada akun guru / instruktur.</p>
+                  ) : (
+                    instrukturOptions.map(ins => {
+                      const isChecked = formData.instruktur_ids.includes(ins.id);
+                      return (
+                        <label key={ins.id} className={`flex items-center gap-2 cursor-pointer p-1.5 rounded text-xs font-bold transition-colors ${isChecked ? 'bg-[#ffe600] border border-black' : 'hover:bg-gray-200'}`}>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData(prev => ({ ...prev, instruktur_ids: [...prev.instruktur_ids, ins.id] }));
+                              } else {
+                                setFormData(prev => ({ ...prev, instruktur_ids: prev.instruktur_ids.filter(id => id !== ins.id) }));
+                              }
+                            }}
+                            className="w-4 h-4 accent-purple-800"
+                          />
+                          <span>👨‍🏫 {ins.name} ({ins.email})</span>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
               </div>
 
               {/* Titik Koordinat GPS & Radius Per Kelas */}

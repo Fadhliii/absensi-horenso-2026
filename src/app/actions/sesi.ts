@@ -159,8 +159,17 @@ export async function mulaiSesiKelas1ClickAction(kelasId: string) {
   }
 
   // Jika user adalah Instruktur / Guru, pastikan kelas ini ditugaskan kepadanya!
-  if (userAuth.role === 'instruktur' && kelasData.instruktur_id !== userAuth.userId) {
-    return { error: 'Anda hanya dapat membuka presensi untuk kelas yang ditugaskan kepada Anda.' };
+  if (userAuth.role === 'instruktur') {
+    const { data: mappingCheck } = await supabase
+      .from('kelas_instruktur')
+      .select('id')
+      .eq('kelas_id', kelasId)
+      .eq('instruktur_id', userAuth.userId)
+      .maybeSingle();
+
+    if (!mappingCheck && kelasData.instruktur_id !== userAuth.userId) {
+      return { error: 'Anda hanya dapat membuka presensi untuk kelas yang ditugaskan kepada Anda.' };
+    }
   }
 
   const lat = kelasData.lokasi_lat;

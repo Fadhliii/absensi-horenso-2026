@@ -128,7 +128,7 @@ export async function getDashboardStatsAction() {
     const isSesiAktif = sesiAktif && sesiAktif.length > 0;
 
     let assignedKelas: { id: string; nama_kelas: string; total_siswa: number; lokasi_lat?: number | null; lokasi_lng?: number | null; radius_meter?: number | null } | null = null;
-    let allKelasList: { id: string; nama_kelas: string; total_siswa: number; lokasi_lat?: number | null; lokasi_lng?: number | null; radius_meter?: number | null; instruktur_id?: string | null }[] = [];
+    let allKelasList: { id: string; nama_kelas: string; total_siswa: number; lokasi_lat?: number | null; lokasi_lng?: number | null; radius_meter?: number | null; instruktur_id?: string | null; instruktur_ids?: string[]; instruktur_list?: { id: string; name: string; email: string }[] }[] = [];
 
     // Fetch all classes for quick selection
     const { data: kAll } = await supabase
@@ -136,36 +136,59 @@ export async function getDashboardStatsAction() {
       .select('id, nama_kelas, lokasi_lat, lokasi_lng, radius_meter, instruktur_id, siswa:siswa(count)')
       .order('nama_kelas', { ascending: true });
 
+    // Fetch all instructor mappings
+    const { data: mappingData } = await supabase
+      .from('kelas_instruktur')
+      .select('kelas_id, instruktur_id, users:instruktur_id(id, name, email)');
+
+    const instructorMap: Record<string, { id: string; name: string; email: string }[]> = {};
+    mappingData?.forEach((m: any) => {
+      if (!instructorMap[m.kelas_id]) {
+        instructorMap[m.kelas_id] = [];
+      }
+      if (m.users) {
+        instructorMap[m.kelas_id].push({
+          id: m.users.id,
+          name: m.users.name,
+          email: m.users.email
+        });
+      }
+    });
+
     if (kAll) {
-      allKelasList = kAll.map((k: any) => ({
-        id: k.id,
-        nama_kelas: k.nama_kelas,
-        lokasi_lat: k.lokasi_lat,
-        lokasi_lng: k.lokasi_lng,
-        radius_meter: k.radius_meter,
-        instruktur_id: k.instruktur_id,
-        total_siswa: k.siswa?.[0]?.count || 0
-      }));
+      allKelasList = kAll.map((k: any) => {
+        const list = instructorMap[k.id] || [];
+        const ids = list.map(i => i.id);
+        if (k.instruktur_id && !ids.includes(k.instruktur_id)) {
+          ids.push(k.instruktur_id);
+        }
+        return {
+          id: k.id,
+          nama_kelas: k.nama_kelas,
+          lokasi_lat: k.lokasi_lat,
+          lokasi_lng: k.lokasi_lng,
+          radius_meter: k.radius_meter,
+          instruktur_id: k.instruktur_id,
+          instruktur_ids: ids,
+          instruktur_list: list,
+          total_siswa: k.siswa?.[0]?.count || 0
+        };
+      });
     }
 
     if (role === 'instruktur' && userId) {
-      // Guru HANYA dapat melihat dan membuka kelas yang ditugaskan (assigned) kepadanya
-      allKelasList = allKelasList.filter(k => k.instruktur_id === userId);
+      // Guru HANYA melihat dan mengelola kelas di mana dia menjadi salah satu instruktur pengajarnya
+      allKelasList = allKelasList.filter(k => k.instruktur_ids?.includes(userId) || k.instruktur_id === userId);
 
-      const { data: kData } = await supabase
-        .from('master_kelas')
-        .select('id, nama_kelas, lokasi_lat, lokasi_lng, radius_meter, siswa:siswa(count)')
-        .eq('instruktur_id', userId)
-        .maybeSingle();
-
-      if (kData) {
+      const myPrimary = allKelasList[0];
+      if (myPrimary) {
         assignedKelas = {
-          id: kData.id,
-          nama_kelas: kData.nama_kelas,
-          lokasi_lat: kData.lokasi_lat,
-          lokasi_lng: kData.lokasi_lng,
-          radius_meter: kData.radius_meter,
-          total_siswa: (kData.siswa as any)?.[0]?.count || 0
+          id: myPrimary.id,
+          nama_kelas: myPrimary.nama_kelas,
+          lokasi_lat: myPrimary.lokasi_lat,
+          lokasi_lng: myPrimary.lokasi_lng,
+          radius_meter: myPrimary.radius_meter,
+          total_siswa: myPrimary.total_siswa
         };
       }
     }

@@ -334,6 +334,28 @@ export default function AdminDashboardPage() {
                                   👥 {k.total_siswa} Siswa Terdaftar
                                 </p>
 
+                                {/* Daftar Guru / Instruktur Pengajar Kelas */}
+                                <div className="flex flex-wrap items-center gap-1 mt-1">
+                                  <span className="text-[10px] font-black text-black">👨‍🏫 Pengajar:</span>
+                                  {k.instruktur_list && k.instruktur_list.length > 0 ? (
+                                    k.instruktur_list.map((ins: any) => {
+                                      const isMe = data?.userId === ins.id;
+                                      return (
+                                        <span 
+                                          key={ins.id} 
+                                          className={`text-[9px] px-1.5 py-0.5 rounded font-black border border-black ${
+                                            isMe ? 'bg-purple-900 text-white' : 'bg-blue-100 text-blue-900'
+                                          }`}
+                                        >
+                                          {ins.name} {isMe && '⭐(Anda)'}
+                                        </span>
+                                      );
+                                    })
+                                  ) : (
+                                    <span className="text-[10px] text-gray-500 italic">Belum ditugaskan</span>
+                                  )}
+                                </div>
+
                                 {k.lokasi_lat !== null && k.lokasi_lat !== undefined && k.lokasi_lng !== null && k.lokasi_lng !== undefined ? (
                                   <div className="flex items-center justify-between gap-1 mt-1 bg-white/80 p-1.5 border border-black/30 rounded text-[10px] font-bold">
                                     <span>📍 {k.lokasi_lat}, {k.lokasi_lng} ({k.radius_meter || 100}m)</span>
