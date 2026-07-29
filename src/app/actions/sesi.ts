@@ -14,14 +14,21 @@ export async function closeExpiredSessions() {
   lastCleanupTime = now;
 
   try {
-    const limitTime = new Date(now - MAX_SESSION_DURATION_SECONDS * 1000).toISOString();
-    
-    // 1. Matikan sesi aktif yang dibuat lebih tua dari 30 menit yang lalu
-    await supabase
+    // 1. Matikan sesi aktif yang sudah melewati durasi_menit masing-masing
+    const { data: activeList } = await supabase
       .from('sesi_absensi')
-      .update({ status: 'selesai' })
-      .eq('status', 'aktif')
-      .lt('dibuat_pada', limitTime);
+      .select('id, dibuat_pada, durasi_menit')
+      .eq('status', 'aktif');
+
+    if (activeList && activeList.length > 0) {
+      for (const item of activeList) {
+        const durationSec = (item.durasi_menit || 120) * 60;
+        const createdMs = new Date(item.dibuat_pada).getTime();
+        if (now - createdMs > durationSec * 1000) {
+          await supabase.from('sesi_absensi').update({ status: 'selesai' }).eq('id', item.id);
+        }
+      }
+    }
 
     // 2. PERATURAN 3 JAM: Auto-approve semua absensi pending menjadi 'hadir' 
     // jika sudah 3 jam sejak siswa PERTAMA menekan tombol Masuk Kelas
@@ -229,6 +236,7 @@ export async function mulaiSesiAction(formData: FormData) {
   const lng = parseFloat(formData.get('longitude') as string);
   const radius = parseInt(formData.get('radius') as string);
   const interval = parseInt(formData.get('interval') as string);
+  const durasi_menit = parseInt(formData.get('durasi_menit') as string) || 120;
   const kelas_id = (formData.get('kelas_id') as string) || null;
 
   if (isNaN(lat) || isNaN(lng)) {
@@ -245,6 +253,7 @@ export async function mulaiSesiAction(formData: FormData) {
         lokasi_lng: lng,
         radius_meter: radius || 50,
         interval_qr_detik: interval || 10,
+        durasi_menit: durasi_menit,
         status: 'aktif',
       }
     ])
@@ -257,7 +266,7 @@ export async function mulaiSesiAction(formData: FormData) {
 }
 
 // 1-Click Buka Presensi Kelas untuk Instruktur / Admin berdasarkan Koordinat Kelas yang Ditentukan
-export async function mulaiSesiKelas1ClickAction(kelasId: string) {
+export async function mulaiSesiKelas1ClickAction(kelasId: string, durasiMenit: number = 120) {
   let userAuth;
   try {
     userAuth = await getAdminOrInstrukturId();
@@ -316,6 +325,7 @@ export async function mulaiSesiKelas1ClickAction(kelasId: string) {
         lokasi_lng: lng,
         radius_meter: radius,
         interval_qr_detik: 10,
+        durasi_menit: durasiMenit || 120,
         status: 'aktif',
       }
     ])
@@ -355,11 +365,12 @@ export async function getDetailSesiAction(sessionId: string) {
 
   if (error || !data) return { error: error?.message || 'Sesi tidak ditemukan' };
 
-  // Hitung sisa waktu
+  // Hitung sisa waktu berdasarkan durasi_menit sesi ini (default 120 menit / 2 jam)
+  const durationSec = (data.durasi_menit || 120) * 60;
   const createdAt = new Date(data.dibuat_pada).getTime();
   const now = Date.now();
   const elapsedSeconds = Math.floor((now - createdAt) / 1000);
-  const remainingSeconds = Math.max(0, MAX_SESSION_DURATION_SECONDS - elapsedSeconds);
+  const remainingSeconds = Math.max(0, durationSec - elapsedSeconds);
 
   if (data.status === 'aktif' && remainingSeconds <= 0) {
     // Sesi sudah kadaluarsa saat di-fetch
@@ -397,7 +408,7 @@ export async function getActiveSesiInfoAction() {
 
     const { data: activeList, error } = await supabase
       .from('sesi_absensi')
-      .select('id, dibuat_pada, radius_meter, status, kelas_id')
+      .select('id, dibuat_pada, radius_meter, status, kelas_id, durasi_menit')
       .eq('status', 'aktif')
       .order('dibuat_pada', { ascending: false });
 
@@ -409,9 +420,10 @@ export async function getActiveSesiInfoAction() {
     let globalActiveId: string | undefined = undefined;
 
     for (const item of activeList) {
+      const durationSec = (item.durasi_menit || 120) * 60;
       const createdAt = new Date(item.dibuat_pada).getTime();
       const elapsedSeconds = Math.floor((Date.now() - createdAt) / 1000);
-      const remainingSeconds = MAX_SESSION_DURATION_SECONDS - elapsedSeconds;
+      const remainingSeconds = durationSec - elapsedSeconds;
 
       if (remainingSeconds <= 0) {
         await supabase.from('sesi_absensi').update({ status: 'selesai' }).eq('id', item.id);

@@ -7,7 +7,7 @@ import { mulaiSesiAction, selesaiSesiAction, getActiveSesiInfoAction, mulaiSesiK
 import { updateKelasLocationAction } from '@/app/actions/kelas';
 import { logoutAction } from '@/app/actions/auth';
 import IndonesianClock from '@/components/IndonesianClock';
-import { Users, UserCheck, UserPlus, LogOut, ExternalLink, MapPin, CheckCircle2, ShieldCheck, DoorOpen, Calendar, Building2, BookOpen, UserCog, ClipboardList, Layers, Loader2, XCircle, Zap, Settings, X } from 'lucide-react';
+import { Users, UserCheck, UserPlus, LogOut, ExternalLink, MapPin, CheckCircle2, ShieldCheck, DoorOpen, Calendar, Building2, BookOpen, UserCog, ClipboardList, Layers, Loader2, XCircle, Zap, Settings, X, Clock } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 
@@ -33,6 +33,7 @@ export default function AdminDashboardPage() {
   const [activeKelasSearch, setActiveKelasSearch] = useState('');
   const [bukaSesiLoading, setBukaSesiLoading] = useState(false);
   const [selectedKelasIdForSession, setSelectedKelasIdForSession] = useState('');
+  const [kelasDurasiMap, setKelasDurasiMap] = useState<Record<string, number>>({});
 
   // Modal Set GPS Kelas Quick Action
   const [gpsModalKelas, setGpsModalKelas] = useState<{ id: string; nama_kelas: string; lat: string; lng: string; radius: string } | null>(null);
@@ -110,17 +111,18 @@ export default function AdminDashboardPage() {
     );
   };
 
-  // 1-Click Buka Presensi Kelas (Menggunakan Koordinat Kelas yang ditentukan Admin)
-  const handle1ClickBukaSesiKelas = async (targetKelasId: string) => {
+  // 1-Click Buka Presensi Kelas (Menggunakan Koordinat Kelas yang ditentukan Admin & Durasi pilihan)
+  const handle1ClickBukaSesiKelas = async (targetKelasId: string, durasiMenit: number = 120) => {
     if (!targetKelasId) return;
     setBukaSesiLoading(true);
 
-    const res = await mulaiSesiKelas1ClickAction(targetKelasId);
+    const res = await mulaiSesiKelas1ClickAction(targetKelasId, durasiMenit);
     if (res.error) {
       alert('⚠️ ' + res.error);
     } else {
       setSesiInfo({ active: true, sessionId: res.sessionId });
-      alert(`🚀 BERHASIL! Presensi untuk ${res.namaKelas || 'Kelas'} telah DIBUKA (1-Click). Siswa kelas tersebut sudah bisa menekan tombol Masuk Kelas.`);
+      const durasiStr = durasiMenit >= 60 ? `${durasiMenit / 60} Jam` : `${durasiMenit} Menit`;
+      alert(`🚀 BERHASIL! Presensi untuk ${res.namaKelas || 'Kelas'} telah DIBUKA selama ${durasiStr}. Siswa sudah bisa menekan tombol Masuk Kelas.`);
       fetchData();
     }
     setBukaSesiLoading(false);
@@ -402,14 +404,36 @@ export default function AdminDashboardPage() {
                                     <span>TUTUP PRESENSI</span>
                                   </button>
                                 ) : (
-                                  <button
-                                    onClick={() => handle1ClickBukaSesiKelas(k.id)}
-                                    disabled={bukaSesiLoading}
-                                    className="w-full bg-[#00e676] hover:bg-green-500 text-black font-black py-2 px-3 neo-btn text-[11px] uppercase flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
-                                  >
-                                    {bukaSesiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5 fill-black" />}
-                                    <span>🚀 BUKA PRESENSI (1-KLIK)</span>
-                                  </button>
+                                  <div className="space-y-1.5">
+                                    {/* Selector Durasi Sesi per Kelas */}
+                                    <div className="flex items-center justify-between gap-1 bg-[#fffde7] p-1.5 neo-border">
+                                      <span className="text-[10px] font-black text-black uppercase flex items-center gap-1">
+                                        <Clock className="w-3 h-3 text-black" /> Durasi:
+                                      </span>
+                                      <select
+                                        value={kelasDurasiMap[k.id] || 120}
+                                        onChange={(e) => setKelasDurasiMap(prev => ({ ...prev, [k.id]: Number(e.target.value) }))}
+                                        className="text-[10px] font-black text-black bg-white border border-black px-1.5 py-0.5 rounded cursor-pointer"
+                                      >
+                                        <option value="30">⏱️ 30 Menit</option>
+                                        <option value="60">⏱️ 1 Jam (60m)</option>
+                                        <option value="90">⏱️ 1.5 Jam (90m)</option>
+                                        <option value="120">⏱️ 2 Jam (Default)</option>
+                                        <option value="180">⏱️ 3 Jam (180m)</option>
+                                        <option value="240">⏱️ 4 Jam (240m)</option>
+                                        <option value="480">⏱️ 8 Jam (480m)</option>
+                                      </select>
+                                    </div>
+
+                                    <button
+                                      onClick={() => handle1ClickBukaSesiKelas(k.id, kelasDurasiMap[k.id] || 120)}
+                                      disabled={bukaSesiLoading}
+                                      className="w-full bg-[#00e676] hover:bg-green-500 text-black font-black py-2 px-3 neo-btn text-[11px] uppercase flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                                    >
+                                      {bukaSesiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5 fill-black" />}
+                                      <span>🚀 BUKA PRESENSI ({(kelasDurasiMap[k.id] || 120) >= 60 ? ((kelasDurasiMap[k.id] || 120) / 60) + ' JAM' : (kelasDurasiMap[k.id] || 120) + ' MENIT'})</span>
+                                    </button>
+                                  </div>
                                 )}
                               </div>
                             </div>
