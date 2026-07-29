@@ -80,8 +80,125 @@ export async function closeExpiredSessions() {
           .in('id', idsToAutoApprove);
       }
     }
+    // 3. JADWAL OTOMATIS: Auto open/close daily sessions based on schedule settings
+    await processAutoDailySessions();
   } catch (err) {
     console.error('Gagal menutup sesi / auto-approve absensi:', err);
+  }
+}
+
+// Internal Helper Engine untuk Otomatis Membuka & Menutup Sesi Absensi Harian sesuai Jadwal
+async function processAutoDailySessions() {
+  try {
+    const { data: scheduleList } = await supabase
+      .from('pengaturan_jadwal_absen')
+      .select('*')
+      .eq('is_active', true);
+
+    if (!scheduleList || scheduleList.length === 0) return;
+
+    // Dapatkan waktu WIB (Asia/Jakarta = UTC+7)
+    const nowUtc = new Date();
+    const wibStr = nowUtc.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' });
+    const wibDate = new Date(wibStr);
+
+    const HARI_INDO = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const currentDayName = HARI_INDO[wibDate.getDay()];
+    const currentMinutes = wibDate.getHours() * 60 + wibDate.getMinutes();
+
+    // Dapatkan awal & akhir hari ini dalam ISO UTC
+    const startOfDay = new Date(wibDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(wibDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const startOfDayIso = startOfDay.toISOString();
+    const endOfDayIso = endOfDay.toISOString();
+
+    for (const item of scheduleList) {
+      // Cek apakah hari ini termasuk hari aktif
+      if (!item.hari_aktif || !item.hari_aktif.includes(currentDayName)) {
+        continue;
+      }
+
+      // Parse jam_mulai (misal '07:00' -> 420 menit)
+      const [startH, startM] = (item.jam_mulai || '07:00').split(':').map(Number);
+      const startMinutes = (startH || 0) * 60 + (startM || 0);
+      const endMinutes = startMinutes + (item.durasi_menit || 120);
+
+      const kelasId = item.kelas_id;
+
+      // JIKA WAKTU SAAT INI BERADA DALAM JANGKAUAN JADWAL
+      if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
+        // Cek apakah sesi aktif untuk kelas ini sudah ada hari ini
+        let query = supabase
+          .from('sesi_absensi')
+          .select('id, status')
+          .gte('dibuat_pada', startOfDayIso)
+          .lte('dibuat_pada', endOfDayIso);
+
+        if (kelasId) {
+          query = query.eq('kelas_id', kelasId);
+        }
+
+        const { data: existingSesi } = await query;
+
+        const hasActiveToday = existingSesi?.some(s => s.status === 'aktif');
+        const hasSessionToday = existingSesi && existingSesi.length > 0;
+
+        if (!hasSessionToday && !hasActiveToday) {
+          // Buka sesi otomatis!
+          let lat = item.lokasi_lat;
+          let lng = item.lokasi_lng;
+          let radius = item.radius_meter || 100;
+
+          // Jika koordinat tidak di-set di jadwal, ambil dari master_kelas
+          if ((lat === null || lat === undefined) && kelasId) {
+            const { data: kData } = await supabase
+              .from('master_kelas')
+              .select('lokasi_lat, lokasi_lng, radius_meter')
+              .eq('id', kelasId)
+              .maybeSingle();
+
+            if (kData) {
+              lat = kData.lokasi_lat;
+              lng = kData.lokasi_lng;
+              radius = kData.radius_meter || 100;
+            }
+          }
+
+          if (lat !== null && lng !== null && lat !== undefined && lng !== undefined) {
+            await supabase.from('sesi_absensi').insert([
+              {
+                dibuat_oleh: null, // System auto-scheduler
+                kelas_id: kelasId || null,
+                lokasi_lat: lat,
+                lokasi_lng: lng,
+                radius_meter: radius,
+                interval_qr_detik: 10,
+                status: 'aktif'
+              }
+            ]);
+          }
+        }
+      } 
+      // JIKA WAKTU SUDAH MELEWATI BATA DURASI -> TUTUP SESI AKTIF OTOMATIS
+      else if (currentMinutes >= endMinutes) {
+        let query = supabase
+          .from('sesi_absensi')
+          .update({ status: 'selesai' })
+          .eq('status', 'aktif')
+          .gte('dibuat_pada', startOfDayIso);
+
+        if (kelasId) {
+          query = query.eq('kelas_id', kelasId);
+        }
+
+        await query;
+      }
+    }
+  } catch (err) {
+    console.error('Gagal menjalankan processAutoDailySessions:', err);
   }
 }
 
@@ -374,6 +491,89 @@ export async function deleteLokasiPresetAction(id: string) {
     await getAdminOrInstrukturId();
     const { error } = await supabase
       .from('lokasi_preset')
+      .delete()
+      .eq('id', id);
+
+    if (error) return { error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { error: err.message };
+  }
+}
+
+// ================= JADWAL OTOMATIS ACTIONS ================= //
+
+export async function getAutoJadwalListAction() {
+  try {
+    const { data, error } = await supabase
+      .from('pengaturan_jadwal_absen')
+      .select('*, master_kelas(id, nama_kelas)')
+      .order('jam_mulai', { ascending: true });
+
+    if (error) return { error: error.message };
+    return { data: data || [] };
+  } catch (err: any) {
+    return { error: err.message };
+  }
+}
+
+export async function saveAutoJadwalAction(formData: FormData) {
+  try {
+    await getAdminOrInstrukturId();
+    const id = formData.get('id') as string;
+    const kelas_id = (formData.get('kelas_id') as string) || null;
+    const jam_mulai = (formData.get('jam_mulai') as string) || '07:00';
+    const durasi_menit = parseInt(formData.get('durasi_menit') as string) || 120;
+    const hari_aktif = formData.getAll('hari_aktif') as string[];
+    const is_active = formData.get('is_active') === 'true';
+
+    const payload: any = {
+      kelas_id: kelas_id === '' ? null : kelas_id,
+      jam_mulai,
+      durasi_menit,
+      hari_aktif: hari_aktif.length > 0 ? hari_aktif : ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'],
+      is_active
+    };
+
+    if (id) {
+      const { error } = await supabase
+        .from('pengaturan_jadwal_absen')
+        .update(payload)
+        .eq('id', id);
+      if (error) return { error: error.message };
+    } else {
+      const { error } = await supabase
+        .from('pengaturan_jadwal_absen')
+        .insert([payload]);
+      if (error) return { error: error.message };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    return { error: err.message };
+  }
+}
+
+export async function toggleAutoJadwalAction(id: string, isActive: boolean) {
+  try {
+    await getAdminOrInstrukturId();
+    const { error } = await supabase
+      .from('pengaturan_jadwal_absen')
+      .update({ is_active: isActive })
+      .eq('id', id);
+
+    if (error) return { error: error.message };
+    return { success: true };
+  } catch (err: any) {
+    return { error: err.message };
+  }
+}
+
+export async function deleteAutoJadwalAction(id: string) {
+  try {
+    await getAdminOrInstrukturId();
+    const { error } = await supabase
+      .from('pengaturan_jadwal_absen')
       .delete()
       .eq('id', id);
 
