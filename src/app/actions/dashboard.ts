@@ -136,10 +136,14 @@ export async function getDashboardStatsAction() {
       .select('id, nama_kelas, lokasi_lat, lokasi_lng, radius_meter, instruktur_id, siswa:siswa(count)')
       .order('nama_kelas', { ascending: true });
 
-    // Fetch all instructor mappings
-    const { data: mappingData } = await supabase
-      .from('kelas_instruktur')
-      .select('kelas_id, instruktur_id, users:instruktur_id(id, name, email)');
+    // Fetch all instructor mappings & auto schedule settings
+    const [
+      { data: mappingData },
+      { data: autoJadwalData }
+    ] = await Promise.all([
+      supabase.from('kelas_instruktur').select('kelas_id, instruktur_id, users:instruktur_id(id, name, email)'),
+      supabase.from('pengaturan_jadwal_absen').select('kelas_id, jam_mulai, durasi_menit, is_active')
+    ]);
 
     const instructorMap: Record<string, { id: string; name: string; email: string }[]> = {};
     mappingData?.forEach((m: any) => {
@@ -152,6 +156,17 @@ export async function getDashboardStatsAction() {
           name: m.users.name,
           email: m.users.email
         });
+      }
+    });
+
+    const autoJadwalMap: Record<string, { jam_mulai: string; durasi_menit: number; is_active: boolean }> = {};
+    autoJadwalData?.forEach((aj: any) => {
+      if (aj.kelas_id) {
+        autoJadwalMap[aj.kelas_id] = {
+          jam_mulai: aj.jam_mulai || '07:00',
+          durasi_menit: aj.durasi_menit || 120,
+          is_active: aj.is_active ?? true
+        };
       }
     });
 
@@ -171,7 +186,8 @@ export async function getDashboardStatsAction() {
           instruktur_id: k.instruktur_id,
           instruktur_ids: ids,
           instruktur_list: list,
-          total_siswa: k.siswa?.[0]?.count || 0
+          total_siswa: k.siswa?.[0]?.count || 0,
+          auto_schedule: autoJadwalMap[k.id] || null
         };
       });
     }

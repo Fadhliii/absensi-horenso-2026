@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getDashboardStatsAction } from '@/app/actions/dashboard';
 import { getPendingCountAction } from '@/app/actions/approval';
-import { mulaiSesiAction, selesaiSesiAction, getActiveSesiInfoAction, mulaiSesiKelas1ClickAction } from '@/app/actions/sesi';
+import { mulaiSesiAction, selesaiSesiAction, getActiveSesiInfoAction, mulaiSesiKelas1ClickAction, saveClassAutoScheduleAction } from '@/app/actions/sesi';
 import { updateKelasLocationAction } from '@/app/actions/kelas';
 import { logoutAction } from '@/app/actions/auth';
 import IndonesianClock from '@/components/IndonesianClock';
@@ -35,8 +35,17 @@ export default function AdminDashboardPage() {
   const [selectedKelasIdForSession, setSelectedKelasIdForSession] = useState('');
   const [kelasDurasiMap, setKelasDurasiMap] = useState<Record<string, number>>({});
 
-  // Modal Set GPS Kelas Quick Action
-  const [gpsModalKelas, setGpsModalKelas] = useState<{ id: string; nama_kelas: string; lat: string; lng: string; radius: string } | null>(null);
+  // Modal Quick Settings Kelas (GPS, Durasi, Auto-Start)
+  const [settingModalKelas, setSettingModalKelas] = useState<{
+    id: string;
+    nama_kelas: string;
+    lat: string;
+    lng: string;
+    radius: string;
+    durasi_menit: number;
+    jam_mulai: string;
+    is_auto_active: boolean;
+  } | null>(null);
   const [savingGps, setSavingGps] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -69,38 +78,39 @@ export default function AdminDashboardPage() {
     fetchData();
   }, [fetchData]);
 
-  // Quick Save GPS for Class
-  const handleSaveGpsForKelas = async () => {
-    if (!gpsModalKelas) return;
-    const lat = parseFloat(gpsModalKelas.lat);
-    const lng = parseFloat(gpsModalKelas.lng);
-    const radius = parseInt(gpsModalKelas.radius) || 100;
-
-    if (isNaN(lat) || isNaN(lng)) {
-      alert('Koordinat Latitude dan Longitude wajib diisi!');
-      return;
-    }
-
+  const handleSaveQuickSettingsForKelas = async () => {
+    if (!settingModalKelas) return;
     setSavingGps(true);
-    const res = await updateKelasLocationAction(gpsModalKelas.id, lat, lng, radius);
-    if (res.success) {
-      alert(`📍 Titik Lokasi GPS untuk ${gpsModalKelas.nama_kelas} BERHASIL DISIMPAN & DITERAPKAN!`);
-      setGpsModalKelas(null);
-      fetchData();
-    } else {
-      alert('Gagal menyimpan lokasi: ' + res.error);
+
+    if (settingModalKelas.lat && settingModalKelas.lng) {
+      const latNum = parseFloat(settingModalKelas.lat);
+      const lngNum = parseFloat(settingModalKelas.lng);
+      const radNum = parseInt(settingModalKelas.radius) || 100;
+      await updateKelasLocationAction(settingModalKelas.id, latNum, lngNum, radNum);
     }
+
+    await saveClassAutoScheduleAction(
+      settingModalKelas.id,
+      settingModalKelas.jam_mulai || '07:00',
+      settingModalKelas.durasi_menit || 120,
+      settingModalKelas.is_auto_active
+    );
+
+    setKelasDurasiMap(prev => ({ ...prev, [settingModalKelas.id]: settingModalKelas.durasi_menit }));
+
     setSavingGps(false);
+    setSettingModalKelas(null);
+    fetchData();
   };
 
-  const handleDetectGpsForModal = () => {
+  const handleDetectGpsForSettingModal = () => {
     if (!navigator.geolocation) {
       alert('Browser Anda tidak mendukung GPS.');
       return;
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setGpsModalKelas(prev => prev ? {
+        setSettingModalKelas(prev => prev ? {
           ...prev,
           lat: pos.coords.latitude.toFixed(6),
           lng: pos.coords.longitude.toFixed(6)
@@ -311,7 +321,7 @@ export default function AdminDashboardPage() {
                           return (
                             <div 
                               key={k.id}
-                              className={`p-3 neo-card border-2 border-black flex flex-col justify-between space-y-2.5 transition-all ${
+                              className={`p-3 neo-card border-2 border-black flex flex-col justify-between space-y-2 transition-all ${
                                 isKelasActive ? 'bg-[#74ee15] border-black' : isMyClass ? 'bg-[#fffde7]' : 'bg-white'
                               }`}
                             >
@@ -321,24 +331,29 @@ export default function AdminDashboardPage() {
                                     🏫 {k.nama_kelas}
                                     {isMyClass && <span className="text-[9px] bg-purple-900 text-white px-1.5 py-0.5 rounded font-black uppercase">Anda Guru</span>}
                                   </span>
-                                  {isKelasActive ? (
-                                    <span className="bg-green-900 text-white text-[9px] font-black px-2 py-0.5 rounded border border-black animate-pulse">
-                                      🟢 AKTIF
+                                  <span className={`px-2 py-0.5 text-[9px] font-black uppercase rounded border border-black ${
+                                    isKelasActive ? 'bg-green-900 text-white animate-pulse' : 'bg-gray-200 text-gray-600'
+                                  }`}>
+                                    {isKelasActive ? '🟢 AKTIF' : '🔴 TUTUP'}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-[10px] font-bold text-gray-700">👥 {k.total_siswa} Siswa</span>
+                                  {k.auto_schedule?.is_active ? (
+                                    <span className="text-[9px] font-black bg-[#ffe600] text-black px-1.5 py-0.5 rounded border border-black flex items-center gap-0.5">
+                                      <Clock className="w-2.5 h-2.5" /> Auto {k.auto_schedule.jam_mulai}
                                     </span>
                                   ) : (
-                                    <span className="bg-gray-200 text-gray-600 text-[9px] font-black px-2 py-0.5 rounded border border-gray-400">
-                                      🔴 TUTUP
+                                    <span className="text-[9px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-300">
+                                      ⏰ Auto OFF
                                     </span>
                                   )}
                                 </div>
 
-                                <p className="text-[11px] font-bold text-gray-700 mt-0.5">
-                                  👥 {k.total_siswa} Siswa Terdaftar
-                                </p>
-
                                 {/* Daftar Guru / Instruktur Pengajar Kelas */}
-                                <div className="flex flex-wrap items-center gap-1 mt-1">
-                                  <span className="text-[10px] font-black text-black">👨‍🏫 Pengajar:</span>
+                                <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                                  <span className="text-[10px] font-black text-black">👨‍🏫 Guru:</span>
                                   {k.instruktur_list && k.instruktur_list.length > 0 ? (
                                     k.instruktur_list.map((ins: any) => {
                                       const isMe = data?.userId === ins.id;
@@ -349,92 +364,55 @@ export default function AdminDashboardPage() {
                                             isMe ? 'bg-purple-900 text-white' : 'bg-blue-100 text-blue-900'
                                           }`}
                                         >
-                                          {ins.name} {isMe && '⭐(Anda)'}
+                                          {ins.name} {isMe && '⭐'}
                                         </span>
                                       );
                                     })
                                   ) : (
-                                    <span className="text-[10px] text-gray-500 italic">Belum ditugaskan</span>
+                                    <span className="text-[10px] text-gray-400 italic">Belum ditugaskan</span>
                                   )}
                                 </div>
-
-                                {k.lokasi_lat !== null && k.lokasi_lat !== undefined && k.lokasi_lng !== null && k.lokasi_lng !== undefined ? (
-                                  <div className="flex items-center justify-between gap-1 mt-1 bg-white/80 p-1.5 border border-black/30 rounded text-[10px] font-bold">
-                                    <span>📍 {k.lokasi_lat}, {k.lokasi_lng} ({k.radius_meter || 100}m)</span>
-                                    <button
-                                      onClick={() => setGpsModalKelas({
-                                        id: k.id,
-                                        nama_kelas: k.nama_kelas,
-                                        lat: String(k.lokasi_lat || ''),
-                                        lng: String(k.lokasi_lng || ''),
-                                        radius: String(k.radius_meter || 100)
-                                      })}
-                                      className="text-black hover:text-purple-700 underline font-black text-[10px] shrink-0"
-                                    >
-                                      ⚙️ Edit
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center justify-between gap-1 mt-1 bg-red-100 p-1.5 neo-border border-red-400 text-[10px] font-bold text-red-900">
-                                    <span>⚠️ Belum Set GPS</span>
-                                    <button
-                                      onClick={() => setGpsModalKelas({
-                                        id: k.id,
-                                        nama_kelas: k.nama_kelas,
-                                        lat: '',
-                                        lng: '',
-                                        radius: '100'
-                                      })}
-                                      className="bg-black text-white px-1.5 py-0.5 rounded font-black text-[9px] uppercase hover:bg-purple-900"
-                                    >
-                                      📍 Set GPS
-                                    </button>
-                                  </div>
-                                )}
                               </div>
 
-                              <div>
+                              <div className="flex items-center gap-1.5 pt-2 border-t border-black/10">
                                 {isKelasActive ? (
                                   <button
                                     onClick={() => handle1ClickTutupSesiKelas(activeSesiData.sessionId, k.nama_kelas)}
                                     disabled={bukaSesiLoading}
-                                    className="w-full bg-[#ff003c] hover:bg-red-700 text-white font-black py-2 px-3 neo-btn text-[11px] uppercase flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                                    className="flex-1 bg-[#ff003c] hover:bg-red-700 text-white font-black py-2 px-2 neo-btn text-[11px] uppercase flex items-center justify-center gap-1 active:scale-95"
                                   >
                                     {bukaSesiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
                                     <span>TUTUP PRESENSI</span>
                                   </button>
                                 ) : (
-                                  <div className="space-y-1.5">
-                                    {/* Selector Durasi Sesi per Kelas */}
-                                    <div className="flex items-center justify-between gap-1 bg-[#fffde7] p-1.5 neo-border">
-                                      <span className="text-[10px] font-black text-black uppercase flex items-center gap-1">
-                                        <Clock className="w-3 h-3 text-black" /> Durasi:
-                                      </span>
-                                      <select
-                                        value={kelasDurasiMap[k.id] || 120}
-                                        onChange={(e) => setKelasDurasiMap(prev => ({ ...prev, [k.id]: Number(e.target.value) }))}
-                                        className="text-[10px] font-black text-black bg-white border border-black px-1.5 py-0.5 rounded cursor-pointer"
-                                      >
-                                        <option value="30">⏱️ 30 Menit</option>
-                                        <option value="60">⏱️ 1 Jam (60m)</option>
-                                        <option value="90">⏱️ 1.5 Jam (90m)</option>
-                                        <option value="120">⏱️ 2 Jam (Default)</option>
-                                        <option value="180">⏱️ 3 Jam (180m)</option>
-                                        <option value="240">⏱️ 4 Jam (240m)</option>
-                                        <option value="480">⏱️ 8 Jam (480m)</option>
-                                      </select>
-                                    </div>
-
-                                    <button
-                                      onClick={() => handle1ClickBukaSesiKelas(k.id, kelasDurasiMap[k.id] || 120)}
-                                      disabled={bukaSesiLoading}
-                                      className="w-full bg-[#00e676] hover:bg-green-500 text-black font-black py-2 px-3 neo-btn text-[11px] uppercase flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
-                                    >
-                                      {bukaSesiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5 fill-black" />}
-                                      <span>🚀 BUKA PRESENSI ({(kelasDurasiMap[k.id] || 120) >= 60 ? ((kelasDurasiMap[k.id] || 120) / 60) + ' JAM' : (kelasDurasiMap[k.id] || 120) + ' MENIT'})</span>
-                                    </button>
-                                  </div>
+                                  <button
+                                    onClick={() => handle1ClickBukaSesiKelas(k.id, kelasDurasiMap[k.id] || k.auto_schedule?.durasi_menit || 120)}
+                                    disabled={bukaSesiLoading}
+                                    className="flex-1 bg-[#00e676] hover:bg-green-500 text-black font-black py-2 px-2 neo-btn text-[11px] uppercase flex items-center justify-center gap-1 active:scale-95"
+                                  >
+                                    {bukaSesiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5 fill-black" />}
+                                    <span>🚀 BUKA ({(kelasDurasiMap[k.id] || k.auto_schedule?.durasi_menit || 120) >= 60 ? ((kelasDurasiMap[k.id] || k.auto_schedule?.durasi_menit || 120) / 60) + ' JAM' : (kelasDurasiMap[k.id] || k.auto_schedule?.durasi_menit || 120) + 'M'})</span>
+                                  </button>
                                 )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => setSettingModalKelas({
+                                    id: k.id,
+                                    nama_kelas: k.nama_kelas,
+                                    lat: String(k.lokasi_lat ?? ''),
+                                    lng: String(k.lokasi_lng ?? ''),
+                                    radius: String(k.radius_meter || 100),
+                                    durasi_menit: kelasDurasiMap[k.id] || k.auto_schedule?.durasi_menit || 120,
+                                    jam_mulai: k.auto_schedule?.jam_mulai || '07:00',
+                                    is_auto_active: k.auto_schedule?.is_active ?? false
+                                  })}
+                                  className="bg-white hover:bg-black hover:text-white p-2 neo-border text-black text-[11px] font-black shrink-0 flex items-center gap-1"
+                                  title="Pengaturan Presensi & Lokasi"
+                                >
+                                  <Settings className="w-3.5 h-3.5" />
+                                  <span>Set</span>
+                                </button>
                               </div>
                             </div>
                           );
@@ -737,112 +715,171 @@ export default function AdminDashboardPage() {
         )}
       </main>
 
-      {/* MODAL SET LOKASI GPS KELAS QUICK ACTION */}
-      {gpsModalKelas && (
+      {/* MODAL UNIFIED PENGATURAN KELAS & PRESENSI (GPS, DURASI, AUTO-START) */}
+      {settingModalKelas && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={() => setGpsModalKelas(null)}></div>
-          <div className="relative z-50 w-full max-w-md bg-white neo-card shadow-none space-y-4 p-6 border-4 border-black">
-            <div className="flex justify-between items-center border-b-3 border-black pb-3">
+          <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={() => setSettingModalKelas(null)}></div>
+          <div className="relative z-50 w-full max-w-md bg-white neo-card shadow-none space-y-4 p-6 border-4 border-black max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b-3 border-black pb-3 bg-[#ffe600] -mx-6 -mt-6 p-4">
               <h3 className="text-sm font-black text-black uppercase flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-purple-700" />
-                <span>Atur Lokasi GPS: {gpsModalKelas.nama_kelas}</span>
+                <Settings className="w-5 h-5 text-black" />
+                <span>Pengaturan Presensi: {settingModalKelas.nama_kelas}</span>
               </h3>
-              <button onClick={() => setGpsModalKelas(null)} className="p-1 hover:bg-black hover:text-white neo-border">
+              <button onClick={() => setSettingModalKelas(null)} className="p-1 hover:bg-black hover:text-white neo-border bg-white text-black">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-4 text-xs font-bold">
-              {/* Opsi 1: Pilih dari Preset Lokasi Tersimpan */}
-              {data?.lokasiPresets && data.lokasiPresets.length > 0 && (
-                <div className="p-3 bg-[#fffde7] neo-border space-y-1.5">
-                  <label className="block text-[11px] font-black text-black uppercase">
-                    ⭐ Pilih dari Preset Lokasi Tersimpan:
-                  </label>
-                  <select
-                    onChange={(e) => {
-                      const selectedId = e.target.value;
-                      const preset = data.lokasiPresets.find((p: any) => p.id === selectedId);
-                      if (preset) {
-                        setGpsModalKelas(prev => prev ? {
-                          ...prev,
-                          lat: String(preset.latitude),
-                          lng: String(preset.longitude),
-                          radius: String(preset.radius_meter || 100)
-                        } : null);
-                      }
-                    }}
-                    className="w-full neo-input p-2 text-xs font-bold bg-white"
-                  >
-                    <option value="">-- Pilih Lokasi Preset --</option>
-                    {data.lokasiPresets.map((p: any) => (
-                      <option key={p.id} value={p.id}>
-                        🏢 {p.nama_lokasi} ({p.latitude}, {p.longitude})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Opsi 2: Ambil GPS HP */}
-              <button
-                type="button"
-                onClick={handleDetectGpsForModal}
-                className="w-full bg-[#74ee15] hover:bg-[#60d60e] text-black font-black py-2.5 px-3 neo-btn text-xs uppercase flex items-center justify-center gap-2"
-              >
-                🎯 Gunakan Posisi GPS HP Saya Saat Ini
-              </button>
-
-              {/* Opsi 3: Input Manual */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[10px] font-black text-gray-700 uppercase mb-0.5">Latitude *</label>
-                  <input
-                    type="number"
-                    step="any"
-                    placeholder="-6.200000"
-                    value={gpsModalKelas.lat}
-                    onChange={(e) => setGpsModalKelas({...gpsModalKelas, lat: e.target.value})}
-                    className="w-full neo-input p-2 text-xs font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black text-gray-700 uppercase mb-0.5">Longitude *</label>
-                  <input
-                    type="number"
-                    step="any"
-                    placeholder="106.800000"
-                    value={gpsModalKelas.lng}
-                    onChange={(e) => setGpsModalKelas({...gpsModalKelas, lng: e.target.value})}
-                    className="w-full neo-input p-2 text-xs font-bold"
-                  />
-                </div>
+            <div className="space-y-4 text-xs font-bold pt-2">
+              {/* BAGIAN 1: DURASI QR SESI */}
+              <div className="p-3 bg-[#fffde7] neo-border space-y-1.5">
+                <label className="block text-[11px] font-black text-black uppercase flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-black" /> ⏳ Durasi Masa Aktif QR Code
+                </label>
+                <select
+                  value={settingModalKelas.durasi_menit}
+                  onChange={(e) => setSettingModalKelas({ ...settingModalKelas, durasi_menit: Number(e.target.value) })}
+                  className="w-full neo-input p-2 text-xs font-black bg-white cursor-pointer"
+                >
+                  <option value="30">⏱️ 30 Menit</option>
+                  <option value="60">⏱️ 1 Jam (60 Menit)</option>
+                  <option value="90">⏱️ 1.5 Jam (90 Menit)</option>
+                  <option value="120">⏱️ 2 Jam (120 Menit - Default)</option>
+                  <option value="180">⏱️ 3 Jam (180 Menit)</option>
+                  <option value="240">⏱️ 4 Jam (240 Menit)</option>
+                  <option value="480">⏱️ 8 Jam (480 Menit)</option>
+                </select>
+                <p className="text-[10px] font-bold text-gray-500">Durasi hitung mundur sesi saat presensi dibuka.</p>
               </div>
 
-              <div>
-                <label className="block text-[10px] font-black text-gray-700 uppercase mb-0.5">Radius Toleransi (Meter)</label>
-                <input
-                  type="number"
-                  min="10"
-                  max="5000"
-                  value={gpsModalKelas.radius}
-                  onChange={(e) => setGpsModalKelas({...gpsModalKelas, radius: e.target.value})}
-                  className="w-full neo-input p-2 text-xs font-bold"
-                />
+              {/* BAGIAN 2: JADWAL MULAI OTOMATIS HARIAN */}
+              <div className="p-3 bg-[#e0f7fa] neo-border space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-black text-black uppercase flex items-center gap-1">
+                    <Zap className="w-3.5 h-3.5 text-black fill-black" /> ⏰ Mulai Sesi Otomatis Harian
+                  </label>
+                  <label className="flex items-center cursor-pointer gap-1.5">
+                    <input
+                      type="checkbox"
+                      checked={settingModalKelas.is_auto_active}
+                      onChange={(e) => setSettingModalKelas({ ...settingModalKelas, is_auto_active: e.target.checked })}
+                      className="w-4 h-4 accent-purple-800 cursor-pointer"
+                    />
+                    <span className="text-[10px] font-black uppercase text-black">
+                      {settingModalKelas.is_auto_active ? '🟢 AKTIF' : '⚪ OFF'}
+                    </span>
+                  </label>
+                </div>
+
+                {settingModalKelas.is_auto_active && (
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-700 uppercase mb-0.5">Jam Mulai Sesi (WIB)</label>
+                    <input
+                      type="time"
+                      value={settingModalKelas.jam_mulai}
+                      onChange={(e) => setSettingModalKelas({ ...settingModalKelas, jam_mulai: e.target.value })}
+                      className="w-full neo-input p-2 text-xs font-black bg-white"
+                    />
+                    <p className="text-[10px] font-bold text-gray-600 mt-1">Sistem otomatis membuka sesi presensi kelas ini pada jam ini (Senin-Jumat).</p>
+                  </div>
+                )}
+              </div>
+
+              {/* BAGIAN 3: TITIK LOKASI GPS & RADIUS */}
+              <div className="p-3 bg-gray-50 neo-border space-y-3">
+                <label className="block text-[11px] font-black text-black uppercase flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-purple-700" /> 📍 Titik Koordinat GPS Kelas
+                </label>
+
+                {data?.lokasiPresets && data.lokasiPresets.length > 0 && (
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-700 uppercase mb-0.5">
+                      Pilih dari Preset Tersimpan:
+                    </label>
+                    <select
+                      onChange={(e) => {
+                        const selectedId = e.target.value;
+                        const preset = data.lokasiPresets.find((p: any) => p.id === selectedId);
+                        if (preset) {
+                          setSettingModalKelas(prev => prev ? {
+                            ...prev,
+                            lat: String(preset.latitude),
+                            lng: String(preset.longitude),
+                            radius: String(preset.radius_meter || 100)
+                          } : null);
+                        }
+                      }}
+                      className="w-full neo-input p-2 text-xs font-bold bg-white cursor-pointer"
+                    >
+                      <option value="">-- Pilih Lokasi Preset --</option>
+                      {data.lokasiPresets.map((p: any) => (
+                        <option key={p.id} value={p.id}>
+                          🏢 {p.nama_lokasi} ({p.latitude}, {p.longitude})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleDetectGpsForSettingModal}
+                  className="w-full bg-[#74ee15] hover:bg-[#60d60e] text-black font-black py-2 px-3 neo-btn text-[11px] uppercase flex items-center justify-center gap-1.5"
+                >
+                  🎯 Gunakan Posisi GPS HP Saya Saat Ini
+                </button>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-700 uppercase mb-0.5">Latitude</label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="-6.200000"
+                      value={settingModalKelas.lat}
+                      onChange={(e) => setSettingModalKelas({ ...settingModalKelas, lat: e.target.value })}
+                      className="w-full neo-input p-2 text-xs font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-700 uppercase mb-0.5">Longitude</label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="106.800000"
+                      value={settingModalKelas.lng}
+                      onChange={(e) => setSettingModalKelas({ ...settingModalKelas, lng: e.target.value })}
+                      className="w-full neo-input p-2 text-xs font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-gray-700 uppercase mb-0.5">Radius Toleransi (Meter)</label>
+                  <input
+                    type="number"
+                    min="10"
+                    max="5000"
+                    value={settingModalKelas.radius}
+                    onChange={(e) => setSettingModalKelas({ ...settingModalKelas, radius: e.target.value })}
+                    className="w-full neo-input p-2 text-xs font-bold"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="flex gap-2 pt-2 border-t-2 border-black">
+            <div className="flex gap-2 pt-3 border-t-2 border-black">
               <button
-                onClick={handleSaveGpsForKelas}
+                type="button"
+                onClick={handleSaveQuickSettingsForKelas}
                 disabled={savingGps}
-                className="flex-1 bg-[#ffe600] text-black font-black py-2.5 text-xs neo-btn uppercase"
+                className="flex-1 bg-[#ffe600] hover:bg-[#ebd300] text-black font-black py-2.5 text-xs neo-btn uppercase"
               >
-                {savingGps ? 'Menyimpan...' : 'Simpan Lokasi Kelas'}
+                {savingGps ? 'Menyimpan...' : '💾 Simpan Pengaturan'}
               </button>
               <button
                 type="button"
-                onClick={() => setGpsModalKelas(null)}
+                onClick={() => setSettingModalKelas(null)}
                 className="bg-gray-200 text-black font-black px-4 py-2.5 text-xs neo-btn uppercase"
               >
                 Batal

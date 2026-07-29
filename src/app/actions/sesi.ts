@@ -595,3 +595,38 @@ export async function deleteAutoJadwalAction(id: string) {
     return { error: err.message };
   }
 }
+
+export async function saveClassAutoScheduleAction(kelasId: string, jamMulai: string, durasiMenit: number = 120, isActive: boolean = true) {
+  try {
+    await getAdminOrInstrukturId();
+
+    const { data: existing } = await supabase
+      .from('pengaturan_jadwal_absen')
+      .select('id')
+      .eq('kelas_id', kelasId)
+      .maybeSingle();
+
+    if (existing) {
+      const { error } = await supabase
+        .from('pengaturan_jadwal_absen')
+        .update({ is_active: isActive, jam_mulai: jamMulai, durasi_menit: durasiMenit })
+        .eq('id', existing.id);
+      if (error) return { error: error.message };
+    } else if (isActive) {
+      const { error } = await supabase
+        .from('pengaturan_jadwal_absen')
+        .insert([{
+          kelas_id: kelasId,
+          jam_mulai: jamMulai,
+          durasi_menit: durasiMenit,
+          hari_aktif: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'],
+          is_active: true
+        }]);
+      if (error) return { error: error.message };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    return { error: err.message };
+  }
+}
