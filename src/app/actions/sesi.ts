@@ -180,9 +180,13 @@ async function processAutoDailySessions() {
             radius = 100;
           }
 
+          // Cari satu admin untuk dijadikan 'dibuat_oleh' karena DB butuh NOT NULL
+          const { data: adminUser } = await supabase.from('users').select('id').eq('role', 'admin').limit(1).single();
+          const adminId = adminUser?.id;
+
           await supabase.from('sesi_absensi').insert([
             {
-              dibuat_oleh: null, // System auto-scheduler
+              dibuat_oleh: adminId, // System auto-scheduler fallback to admin
               kelas_id: kelasId || null,
               lokasi_lat: lat,
               lokasi_lng: lng,
