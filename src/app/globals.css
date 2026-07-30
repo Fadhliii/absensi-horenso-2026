@@ -1,14 +1,29 @@
 @import "tailwindcss";
 
 :root {
-  /* 4-COLOR SYSTEM */
-  --color-primary: #dc2626;     /* 1. Warna Utama: Red Crimson */
-  --color-secondary: #2563eb;   /* 2. Warna Sekunder: Royal Blue */
-  --color-sub: #f8fafc;         /* 3. Sub / Background: Crisp Off-White */
-  --color-shadow: #000000;      /* 4. Border & Shadow: Solid Black */
+  /* ================= DESIGN TOKENS SYSTEM ================= */
+  --brand-primary: #dc2626;         /* Primary Brand: LPK Horenso Crimson Red */
+  --brand-primary-hover: #b91c1c;
+  --brand-secondary: #1e40af;       /* Secondary Brand: Royal Blue */
+  --brand-secondary-hover: #1d4ed8;
 
-  --background: var(--color-sub);
-  --foreground: #000000;
+  --bg-canvas: #f8fafc;             /* Slate 50 Light Crisp Canvas */
+  --bg-surface: #ffffff;            /* Pure White Card Surface */
+  --bg-subtle: #f1f5f9;             /* Slate 100 Soft Accent/Hover */
+  --text-main: #0f172a;             /* Slate 900 High Contrast Text */
+  --text-muted: #64748b;            /* Slate 500 Subtitle Text */
+  --border-color: #0f172a;          /* Clean Slate 900 Border */
+
+  /* Semantic Status Tokens */
+  --status-success-bg: #dcfce7;
+  --status-success-text: #16a34a;
+  --status-warning-bg: #fef3c7;
+  --status-warning-text: #d97706;
+  --status-danger-bg: #fee2e2;
+  --status-danger-text: #dc2626;
+
+  --background: var(--bg-canvas);
+  --foreground: var(--text-main);
 }
 
 @theme inline {
@@ -21,7 +36,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #f8fafc;
-    --foreground: #000000;
+    --foreground: #0f172a;
   }
 }
 
@@ -32,100 +47,137 @@ body {
   font-weight: 700;
 }
 
-/* --- Clean 4-Color System Utilities --- */
+/* ================= STANDARDIZED UI UTILITIES ================= */
 
 .neo-border {
-  border: 3px solid #000000;
+  border: 2.5px solid var(--border-color);
 }
 
 .neo-shadow {
-  box-shadow: 4px 4px 0px 0px #000000;
+  box-shadow: 4px 4px 0px 0px var(--border-color);
 }
 
 .neo-shadow-lg {
-  box-shadow: 6px 6px 0px 0px #000000;
+  box-shadow: 6px 6px 0px 0px var(--border-color);
 }
 
 .neo-shadow-sm {
-  box-shadow: 2px 2px 0px 0px #000000;
+  box-shadow: 2px 2px 0px 0px var(--border-color);
 }
 
 .neo-card {
-  border: 3px solid #000000;
-  box-shadow: 6px 6px 0px 0px #000000;
+  border: 2.5px solid var(--border-color);
+  box-shadow: 4px 4px 0px 0px var(--border-color);
   border-radius: 0px;
   background-color: #ffffff;
 }
 
-/* Alias legacy color classes to clean 4-color palette */
-.neo-card-yellow, .neo-card-red, .neo-card-pink {
+/* Standar Tombol Konsisten (Consistent Button Components) */
+.btn-base {
+  border: 2.5px solid var(--border-color);
+  box-shadow: 3px 3px 0px 0px var(--border-color);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 0px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.75rem;
+  display: inline-flex;
+  items-center: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-base:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0px 0px var(--border-color);
+}
+
+.btn-base:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px 0px var(--border-color);
+}
+
+.btn-primary {
+  background-color: var(--brand-primary);
+  color: #ffffff;
+}
+.btn-primary:hover {
+  background-color: var(--brand-primary-hover);
+}
+
+.btn-secondary {
+  background-color: var(--brand-secondary);
+  color: #ffffff;
+}
+.btn-secondary:hover {
+  background-color: var(--brand-secondary-hover);
+}
+
+.btn-neutral {
+  background-color: #ffffff;
+  color: var(--text-main);
+}
+.btn-neutral:hover {
+  background-color: var(--bg-subtle);
+}
+
+.btn-success {
+  background-color: #16a34a;
+  color: #ffffff;
+}
+.btn-success:hover {
+  background-color: #15803d;
+}
+
+.btn-danger {
   background-color: #dc2626;
   color: #ffffff;
 }
-
-.neo-card-blue, .neo-card-cyan {
-  background-color: #2563eb;
-  color: #ffffff;
-}
-
-.neo-btn-primary, .neo-btn-red {
-  background-color: #dc2626;
-  color: #ffffff;
-}
-
-.neo-btn-primary:hover, .neo-btn-red:hover {
+.btn-danger:hover {
   background-color: #b91c1c;
 }
 
-.neo-btn-secondary, .neo-btn-blue {
-  background-color: #2563eb;
-  color: #ffffff;
-}
-
-.neo-btn-secondary:hover, .neo-btn-blue:hover {
-  background-color: #1d4ed8;
-}
-
+/* Legacy Alias Compatibility */
 .neo-btn {
-  border: 3px solid #000000;
-  box-shadow: 4px 4px 0px 0px #000000;
+  border: 2.5px solid var(--border-color);
+  box-shadow: 3px 3px 0px 0px var(--border-color);
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 0px;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
-
 .neo-btn:hover {
   transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0px 0px #000000;
+  box-shadow: 5px 5px 0px 0px var(--border-color);
 }
-
 .neo-btn:active {
   transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0px 0px #000000;
+  box-shadow: 1px 1px 0px 0px var(--border-color);
 }
 
 .neo-input {
-  border: 3px solid #000000;
-  box-shadow: 3px 3px 0px 0px #000000;
+  border: 2.5px solid var(--border-color);
+  box-shadow: 2px 2px 0px 0px var(--border-color);
   border-radius: 0px;
   transition: all 0.1s ease-in-out;
   background-color: #ffffff;
-  color: #000000;
+  color: var(--text-main);
   font-weight: 700;
 }
 
 .neo-input:focus {
   outline: none;
-  border-color: #000000;
-  box-shadow: 5px 5px 0px 0px #000000;
+  border-color: var(--border-color);
+  box-shadow: 4px 4px 0px 0px var(--border-color);
   transform: translate(-1px, -1px);
 }
 
 .neo-badge {
-  border: 2px solid #000000;
-  box-shadow: 2px 2px 0px 0px #000000;
+  border: 2px solid var(--border-color);
+  box-shadow: 2px 2px 0px 0px var(--border-color);
   font-weight: 900;
   border-radius: 0px;
 }

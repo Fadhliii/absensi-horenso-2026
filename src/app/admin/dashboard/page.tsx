@@ -7,7 +7,7 @@ import { mulaiSesiAction, selesaiSesiAction, getActiveSesiInfoAction, mulaiSesiK
 import { updateKelasLocationAction } from '@/app/actions/kelas';
 import { logoutAction } from '@/app/actions/auth';
 import IndonesianClock from '@/components/IndonesianClock';
-import { Users, UserCheck, UserPlus, LogOut, ExternalLink, MapPin, CheckCircle2, ShieldCheck, DoorOpen, Calendar, Building2, BookOpen, UserCog, ClipboardList, Layers, Loader2, XCircle, Zap, Settings, X, Clock } from 'lucide-react';
+import { Users, UserCheck, UserPlus, LogOut, ExternalLink, MapPin, CheckCircle2, ShieldCheck, DoorOpen, Calendar, Building2, BookOpen, UserCog, ClipboardList, Layers, Loader2, XCircle, Zap, Settings, X, Clock, PlayCircle } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 
@@ -266,28 +266,28 @@ export default function AdminDashboardPage() {
         ) : data && (
           <div className="space-y-6">            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              
-              {/* BANNER 1: PANEL KONTROL KELAS MULTI-CLASS (Bisa Muat Banyak Kelas) */}
-              <div className="md:col-span-2 bg-white neo-card p-5 border-4 border-black space-y-4 flex flex-col justify-between">
+                      {/* BANNER 1: PANEL KONTROL KELAS MULTI-CLASS (Bisa Muat Banyak Kelas) */}
+              <div className="md:col-span-2 bg-white neo-card p-5 space-y-4 flex flex-col justify-between">
                 <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b-3 border-black pb-3">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b-2 border-[#0f172a] pb-3">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <DoorOpen className="w-6 h-6 text-purple-700" />
-                        <h2 className="text-base font-black text-black uppercase tracking-tight">
+                        <DoorOpen className="w-5 h-5 text-[#1e40af]" />
+                        <h2 className="text-base font-black text-[#0f172a] uppercase tracking-tight">
                           Kontrol Presensi Kelas (1-Klik Per Kelas)
                         </h2>
                         {activeSesiCount > 0 ? (
-                          <span className="bg-green-700 text-white text-[11px] font-black px-2.5 py-0.5 rounded border border-black animate-pulse">
-                            🟢 {activeSesiCount} KELAS AKTIF
+                          <span className="bg-[#dcfce7] text-[#16a34a] text-[11px] font-black px-2.5 py-0.5 rounded border border-[#16a34a] flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-[#16a34a] animate-ping"></span>
+                            {activeSesiCount} KELAS AKTIF
                           </span>
                         ) : (
-                          <span className="bg-gray-200 text-gray-700 text-[11px] font-black px-2.5 py-0.5 rounded border border-black">
+                          <span className="bg-slate-100 text-slate-600 text-[11px] font-black px-2.5 py-0.5 rounded border border-slate-300">
                             ⚪ BELUM ADA KELAS BUKA
                           </span>
                         )}
                       </div>
-                      <p className="text-xs font-bold text-gray-600 mt-0.5">
+                      <p className="text-xs font-bold text-slate-500 mt-0.5">
                         Buka & tutup presensi 1-klik untuk setiap kelas secara mandiri menggunakan lokasi koordinat per kelas.
                       </p>
                     </div>
@@ -299,20 +299,20 @@ export default function AdminDashboardPage() {
                         placeholder="🔍 Cari Kelas..."
                         value={activeKelasSearch}
                         onChange={(e) => setActiveKelasSearch(e.target.value)}
-                        className="neo-input px-3 py-1.5 text-xs font-bold bg-gray-50 text-black flex-1 sm:w-40"
+                        className="neo-input px-3 py-1.5 text-xs font-bold bg-white text-[#0f172a] flex-1 sm:w-40"
                       />
                       <button
                         onClick={handle1ClickBukaKelas}
                         disabled={bukaSesiLoading}
-                        className="bg-[#00f0ff] hover:bg-[#00d8e6] text-black px-3 py-1.5 neo-btn text-xs font-black uppercase shrink-0 flex items-center gap-1"
+                        className="btn-base btn-secondary px-3 py-1.5 text-xs font-black uppercase shrink-0"
                         title="Buka Presensi Menggunakan Sinyal GPS HP Saat Ini"
                       >
-                        <MapPin className="w-4 h-4 text-black" /> GPS Instan
+                        <MapPin className="w-4 h-4" /> GPS Instan
                       </button>
                     </div>
                   </div>
 
-                  {/* GRID DAFTAR KELAS - DAPAT MEMUAT SANGAT BANYAK KELAS */}
+                  {/* GRID DAFTAR KELAS */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[360px] overflow-y-auto pr-1">
                     {data?.allKelasList && data.allKelasList.length > 0 ? (
                       data.allKelasList
@@ -325,31 +325,31 @@ export default function AdminDashboardPage() {
                           return (
                             <div 
                               key={k.id}
-                              className={`p-3 neo-card border-2 border-black flex flex-col justify-between space-y-2 transition-all ${
-                                isKelasActive ? 'bg-[#74ee15] border-black' : isMyClass ? 'bg-[#fffde7]' : 'bg-white'
+                              className={`p-3 neo-card flex flex-col justify-between space-y-2 transition-all ${
+                                isKelasActive ? 'bg-[#f0fdf4] border-[#16a34a]' : isMyClass ? 'bg-amber-50/70 border-amber-400' : 'bg-white border-[#0f172a]'
                               }`}
                             >
                               <div>
                                 <div className="flex items-center justify-between gap-1">
-                                  <span className="font-black text-sm text-black uppercase flex items-center gap-1">
+                                  <span className="font-black text-sm text-[#0f172a] uppercase flex items-center gap-1">
                                     🏫 {k.nama_kelas}
-                                    {isMyClass && <span className="text-[9px] bg-purple-900 text-white px-1.5 py-0.5 rounded font-black uppercase">Anda Guru</span>}
+                                    {isMyClass && <span className="text-[9px] bg-[#1e40af] text-white px-1.5 py-0.5 rounded font-black uppercase">Anda Guru</span>}
                                   </span>
-                                  <span className={`px-2 py-0.5 text-[9px] font-black uppercase rounded border border-black ${
-                                    isKelasActive ? 'bg-green-900 text-white animate-pulse' : 'bg-gray-200 text-gray-600'
+                                  <span className={`px-2 py-0.5 text-[9px] font-black uppercase rounded border ${
+                                    isKelasActive ? 'bg-[#dcfce7] text-[#16a34a] border-[#16a34a]' : 'bg-slate-100 text-slate-600 border-slate-300'
                                   }`}>
                                     {isKelasActive ? '🟢 AKTIF' : '🔴 TUTUP'}
                                   </span>
                                 </div>
 
                                 <div className="flex items-center gap-2 mt-1">
-                                  <span className="text-[10px] font-bold text-gray-700">👥 {k.total_siswa} Siswa</span>
+                                  <span className="text-[10px] font-bold text-slate-600">👥 {k.total_siswa} Siswa</span>
                                   {k.auto_schedule?.is_active ? (
-                                    <span className="text-[9px] font-black bg-[#ffe600] text-black px-1.5 py-0.5 rounded border border-black flex items-center gap-0.5">
-                                      <Clock className="w-2.5 h-2.5" /> Auto {k.auto_schedule.jam_mulai}
+                                    <span className="text-[9px] font-black bg-slate-100 text-[#0f172a] px-1.5 py-0.5 rounded border border-slate-300 flex items-center gap-0.5">
+                                      <Clock className="w-2.5 h-2.5 text-[#1e40af]" /> Auto {k.auto_schedule.jam_mulai}
                                     </span>
                                   ) : (
-                                    <span className="text-[9px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-300">
+                                    <span className="text-[9px] font-bold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200">
                                       ⏰ Auto OFF
                                     </span>
                                   )}
@@ -357,15 +357,15 @@ export default function AdminDashboardPage() {
 
                                 {/* Daftar Guru / Instruktur Pengajar Kelas */}
                                 <div className="flex flex-wrap items-center gap-1 mt-1.5">
-                                  <span className="text-[10px] font-black text-black">👨‍🏫 Guru:</span>
+                                  <span className="text-[10px] font-black text-slate-700">👨‍🏫 Guru:</span>
                                   {k.instruktur_list && k.instruktur_list.length > 0 ? (
                                     k.instruktur_list.map((ins: any) => {
                                       const isMe = data?.userId === ins.id;
                                       return (
                                         <span 
                                           key={ins.id} 
-                                          className={`text-[9px] px-1.5 py-0.5 rounded font-black border border-black ${
-                                            isMe ? 'bg-purple-900 text-white' : 'bg-blue-100 text-blue-900'
+                                          className={`text-[9px] px-1.5 py-0.5 rounded font-black border ${
+                                            isMe ? 'bg-[#1e40af] text-white border-[#1e40af]' : 'bg-slate-100 text-slate-800 border-slate-300'
                                           }`}
                                         >
                                           {ins.name} {isMe && '⭐'}
@@ -373,17 +373,17 @@ export default function AdminDashboardPage() {
                                       );
                                     })
                                   ) : (
-                                    <span className="text-[10px] text-gray-400 italic">Belum ditugaskan</span>
+                                    <span className="text-[10px] text-slate-400 italic">Belum ditugaskan</span>
                                   )}
                                 </div>
                               </div>
 
-                              <div className="flex items-center gap-1.5 pt-2 border-t border-black/10">
+                              <div className="flex items-center gap-1.5 pt-2 border-t border-slate-200">
                                 {isKelasActive ? (
                                   <button
                                     onClick={() => handle1ClickTutupSesiKelas(activeSesiData.sessionId, k.nama_kelas)}
                                     disabled={bukaSesiLoading}
-                                    className="flex-1 bg-[#ff003c] hover:bg-red-700 text-white font-black py-2 px-2 neo-btn text-[11px] uppercase flex items-center justify-center gap-1 active:scale-95"
+                                    className="btn-base btn-danger flex-1 py-1.5 text-[11px]"
                                   >
                                     {bukaSesiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
                                     <span>TUTUP PRESENSI</span>
@@ -392,15 +392,14 @@ export default function AdminDashboardPage() {
                                   <button
                                     onClick={() => handle1ClickBukaSesiKelas(k.id, kelasDurasiMap[k.id] || k.auto_schedule?.durasi_menit || 120)}
                                     disabled={bukaSesiLoading}
-                                    className="flex-1 bg-[#00e676] hover:bg-green-500 text-black font-black py-2 px-2 neo-btn text-[11px] uppercase flex items-center justify-center gap-1 active:scale-95"
+                                    className="btn-base btn-success flex-1 py-1.5 text-[11px]"
                                   >
-                                    {bukaSesiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5 fill-black" />}
-                                    <span>🚀 BUKA ({(kelasDurasiMap[k.id] || k.auto_schedule?.durasi_menit || 120) >= 60 ? ((kelasDurasiMap[k.id] || k.auto_schedule?.durasi_menit || 120) / 60) + ' JAM' : (kelasDurasiMap[k.id] || k.auto_schedule?.durasi_menit || 120) + 'M'})</span>
+                                    {bukaSesiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PlayCircle className="w-3.5 h-3.5" />}
+                                    <span>BUKA ({k.durasi_menit || 120}m)</span>
                                   </button>
                                 )}
 
                                 <button
-                                  type="button"
                                   onClick={() => setSettingModalKelas({
                                     id: k.id,
                                     nama_kelas: k.nama_kelas,
@@ -411,8 +410,8 @@ export default function AdminDashboardPage() {
                                     jam_mulai: k.auto_schedule?.jam_mulai || '07:00',
                                     is_auto_active: k.auto_schedule?.is_active ?? false
                                   })}
-                                  className="bg-white hover:bg-black hover:text-white p-2 neo-border text-black text-[11px] font-black shrink-0 flex items-center gap-1"
-                                  title="Pengaturan Presensi & Lokasi"
+                                  className="btn-base btn-neutral py-1.5 px-2.5 text-[11px]"
+                                  title="Pengaturan Lokasi GPS & Durasi QR Kelas"
                                 >
                                   <Settings className="w-3.5 h-3.5" />
                                   <span>Set</span>
@@ -422,7 +421,7 @@ export default function AdminDashboardPage() {
                           );
                         })
                     ) : (
-                      <div className="col-span-full py-8 text-center text-xs font-bold text-gray-500">
+                      <div className="col-span-full py-8 text-center text-xs font-bold text-slate-500">
                         Belum ada data kelas yang terdaftar. Silakan tambahkan di menu Master Kelas.
                       </div>
                     )}
@@ -431,27 +430,27 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* BANNER 2: PERSETUJUAN MASUK KELAS (SETUJUI BERJAMAAH) */}
-              <div className="md:col-span-1 bg-[#d1fae5] neo-card p-5 border-4 border-black flex flex-col justify-between space-y-4 shadow-sm">
+              <div className="md:col-span-1 bg-[#0f172a] text-white neo-card p-5 flex flex-col justify-between space-y-4 shadow-sm">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-white neo-border flex items-center justify-center shrink-0">
-                      <CheckCircle2 className="w-7 h-7 text-emerald-700" />
+                    <div className="w-12 h-12 bg-white text-[#0f172a] neo-border flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-7 h-7 text-[#16a34a]" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h2 className="text-base font-black text-black uppercase tracking-tight">Persetujuan Masal</h2>
+                        <h2 className="text-base font-black text-white uppercase tracking-tight">Persetujuan Masal</h2>
                         {pendingMasukCount > 0 ? (
-                          <span className="bg-[#ff003c] text-white text-[11px] font-black px-2.5 py-0.5 rounded-full neo-border animate-pulse flex items-center gap-1 shadow-sm">
+                          <span className="bg-[#dc2626] text-white text-[11px] font-black px-2.5 py-0.5 rounded-full neo-border animate-pulse flex items-center gap-1 shadow-sm">
                             <span className="w-2 h-2 rounded-full bg-white animate-ping"></span>
                             {pendingMasukCount} SISWA MASUK
                           </span>
                         ) : (
-                          <span className="bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded">
+                          <span className="bg-[#dcfce7] text-[#16a34a] border border-[#16a34a] text-[10px] font-bold px-2 py-0.5 rounded">
                             Semua Disetujui
                           </span>
                         )}
                       </div>
-                      <p className="text-xs font-bold text-gray-700 mt-0.5">
+                      <p className="text-xs font-bold text-slate-300 mt-0.5">
                         Setujui presensi banyak siswa sekaligus setelah mereka menekan tombol Masuk Kelas.
                       </p>
                     </div>
@@ -460,12 +459,12 @@ export default function AdminDashboardPage() {
 
                 <Link 
                   href="/admin/approval-absensi"
-                  className="w-full bg-[#1d4ed8] hover:bg-[#1e40af] text-white font-black py-3.5 px-4 neo-btn text-xs uppercase flex items-center justify-center gap-2 shadow-md active:scale-95 relative"
+                  className="btn-base btn-secondary w-full py-3 text-xs"
                 >
-                  <ShieldCheck className="w-5 h-5 text-white" />
-                  <span className="text-sm font-black tracking-wide">PERSETUJUAN BERJAMAAH</span>
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>PERSETUJUAN BERJAMAAH</span>
                   {pendingMasukCount > 0 && (
-                    <span className="bg-[#dc2626] text-white text-xs font-black px-2 py-0.5 rounded-full neo-border shadow-sm ml-1">
+                    <span className="bg-[#dc2626] text-white text-xs font-black px-2 py-0.5 rounded-full neo-border ml-1">
                       {pendingMasukCount}
                     </span>
                   )}
@@ -474,32 +473,32 @@ export default function AdminDashboardPage() {
 
             </div>           
 
-            {/* RINGKASAN MENU TERBAGI KATEGORI */}
+            {/* RINGKASAN MENU TERBAGI KATEGORI (Clean 4-Color System) */}
             {data.role === 'admin' ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
                 {/* Kategori 1: Presensi & Sesi Kelas */}
                 <div className="bg-white neo-card p-5 space-y-3">
-                  <div className="flex items-center gap-2 border-b-3 border-black pb-2 mb-3">
-                    <DoorOpen className="w-5 h-5 text-blue-700" />
-                    <h3 className="text-xs font-black text-black uppercase tracking-wider">1. Presensi & Sesi Kelas</h3>
+                  <div className="flex items-center gap-2 border-b-2 border-[#0f172a] pb-2 mb-3">
+                    <DoorOpen className="w-5 h-5 text-[#1e40af]" />
+                    <h3 className="text-xs font-black text-[#0f172a] uppercase tracking-wider">1. Presensi & Sesi Kelas</h3>
                   </div>
                   <div className="space-y-2">
-                    <Link href="/admin/approval-absensi" className="bg-[#1d4ed8] hover:bg-[#1e40af] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
-                      <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Approval Masuk Kelas</span>
+                    <Link href="/admin/approval-absensi" className="btn-base btn-neutral w-full justify-between">
+                      <span className="flex items-center gap-2 text-[#0f172a]"><CheckCircle2 className="w-4 h-4 text-[#1e40af]" /> Approval Masuk Kelas</span>
                       {pendingMasukCount > 0 && <span className="bg-[#dc2626] text-white px-2 py-0.5 text-[10px] font-black rounded-full">{pendingMasukCount}</span>}
                     </Link>
 
-                    <Link href="/admin/sesi" className="bg-[#dc2626] hover:bg-[#b91c1c] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
-                      <span className="flex items-center gap-2"><DoorOpen className="w-4 h-4" /> Pengaturan Sesi & Lokasi</span>
+                    <Link href="/admin/sesi" className="btn-base btn-neutral w-full justify-between">
+                      <span className="flex items-center gap-2 text-[#0f172a]"><DoorOpen className="w-4 h-4 text-[#dc2626]" /> Pengaturan Sesi & Lokasi</span>
                     </Link>
 
-                    <Link href="/admin/rekap" className="bg-[#16a34a] hover:bg-[#15803d] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
-                      <span className="flex items-center gap-2"><ClipboardList className="w-4 h-4" /> Rekap Grid Presensi</span>
+                    <Link href="/admin/rekap" className="btn-base btn-neutral w-full justify-between">
+                      <span className="flex items-center gap-2 text-[#0f172a]"><ClipboardList className="w-4 h-4 text-[#16a34a]" /> Rekap Grid Presensi</span>
                     </Link>
 
-                    <Link href="/admin/izin" className="bg-[#1d4ed8] hover:bg-[#1e40af] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
-                      <span className="flex items-center gap-2"><Calendar className="w-4 h-4" /> Permohonan Izin / Sakit</span>
+                    <Link href="/admin/izin" className="btn-base btn-neutral w-full justify-between">
+                      <span className="flex items-center gap-2 text-[#0f172a]"><Calendar className="w-4 h-4 text-[#d97706]" /> Permohonan Izin / Sakit</span>
                       {data.stats.pendingIzin > 0 && <span className="bg-[#dc2626] text-white px-2 py-0.5 text-[10px] font-black rounded-full">{data.stats.pendingIzin}</span>}
                     </Link>
                   </div>
@@ -507,47 +506,47 @@ export default function AdminDashboardPage() {
 
                 {/* Kategori 2: Data Master & Akun Siswa */}
                 <div className="bg-white neo-card p-5 space-y-3">
-                  <div className="flex items-center gap-2 border-b-3 border-black pb-2 mb-3">
-                    <Users className="w-5 h-5 text-red-600" />
-                    <h3 className="text-xs font-black text-black uppercase tracking-wider">2. Data Master & Siswa</h3>
+                  <div className="flex items-center gap-2 border-b-2 border-[#0f172a] pb-2 mb-3">
+                    <Users className="w-5 h-5 text-[#dc2626]" />
+                    <h3 className="text-xs font-black text-[#0f172a] uppercase tracking-wider">2. Data Master & Siswa</h3>
                   </div>
                   <div className="space-y-2">
-                    <Link href="/admin/siswa" className="bg-[#dc2626] hover:bg-[#b91c1c] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
-                      <span className="flex items-center gap-2"><Users className="w-4 h-4" /> Data Siswa LPK</span>
+                    <Link href="/admin/siswa" className="btn-base btn-neutral w-full justify-between">
+                      <span className="flex items-center gap-2 text-[#0f172a]"><Users className="w-4 h-4 text-[#dc2626]" /> Data Siswa LPK</span>
                     </Link>
 
-                    <Link href="/admin/approval" className="bg-[#1d4ed8] hover:bg-[#1e40af] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
-                      <span className="flex items-center gap-2"><UserPlus className="w-4 h-4" /> Approval Registrasi Akun</span>
-                      {data.stats.pendingApproval > 0 && <span className="bg-[#ff003c] text-white px-2 py-0.5 text-[10px] font-black rounded-full">{data.stats.pendingApproval}</span>}
+                    <Link href="/admin/approval" className="btn-base btn-neutral w-full justify-between">
+                      <span className="flex items-center gap-2 text-[#0f172a]"><UserPlus className="w-4 h-4 text-[#1e40af]" /> Approval Registrasi Akun</span>
+                      {data.stats.pendingApproval > 0 && <span className="bg-[#dc2626] text-white px-2 py-0.5 text-[10px] font-black rounded-full">{data.stats.pendingApproval}</span>}
                     </Link>
 
-                    <Link href="/admin/perusahaan" className="bg-[#1d4ed8] hover:bg-[#1e40af] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
-                      <span className="flex items-center gap-2"><Building2 className="w-4 h-4" /> Perusahaan Mitra</span>
+                    <Link href="/admin/perusahaan" className="btn-base btn-neutral w-full justify-between">
+                      <span className="flex items-center gap-2 text-[#0f172a]"><Building2 className="w-4 h-4 text-[#16a34a]" /> Perusahaan Mitra</span>
                     </Link>
 
-                    <Link href="/admin/kelas" className="bg-[#dc2626] hover:bg-[#b91c1c] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
-                      <span className="flex items-center gap-2"><Layers className="w-4 h-4" /> Master Kelas</span>
+                    <Link href="/admin/kelas" className="btn-base btn-neutral w-full justify-between">
+                      <span className="flex items-center gap-2 text-[#0f172a]"><Layers className="w-4 h-4 text-[#d97706]" /> Master Kelas</span>
                     </Link>
                   </div>
                 </div>
 
-                {/* Kategori 3: Pengaturan & Program Tambahan */}
+                {/* Kategori 3: Program & Akun */}
                 <div className="bg-white neo-card p-5 space-y-3">
-                  <div className="flex items-center gap-2 border-b-3 border-black pb-2 mb-3">
-                    <BookOpen className="w-5 h-5 text-blue-600" />
-                    <h3 className="text-xs font-black text-black uppercase tracking-wider">3. Program & Akun</h3>
+                  <div className="flex items-center gap-2 border-b-2 border-[#0f172a] pb-2 mb-3">
+                    <BookOpen className="w-5 h-5 text-[#1e40af]" />
+                    <h3 className="text-xs font-black text-[#0f172a] uppercase tracking-wider">3. Program & Akun</h3>
                   </div>
                   <div className="space-y-2">
-                    <Link href="/admin/soft-skill" className="bg-[#1d4ed8] hover:bg-[#1e40af] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
-                      <span className="flex items-center gap-2"><BookOpen className="w-4 h-4" /> Kelas Soft Skill</span>
+                    <Link href="/admin/soft-skill" className="btn-base btn-neutral w-full justify-between">
+                      <span className="flex items-center gap-2 text-[#0f172a]"><BookOpen className="w-4 h-4 text-[#1e40af]" /> Kelas Soft Skill</span>
                     </Link>
 
-                    <Link href="/admin/users" className="bg-black text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between hover:bg-gray-800">
-                      <span className="flex items-center gap-2"><UserCog className="w-4 h-4" /> Manajemen User / Instruktur</span>
+                    <Link href="/admin/users" className="btn-base btn-neutral w-full justify-between">
+                      <span className="flex items-center gap-2 text-[#0f172a]"><UserCog className="w-4 h-4 text-[#0f172a]" /> Manajemen User / Instruktur</span>
                     </Link>
 
                     {data.isSesiAktif && (
-                      <Link href="/admin/sesi/aktif" target="_blank" className="bg-[#dc2626] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
+                      <Link href="/admin/sesi/aktif" target="_blank" className="btn-base btn-primary w-full justify-between">
                         <span className="flex items-center gap-2"><ExternalLink className="w-4 h-4" /> Tampilan Sesi Aktif</span>
                       </Link>
                     )}
