@@ -348,10 +348,10 @@ export default function SiswaPage() {
           </div>
         )}
 
-        <div className="bg-[#ffe600] neo-card overflow-hidden">
+        <div className="bg-white neo-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y-3 divide-black">
-              <thead className="bg-gray-100 border-b border-gray-200">
+              <thead className="bg-[#dc2626] text-white border-b-3 border-black">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left w-12">
                     <input 
@@ -361,11 +361,11 @@ export default function SiswaPage() {
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">Nama Siswa</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider hidden lg:table-cell">Kontak</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider hidden sm:table-cell">Tgl Daftar</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">Status & Kelas</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">Penempatan & Batch</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-black text-white uppercase tracking-wider">Nama Siswa</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-black text-white uppercase tracking-wider hidden lg:table-cell">Kontak</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-black text-white uppercase tracking-wider hidden sm:table-cell">Tgl Daftar</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-black text-white uppercase tracking-wider">Status & Kelas</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-black text-white uppercase tracking-wider">Penempatan & Batch</th>
                   <th scope="col" className="relative px-6 py-3"><span className="sr-only">Aksi</span></th>
                 </tr>
               </thead>
@@ -376,7 +376,7 @@ export default function SiswaPage() {
                   <tr><td colSpan={7} className="px-6 py-10 text-center text-sm text-gray-800 font-medium">Tidak ada data siswa ditemukan.</td></tr>
                 ) : (
                   data.map((s) => (
-                    <tr key={s.id} className="hover:bg-[#ffe600] hover:text-black font-black transition-colors">
+                    <tr key={s.id} className="hover:bg-slate-100 font-bold transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <input 
                           type="checkbox"

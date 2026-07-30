@@ -447,13 +447,13 @@ function RekapGridContent() {
 
       <main className="flex-1 w-full overflow-hidden flex flex-col px-4 sm:px-6 py-4 space-y-4">
         
-        {/* Navigation Tabs (Neo-Brutalist) */}
+        {/* Navigation Tabs (Neo-Brutalist 4-Color) */}
         <div className="flex items-center gap-2 border-b-4 border-black pb-2">
           <button
             onClick={() => setActiveTab('harian')}
             className={`px-5 py-2.5 neo-btn text-xs font-black uppercase flex items-center gap-2 ${
               activeTab === 'harian'
-                ? 'bg-[#ffe600] text-black shadow-[3px_3px_0px_0px_#000]'
+                ? 'bg-[#dc2626] text-white shadow-[3px_3px_0px_0px_#000]'
                 : 'bg-white text-gray-700 hover:bg-gray-100'
             }`}
           >
@@ -463,7 +463,7 @@ function RekapGridContent() {
             onClick={() => setActiveTab('soft_skill')}
             className={`px-5 py-2.5 neo-btn text-xs font-black uppercase flex items-center gap-2 ${
               activeTab === 'soft_skill'
-                ? 'bg-[#ff00c8] text-white shadow-[3px_3px_0px_0px_#000]'
+                ? 'bg-[#2563eb] text-white shadow-[3px_3px_0px_0px_#000]'
                 : 'bg-white text-gray-700 hover:bg-gray-100'
             }`}
           >

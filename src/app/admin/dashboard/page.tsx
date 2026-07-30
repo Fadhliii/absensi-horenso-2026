@@ -521,11 +521,11 @@ export default function AdminDashboardPage() {
                       {data.stats.pendingApproval > 0 && <span className="bg-[#ff003c] text-white px-2 py-0.5 text-[10px] font-black rounded-full">{data.stats.pendingApproval}</span>}
                     </Link>
 
-                    <Link href="/admin/perusahaan" className="bg-[#00f0ff] hover:bg-[#00d8e6] text-black p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
+                    <Link href="/admin/perusahaan" className="bg-[#1d4ed8] hover:bg-[#1e40af] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
                       <span className="flex items-center gap-2"><Building2 className="w-4 h-4" /> Perusahaan Mitra</span>
                     </Link>
 
-                    <Link href="/admin/kelas" className="bg-[#4deeea] hover:bg-[#3cdad6] text-black p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
+                    <Link href="/admin/kelas" className="bg-[#dc2626] hover:bg-[#b91c1c] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
                       <span className="flex items-center gap-2"><Layers className="w-4 h-4" /> Master Kelas</span>
                     </Link>
                   </div>
@@ -538,7 +538,7 @@ export default function AdminDashboardPage() {
                     <h3 className="text-xs font-black text-black uppercase tracking-wider">3. Program & Akun</h3>
                   </div>
                   <div className="space-y-2">
-                    <Link href="/admin/soft-skill" className="bg-[#74ee15] hover:bg-[#62cb12] text-black p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
+                    <Link href="/admin/soft-skill" className="bg-[#1d4ed8] hover:bg-[#1e40af] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
                       <span className="flex items-center gap-2"><BookOpen className="w-4 h-4" /> Kelas Soft Skill</span>
                     </Link>
 
@@ -547,7 +547,7 @@ export default function AdminDashboardPage() {
                     </Link>
 
                     {data.isSesiAktif && (
-                      <Link href="/admin/sesi/aktif" target="_blank" className="bg-[#ff003c] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
+                      <Link href="/admin/sesi/aktif" target="_blank" className="bg-[#dc2626] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
                         <span className="flex items-center gap-2"><ExternalLink className="w-4 h-4" /> Tampilan Sesi Aktif</span>
                       </Link>
                     )}
@@ -627,13 +627,13 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
-                <div className="bg-[#ffe600] neo-card p-6 flex items-center">
-                  <div className="w-14 h-14 bg-white neo-border flex items-center justify-center mr-4 shrink-0">
+                <div className="bg-[#dc2626] text-white neo-card p-6 flex items-center">
+                  <div className="w-14 h-14 bg-white text-black neo-border flex items-center justify-center mr-4 shrink-0">
                     <CheckCircle2 className="w-7 h-7 text-black" />
                   </div>
                   <div>
-                    <p className="text-xs font-black text-black uppercase mb-1">Pending Masuk Kelas</p>
-                    <p className="text-3xl font-black text-black">{pendingMasukCount} Siswa</p>
+                    <p className="text-xs font-black text-white/90 uppercase mb-1">Pending Masuk Kelas</p>
+                    <p className="text-3xl font-black text-white">{pendingMasukCount} Siswa</p>
                   </div>
                 </div>
               </div>
@@ -655,7 +655,7 @@ export default function AdminDashboardPage() {
               )}
 
               {/* Log Pemindaian Terakhir */}
-              <div className={`${data.role === 'admin' ? '' : 'w-full'} bg-[#f000ff] neo-card p-6 flex flex-col h-full`}>
+              <div className={`${data.role === 'admin' ? '' : 'w-full'} bg-[#2563eb] text-white neo-card p-6 flex flex-col h-full`}>
                 <div className="flex justify-between items-center mb-6 bg-white p-3 neo-border">
                   <h3 className="text-sm font-black text-black uppercase">Aktivitas Presensi Terakhir</h3>
                   {data.role === 'admin' && (

@@ -1,7 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f4f4f0; /* Off-white canvas for Neo Brutalism */
+  /* 4-COLOR SYSTEM */
+  --color-primary: #dc2626;     /* 1. Warna Utama: Red Crimson */
+  --color-secondary: #2563eb;   /* 2. Warna Sekunder: Royal Blue */
+  --color-sub: #f8fafc;         /* 3. Sub / Background: Crisp Off-White */
+  --color-shadow: #000000;      /* 4. Border & Shadow: Solid Black */
+
+  --background: var(--color-sub);
   --foreground: #000000;
 }
 
@@ -12,10 +18,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* Force light mode background for Neo Brutalism */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #f4f4f0;
+    --background: #f8fafc;
     --foreground: #000000;
   }
 }
@@ -24,10 +29,10 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
-  font-weight: 700; /* Neo brutalism bold font */
+  font-weight: 700;
 }
 
-/* --- Neo Brutalism Utilities --- */
+/* --- Clean 4-Color System Utilities --- */
 
 .neo-border {
   border: 3px solid #000000;
@@ -52,47 +57,33 @@ body {
   background-color: #ffffff;
 }
 
-.neo-card-yellow {
+/* Alias legacy color classes to clean 4-color palette */
+.neo-card-yellow, .neo-card-red, .neo-card-pink {
   background-color: #dc2626;
   color: #ffffff;
 }
 
-.neo-card-red {
-  background-color: #dc2626;
-  color: #ffffff;
-}
-
-.neo-card-blue {
-  background-color: #1d4ed8;
-  color: #ffffff;
-}
-
-.neo-card-cyan {
+.neo-card-blue, .neo-card-cyan {
   background-color: #2563eb;
   color: #ffffff;
 }
 
-.neo-card-pink {
+.neo-btn-primary, .neo-btn-red {
   background-color: #dc2626;
   color: #ffffff;
 }
 
-.neo-btn-red {
-  background-color: #dc2626;
-  color: #ffffff;
-}
-
-.neo-btn-red:hover {
+.neo-btn-primary:hover, .neo-btn-red:hover {
   background-color: #b91c1c;
 }
 
-.neo-btn-blue {
-  background-color: #1d4ed8;
+.neo-btn-secondary, .neo-btn-blue {
+  background-color: #2563eb;
   color: #ffffff;
 }
 
-.neo-btn-blue:hover {
-  background-color: #1e40af;
+.neo-btn-secondary:hover, .neo-btn-blue:hover {
+  background-color: #1d4ed8;
 }
 
 .neo-btn {

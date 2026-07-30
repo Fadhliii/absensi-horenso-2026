@@ -331,13 +331,13 @@ export default function MasterKelasPage() {
         <div className="bg-white neo-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y-3 divide-black">
-              <thead className="bg-[#ffe600] border-b-3 border-black">
+              <thead className="bg-[#dc2626] text-white border-b-3 border-black">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-black text-black uppercase tracking-wider">Nama Kelas</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-black uppercase tracking-wider">Instruktur Pengajar</th>
-                  <th className="px-6 py-4 text-left text-xs font-black text-black uppercase tracking-wider">Titik Koordinat Lokasi & Radius</th>
-                  <th className="px-6 py-4 text-center text-xs font-black text-black uppercase tracking-wider">Jumlah Siswa</th>
-                  <th className="px-6 py-4 text-right text-xs font-black text-black uppercase tracking-wider">Aksi</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-white uppercase tracking-wider">Nama Kelas</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-white uppercase tracking-wider">Instruktur Pengajar</th>
+                  <th className="px-6 py-4 text-left text-xs font-black text-white uppercase tracking-wider">Titik Koordinat Lokasi & Radius</th>
+                  <th className="px-6 py-4 text-center text-xs font-black text-white uppercase tracking-wider">Jumlah Siswa</th>
+                  <th className="px-6 py-4 text-right text-xs font-black text-white uppercase tracking-wider">Aksi</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y-2 divide-gray-200">
@@ -350,7 +350,7 @@ export default function MasterKelasPage() {
                     <tr 
                       key={item.id} 
                       onClick={() => openDetailModal(item)}
-                      className="hover:bg-[#ffe600] hover:text-black font-bold cursor-pointer transition-colors"
+                      className="hover:bg-slate-100 font-bold cursor-pointer transition-colors"
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-col">
