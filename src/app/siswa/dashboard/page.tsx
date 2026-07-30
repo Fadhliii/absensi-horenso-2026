@@ -58,6 +58,10 @@ export default function SiswaDashboardPage() {
 
   useEffect(() => {
     fetchData();
+    const interval = setInterval(() => {
+      fetchData();
+    }, 10000);
+    return () => clearInterval(interval);
   }, [fetchData]);
 
   const formatDate = (isoString: string) => formatIndonesianDate(isoString);

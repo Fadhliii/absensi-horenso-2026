@@ -76,6 +76,10 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     fetchData();
+    const interval = setInterval(() => {
+      fetchData();
+    }, 10000);
+    return () => clearInterval(interval);
   }, [fetchData]);
 
   const handleSaveQuickSettingsForKelas = async () => {

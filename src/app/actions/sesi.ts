@@ -104,20 +104,21 @@ async function processAutoDailySessions() {
 
     if (!scheduleList || scheduleList.length === 0) return;
 
-    // Dapatkan waktu WIB (Asia/Jakarta = UTC+7)
-    const nowUtc = new Date();
-    const wibStr = nowUtc.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' });
-    const wibDate = new Date(wibStr);
+    // Dapatkan waktu WIB (Asia/Jakarta = UTC+7) dengan presisi tanpa terpengaruh lokal server
+    const nowUtcMs = Date.now();
+    const wibDate = new Date(nowUtcMs + 7 * 60 * 60 * 1000);
+    const currentH = wibDate.getUTCHours();
+    const currentM = wibDate.getUTCMinutes();
+    const currentMinutes = currentH * 60 + currentM;
 
     const HARI_INDO = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-    const currentDayName = HARI_INDO[wibDate.getDay()];
-    const currentMinutes = wibDate.getHours() * 60 + wibDate.getMinutes();
+    const currentDayName = HARI_INDO[wibDate.getUTCDay()];
 
     // Dapatkan awal & akhir hari ini dalam ISO UTC
     const startOfDay = new Date(wibDate);
-    startOfDay.setHours(0, 0, 0, 0);
+    startOfDay.setUTCHours(0, 0, 0, 0);
     const endOfDay = new Date(wibDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    endOfDay.setUTCHours(23, 59, 59, 999);
 
     const startOfDayIso = startOfDay.toISOString();
     const endOfDayIso = endOfDay.toISOString();
@@ -128,19 +129,19 @@ async function processAutoDailySessions() {
         continue;
       }
 
-      // Parse jam_mulai (misal '07:00' -> 420 menit)
+      // Parse jam_mulai (misal '12:55' -> 775 menit)
       const [startH, startM] = (item.jam_mulai || '07:00').split(':').map(Number);
       const startMinutes = (startH || 0) * 60 + (startM || 0);
       const endMinutes = startMinutes + (item.durasi_menit || 120);
 
       const kelasId = item.kelas_id;
 
-      // JIKA WAKTU SAAT INI BERADA DALAM JANGKAUAN JADWAL
+      // JIKA WAKTU SAAT INI BERADA DALAM JANGKAUAN JADWAL (misal 12:55 s/d 14:55)
       if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
-        // Cek apakah sesi aktif untuk kelas ini sudah ada hari ini
+        // Cek apakah ada sesi aktif untuk kelas ini
         let query = supabase
           .from('sesi_absensi')
-          .select('id, status')
+          .select('id, status, dibuat_pada')
           .gte('dibuat_pada', startOfDayIso)
           .lte('dibuat_pada', endOfDayIso);
 
@@ -149,18 +150,16 @@ async function processAutoDailySessions() {
         }
 
         const { data: existingSesi } = await query;
-
         const hasActiveToday = existingSesi?.some(s => s.status === 'aktif');
-        const hasSessionToday = existingSesi && existingSesi.length > 0;
 
-        if (!hasSessionToday && !hasActiveToday) {
-          // Buka sesi otomatis!
+        // Buka sesi otomatis jika BELUM ADA sesi yang sedang aktif
+        if (!hasActiveToday) {
           let lat = item.lokasi_lat;
           let lng = item.lokasi_lng;
           let radius = item.radius_meter || 100;
 
           // Jika koordinat tidak di-set di jadwal, ambil dari master_kelas
-          if ((lat === null || lat === undefined) && kelasId) {
+          if ((lat === null || lat === undefined || isNaN(lat)) && kelasId) {
             const { data: kData } = await supabase
               .from('master_kelas')
               .select('lokasi_lat, lokasi_lng, radius_meter')
@@ -174,19 +173,25 @@ async function processAutoDailySessions() {
             }
           }
 
-          if (lat !== null && lng !== null && lat !== undefined && lng !== undefined) {
-            await supabase.from('sesi_absensi').insert([
-              {
-                dibuat_oleh: null, // System auto-scheduler
-                kelas_id: kelasId || null,
-                lokasi_lat: lat,
-                lokasi_lng: lng,
-                radius_meter: radius,
-                interval_qr_detik: 10,
-                status: 'aktif'
-              }
-            ]);
+          // Fallback ke koordinat default jika belum diset sama sekali
+          if (lat === null || lat === undefined || isNaN(lat)) {
+            lat = -6.288964;
+            lng = 107.082858;
+            radius = 100;
           }
+
+          await supabase.from('sesi_absensi').insert([
+            {
+              dibuat_oleh: null, // System auto-scheduler
+              kelas_id: kelasId || null,
+              lokasi_lat: lat,
+              lokasi_lng: lng,
+              radius_meter: radius,
+              interval_qr_detik: 10,
+              durasi_menit: item.durasi_menit || 120,
+              status: 'aktif'
+            }
+          ]);
         }
       } 
       // JIKA WAKTU SUDAH MELEWATI BATA DURASI -> TUTUP SESI AKTIF OTOMATIS
