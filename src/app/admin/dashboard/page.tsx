@@ -277,12 +277,12 @@ export default function AdminDashboardPage() {
                           Kontrol Presensi Kelas (1-Klik Per Kelas)
                         </h2>
                         {activeSesiCount > 0 ? (
-                          <span className="bg-[#dcfce7] text-[#16a34a] text-[11px] font-black px-2.5 py-0.5 rounded border border-[#16a34a] flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full bg-[#16a34a] animate-ping"></span>
+                          <span className="bg-[#16a34a] text-white text-[11px] font-black px-2.5 py-0.5 rounded border border-[#0f172a] flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-white animate-ping"></span>
                             {activeSesiCount} KELAS AKTIF
                           </span>
                         ) : (
-                          <span className="bg-slate-100 text-slate-600 text-[11px] font-black px-2.5 py-0.5 rounded border border-slate-300">
+                          <span className="bg-slate-700 text-white text-[11px] font-black px-2.5 py-0.5 rounded border border-slate-900">
                             ⚪ BELUM ADA KELAS BUKA
                           </span>
                         )}
@@ -304,7 +304,7 @@ export default function AdminDashboardPage() {
                       <button
                         onClick={handle1ClickBukaKelas}
                         disabled={bukaSesiLoading}
-                        className="btn-base btn-secondary px-3 py-1.5 text-xs font-black uppercase shrink-0"
+                        className="btn-base btn-secondary text-white px-3 py-1.5 text-xs font-black uppercase shrink-0"
                         title="Buka Presensi Menggunakan Sinyal GPS HP Saat Ini"
                       >
                         <MapPin className="w-4 h-4" /> GPS Instan
@@ -336,7 +336,7 @@ export default function AdminDashboardPage() {
                                     {isMyClass && <span className="text-[9px] bg-[#1e40af] text-white px-1.5 py-0.5 rounded font-black uppercase">Anda Guru</span>}
                                   </span>
                                   <span className={`px-2 py-0.5 text-[9px] font-black uppercase rounded border ${
-                                    isKelasActive ? 'bg-[#dcfce7] text-[#16a34a] border-[#16a34a]' : 'bg-slate-100 text-slate-600 border-slate-300'
+                                    isKelasActive ? 'bg-[#16a34a] text-white border-[#0f172a]' : 'bg-slate-700 text-white border-[#0f172a]'
                                   }`}>
                                     {isKelasActive ? '🟢 AKTIF' : '🔴 TUTUP'}
                                   </span>
@@ -383,7 +383,7 @@ export default function AdminDashboardPage() {
                                   <button
                                     onClick={() => handle1ClickTutupSesiKelas(activeSesiData.sessionId, k.nama_kelas)}
                                     disabled={bukaSesiLoading}
-                                    className="btn-base btn-danger flex-1 py-1.5 text-[11px]"
+                                    className="btn-base btn-danger text-white flex-1 py-1.5 text-[11px]"
                                   >
                                     {bukaSesiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
                                     <span>TUTUP PRESENSI</span>
@@ -392,7 +392,7 @@ export default function AdminDashboardPage() {
                                   <button
                                     onClick={() => handle1ClickBukaSesiKelas(k.id, kelasDurasiMap[k.id] || k.auto_schedule?.durasi_menit || 120)}
                                     disabled={bukaSesiLoading}
-                                    className="btn-base btn-success flex-1 py-1.5 text-[11px]"
+                                    className="btn-base btn-success text-white flex-1 py-1.5 text-[11px]"
                                   >
                                     {bukaSesiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PlayCircle className="w-3.5 h-3.5" />}
                                     <span>BUKA ({k.durasi_menit || 120}m)</span>
@@ -445,7 +445,7 @@ export default function AdminDashboardPage() {
                             {pendingMasukCount} SISWA MASUK
                           </span>
                         ) : (
-                          <span className="bg-[#dcfce7] text-[#16a34a] border border-[#16a34a] text-[10px] font-bold px-2 py-0.5 rounded">
+                          <span className="bg-[#16a34a] text-white border border-[#0f172a] text-[10px] font-bold px-2 py-0.5 rounded">
                             Semua Disetujui
                           </span>
                         )}
@@ -459,7 +459,7 @@ export default function AdminDashboardPage() {
 
                 <Link 
                   href="/admin/approval-absensi"
-                  className="btn-base btn-secondary w-full py-3 text-xs"
+                  className="btn-base btn-secondary text-white w-full py-3 text-xs"
                 >
                   <ShieldCheck className="w-4 h-4" />
                   <span>PERSETUJUAN BERJAMAAH</span>
@@ -546,7 +546,7 @@ export default function AdminDashboardPage() {
                     </Link>
 
                     {data.isSesiAktif && (
-                      <Link href="/admin/sesi/aktif" target="_blank" className="btn-base btn-primary w-full justify-between">
+                      <Link href="/admin/sesi/aktif" target="_blank" className="btn-base btn-primary text-white w-full justify-between">
                         <span className="flex items-center gap-2"><ExternalLink className="w-4 h-4" /> Tampilan Sesi Aktif</span>
                       </Link>
                     )}
