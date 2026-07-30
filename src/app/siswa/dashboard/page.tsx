@@ -180,40 +180,75 @@ export default function SiswaDashboardPage() {
 
       <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-5 space-y-5">
         
-        {/* Compact Profile Card */}
-        {data && (
-          <div className="bg-[#dc2626] text-white neo-card p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-black/30 pb-3 mb-3">
-              <div>
-                <span className="text-[10px] font-black uppercase text-white/80">Siswa LPK Horenso</span>
-                <h2 className="text-xl font-black text-white uppercase tracking-tight">{data.profile.name}</h2>
+        {/* Skeleton Screen when initial loading */}
+        {loading && !data ? (
+          <div className="space-y-5 animate-pulse">
+            {/* Profile Card Skeleton */}
+            <div className="bg-[#e2e8f0] neo-card p-4 h-32 flex flex-col justify-between border-2 border-[#0f172a]">
+              <div className="flex justify-between items-center">
+                <div className="space-y-2 w-1/2">
+                  <div className="h-3 bg-slate-300 rounded w-1/3"></div>
+                  <div className="h-6 bg-slate-300 rounded w-3/4"></div>
+                </div>
+                <div className="h-7 bg-slate-300 rounded w-24"></div>
               </div>
-
-              {data.profile.namaKelas ? (
-                <div className="bg-[#1d4ed8] text-white px-3 py-1 neo-border text-xs font-black self-start sm:self-auto uppercase">
-                  🎓 Kelas: {data.profile.namaKelas}
-                </div>
-              ) : (
-                <div className="bg-white text-black px-3 py-1 neo-border text-xs font-black self-start sm:self-auto uppercase">
-                  ⚪ Belum Ada Kelas
-                </div>
-              )}
+              <div className="h-8 bg-slate-300 rounded w-full"></div>
             </div>
-            
-            {/* Status Penempatan Compact */}
-            {data.profile.statusPenempatan === 'sudah' ? (
-              <div className="flex items-center bg-[#16a34a] text-white neo-border p-2.5 text-xs font-black">
-                <Building2 className="w-4 h-4 mr-2 shrink-0" />
-                <span>Penempatan: <span className="underline">{data.profile.namaPerusahaan}</span></span>
+
+            {/* Action Banner Skeleton */}
+            <div className="bg-[#e2e8f0] neo-card p-5 h-44 flex flex-col justify-between border-2 border-[#0f172a]">
+              <div className="h-6 bg-slate-300 rounded w-1/3"></div>
+              <div className="h-10 bg-slate-300 rounded w-full"></div>
+              <div className="h-8 bg-slate-300 rounded w-1/2"></div>
+            </div>
+
+            {/* History Card Skeleton */}
+            <div className="bg-[#e2e8f0] neo-card p-4 h-64 space-y-4 border-2 border-[#0f172a]">
+              <div className="flex justify-between items-center border-b-2 border-[#0f172a] pb-3">
+                <div className="h-5 bg-slate-300 rounded w-1/3"></div>
+                <div className="h-7 bg-slate-300 rounded w-24"></div>
               </div>
-            ) : (
-              <div className="flex items-center bg-black text-white neo-border p-2.5 text-xs font-black">
-                <AlertCircle className="w-4 h-4 mr-2 shrink-0 text-yellow-400" />
-                <span>Belum Ditempatkan di Perusahaan Mitra</span>
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-10 bg-slate-300 rounded w-full"></div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Compact Profile Card */}
+            {data && (
+              <div className="bg-[#dc2626] text-white neo-card p-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-black/30 pb-3 mb-3">
+                  <div>
+                    <span className="text-[10px] font-black uppercase text-white/80">Siswa LPK Horenso</span>
+                    <h2 className="text-xl font-black text-white uppercase tracking-tight">{data.profile.name}</h2>
+                  </div>
+
+                  {data.profile.namaKelas ? (
+                    <div className="bg-[#1d4ed8] text-white px-3 py-1 neo-border text-xs font-black self-start sm:self-auto uppercase">
+                      🎓 Kelas: {data.profile.namaKelas}
+                    </div>
+                  ) : (
+                    <div className="bg-white text-black px-3 py-1 neo-border text-xs font-black self-start sm:self-auto uppercase">
+                      ⚪ Belum Ada Kelas
+                    </div>
+                  )}
+                </div>
+                
+                {/* Status Penempatan Compact */}
+                {data.profile.statusPenempatan === 'sudah' ? (
+                  <div className="flex items-center bg-[#16a34a] text-white neo-border p-2.5 text-xs font-black">
+                    <Building2 className="w-4 h-4 mr-2 shrink-0" />
+                    <span>Penempatan: <span className="underline">{data.profile.namaPerusahaan}</span></span>
+                  </div>
+                ) : (
+                  <div className="flex items-center bg-black text-white neo-border p-2.5 text-xs font-black">
+                    <AlertCircle className="w-4 h-4 mr-2 shrink-0 text-yellow-400" />
+                    <span>Belum Ditempatkan di Perusahaan Mitra</span>
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        )}
 
         {/* Action Buttons Grid / Status Banner */}
         {data?.profile?.statusPendidikan === 'tunggu_terbang' ? (
@@ -358,7 +393,11 @@ export default function SiswaDashboardPage() {
           {/* List Content */}
           <div className="p-0">
             {loading ? (
-              <div className="p-6 text-center text-gray-800 font-medium text-xs">Memuat riwayat...</div>
+              <div className="p-4 space-y-3 animate-pulse">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-10 bg-slate-200 rounded w-full border border-slate-300"></div>
+                ))}
+              </div>
             ) : error ? (
               <div className="p-6 text-center text-red-600 font-semibold text-xs">{error}</div>
             ) : (() => {
@@ -472,7 +511,8 @@ export default function SiswaDashboardPage() {
             })()}
           </div>
         </div>
-
+      </>
+      )}
       </main>
 
       {/* Modal Izin/Sakit */}

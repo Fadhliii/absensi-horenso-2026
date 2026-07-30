@@ -255,7 +255,49 @@ export default function AdminDashboardPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-6">
         
         {loading ? (
-          <div className="flex justify-center py-20"><span className="animate-pulse text-gray-500 font-bold">Memuat Dashboard...</span></div>
+          <div className="space-y-6 animate-pulse">
+            {/* Top Cards Skeleton */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2 bg-[#e2e8f0] neo-card p-6 h-56 flex flex-col justify-between">
+                <div className="space-y-3">
+                  <div className="h-6 bg-slate-300 rounded w-1/3"></div>
+                  <div className="h-4 bg-slate-300 rounded w-2/3"></div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="h-10 bg-slate-300 rounded w-32"></div>
+                  <div className="h-10 bg-slate-300 rounded w-32"></div>
+                </div>
+              </div>
+              <div className="bg-[#e2e8f0] neo-card p-6 h-56 flex flex-col justify-between">
+                <div className="space-y-3">
+                  <div className="h-6 bg-slate-300 rounded w-1/2"></div>
+                  <div className="h-4 bg-slate-300 rounded w-3/4"></div>
+                </div>
+                <div className="h-10 bg-slate-300 rounded w-full"></div>
+              </div>
+            </div>
+
+            {/* Stats Cards Skeleton */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="bg-[#e2e8f0] neo-card p-4 h-28 flex flex-col justify-between">
+                  <div className="h-4 bg-slate-300 rounded w-1/2"></div>
+                  <div className="h-8 bg-slate-300 rounded w-3/4"></div>
+                </div>
+              ))}
+            </div>
+
+            {/* Main Table / Grid Skeleton */}
+            <div className="bg-[#e2e8f0] neo-card p-6 h-72 space-y-4">
+              <div className="flex justify-between items-center border-b-2 border-[#0f172a] pb-3">
+                <div className="h-6 bg-slate-300 rounded w-1/4"></div>
+                <div className="h-8 bg-slate-300 rounded w-28"></div>
+              </div>
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="h-10 bg-slate-300 rounded w-full"></div>
+              ))}
+            </div>
+          </div>
         ) : error ? (
           <div className="flex justify-center py-20">
             <div className="bg-[#ff003c] text-white p-6 neo-card max-w-md text-center">
