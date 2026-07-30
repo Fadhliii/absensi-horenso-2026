@@ -152,9 +152,13 @@ export default function SiswaDashboardPage() {
                 <h2 className="text-xl font-black text-black uppercase tracking-tight">{data.profile.name}</h2>
               </div>
 
-              {data.profile.namaKelas && (
+              {data.profile.namaKelas ? (
                 <div className="bg-[#ff00c8] text-white px-3 py-1 neo-border text-xs font-black self-start sm:self-auto uppercase">
-                  Kelas: {data.profile.namaKelas}
+                  🎓 Kelas: {data.profile.namaKelas}
+                </div>
+              ) : (
+                <div className="bg-white text-black px-3 py-1 neo-border text-xs font-black self-start sm:self-auto uppercase">
+                  ⚪ Belum Ada Kelas
                 </div>
               )}
             </div>

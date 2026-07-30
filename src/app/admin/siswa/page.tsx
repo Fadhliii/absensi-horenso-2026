@@ -269,11 +269,12 @@ export default function SiswaPage() {
             <select
               value={kelasFilter}
               onChange={(e) => { setKelasFilter(e.target.value); setPage(1); }}
-              className="block w-full sm:w-36 px-3 py-2 neo-input text-xs font-bold"
+              className="block w-full sm:w-44 px-3 py-2 neo-input text-xs font-bold"
             >
               <option value="">Semua Kelas</option>
+              <option value="unassigned">⚪ Belum Ada Kelas (Tanpa Kelas)</option>
               {kelasList.map(k => (
-                <option key={k.id} value={k.id}>{k.nama_kelas}</option>
+                <option key={k.id} value={k.id}>🎓 {k.nama_kelas}</option>
               ))}
             </select>
             <select
@@ -421,9 +422,15 @@ export default function SiswaPage() {
                             </span>
                           )}
 
-                          <span className="text-xs font-black uppercase text-black bg-yellow-200 px-1.5 py-0.5 neo-border">
-                            {s.siswa?.master_kelas?.nama_kelas || 'Tanpa Kelas'}
-                          </span>
+                          {s.siswa?.master_kelas?.nama_kelas ? (
+                            <span className="text-xs font-black uppercase text-black bg-yellow-200 px-1.5 py-0.5 neo-border">
+                              🎓 {s.siswa.master_kelas.nama_kelas}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-black uppercase text-gray-700 bg-gray-200 px-1.5 py-0.5 border border-gray-400">
+                              ⚪ Belum Ada Kelas
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

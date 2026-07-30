@@ -523,8 +523,9 @@ function RekapGridContent() {
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-blue-500 focus:border-blue-500 min-w-[150px]"
             >
               <option value="">Semua Kelas</option>
+              <option value="unassigned">⚪ Siswa Belum Ada Kelas</option>
               {kelasList.map(k => (
-                <option key={k.id} value={k.id}>{k.nama_kelas}</option>
+                <option key={k.id} value={k.id}>🎓 {k.nama_kelas}</option>
               ))}
             </select>
           </div>

@@ -284,7 +284,11 @@ export async function getSiswaApprovedAction(
     }
 
     if (kelasFilter) {
-      siswaQuery = siswaQuery.eq('kelas_id', kelasFilter);
+      if (kelasFilter === 'unassigned' || kelasFilter === 'tanpa_kelas') {
+        siswaQuery = siswaQuery.is('kelas_id', null);
+      } else {
+        siswaQuery = siswaQuery.eq('kelas_id', kelasFilter);
+      }
     }
 
     if (search) {

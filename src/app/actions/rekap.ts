@@ -63,7 +63,11 @@ export async function getRekapAbsensiAction(year: number, month: number, perusah
       query = query.eq('siswa.perusahaan_id', perusahaanId);
     }
     if (kelasId) {
-      query = query.eq('siswa.kelas_id', kelasId);
+      if (kelasId === 'unassigned' || kelasId === 'tanpa_kelas') {
+        query = query.is('siswa.kelas_id', null);
+      } else {
+        query = query.eq('siswa.kelas_id', kelasId);
+      }
     }
 
     const { data: rawStudents, error: studentsError } = await query;
