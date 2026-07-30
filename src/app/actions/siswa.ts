@@ -251,6 +251,7 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
         namaKelas: namaKelas || null
       },
       isSesiAktif,
+      sesiAktif: sesiAktifData && sesiAktifData.length > 0 ? sesiAktifData[0] : null,
       sudahMasukKelas,
       statusAbsensiToday,
       riwayat: combinedRiwayat 

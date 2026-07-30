@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getStudentDashboardDataAction } from '@/app/actions/siswa';
 import { ajukanIzinAction, getInstrukturAction } from '@/app/actions/izin';
 import { masukKelasDirectAction } from '@/app/actions/absensi';
@@ -39,6 +39,11 @@ export default function SiswaDashboardPage() {
   const [izinError, setIzinError] = useState('');
   const [instrukturList, setInstrukturList] = useState<{id: string, name: string}[]>([]);
 
+  // Live Notification State
+  const [showLiveToast, setShowLiveToast] = useState(false);
+  const [toastSesiInfo, setToastSesiInfo] = useState<any>(null);
+  const prevSesiIdRef = useRef<string | null | undefined>(undefined);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     const result = await getStudentDashboardDataAction(monthFilter);
@@ -46,6 +51,19 @@ export default function SiswaDashboardPage() {
       setError(result.error);
     } else {
       setData(result);
+      
+      // Deteksi Sesi Baru untuk Live Notification Popup
+      if (result.sesiAktif) {
+        if (prevSesiIdRef.current !== undefined && prevSesiIdRef.current !== result.sesiAktif.id) {
+          setToastSesiInfo(result.sesiAktif);
+          setShowLiveToast(true);
+          // Auto-hide setelah 8 detik
+          setTimeout(() => setShowLiveToast(false), 8000);
+        }
+        prevSesiIdRef.current = result.sesiAktif.id;
+      } else {
+        prevSesiIdRef.current = null; // null berarti sedang tidak ada sesi
+      }
     }
     
     const insRes = await getInstrukturAction();
@@ -118,7 +136,26 @@ export default function SiswaDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f4f0] font-sans flex flex-col">
+    <div className="min-h-screen bg-[#f4f4f0] font-sans flex flex-col relative">
+      {/* LIVE NOTIFICATION TOAST (POPUP) */}
+      {showLiveToast && toastSesiInfo && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm bg-[#16a34a] text-white p-4 rounded neo-shadow-lg border-2 border-[#0f172a] flex items-start gap-3 transition-transform animate-in slide-in-from-top-10 fade-in duration-500">
+           <div className="bg-white text-[#16a34a] p-2 rounded neo-border shrink-0 mt-0.5 animate-pulse">
+             <DoorOpen className="w-6 h-6" />
+           </div>
+           <div className="flex-1">
+             <h4 className="font-black text-sm uppercase leading-tight tracking-wide">Kelas Telah Dibuka!</h4>
+             <p className="text-xs font-bold text-green-100 mt-1.5 leading-relaxed">
+               Presensi kelas <span className="text-white bg-green-800 px-1.5 py-0.5 rounded uppercase">{toastSesiInfo.kelas?.nama_kelas || 'Sesi Baru'}</span> sudah dibuka. 
+               Silakan lakukan absensi sekarang!
+             </p>
+           </div>
+           <button onClick={() => setShowLiveToast(false)} className="bg-white/20 hover:bg-white/40 p-1 rounded-full text-white transition-colors neo-border">
+             <X className="w-4 h-4" />
+           </button>
+        </div>
+      )}
+
       {/* Ringkas Header */}
       <header className="bg-white border-b-4 border-black sticky top-0 z-30">
         <div className="max-w-3xl mx-auto px-4 py-2.5 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
