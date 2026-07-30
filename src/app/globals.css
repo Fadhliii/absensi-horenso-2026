@@ -53,16 +53,46 @@ body {
 }
 
 .neo-card-yellow {
-  background-color: #ffe600;
+  background-color: #dc2626;
+  color: #ffffff;
+}
+
+.neo-card-red {
+  background-color: #dc2626;
+  color: #ffffff;
+}
+
+.neo-card-blue {
+  background-color: #1d4ed8;
+  color: #ffffff;
 }
 
 .neo-card-cyan {
-  background-color: #00f0ff;
+  background-color: #2563eb;
+  color: #ffffff;
 }
 
 .neo-card-pink {
-  background-color: #ff00c8;
+  background-color: #dc2626;
   color: #ffffff;
+}
+
+.neo-btn-red {
+  background-color: #dc2626;
+  color: #ffffff;
+}
+
+.neo-btn-red:hover {
+  background-color: #b91c1c;
+}
+
+.neo-btn-blue {
+  background-color: #1d4ed8;
+  color: #ffffff;
+}
+
+.neo-btn-blue:hover {
+  background-color: #1e40af;
 }
 
 .neo-btn {

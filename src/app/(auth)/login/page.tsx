@@ -34,38 +34,38 @@ function LoginForm() {
         <IndonesianClock />
       </div>
       
-      <div className="max-w-md w-full bg-[#ffe600] neo-card neo-shadow-lg p-8">
+      <div className="max-w-md w-full bg-[#dc2626] text-white neo-card neo-shadow-lg p-8">
         <div className="text-center mb-8 border-b-4 border-black pb-4">
-          <h2 className="text-3xl font-black text-black uppercase tracking-tight">Login Absensi LPK</h2>
-          <p className="text-xs text-black font-bold uppercase mt-1">Masuk ke akun Anda</p>
+          <h2 className="text-3xl font-black text-white uppercase tracking-tight">Login Absensi LPK</h2>
+          <p className="text-xs text-white/90 font-bold uppercase mt-1">Masuk ke akun Anda</p>
         </div>
 
         {(error || pendingError) && (
-          <div className="bg-[#ff1744] text-white neo-border p-4 mb-6 text-xs font-black uppercase">
+          <div className="bg-black text-white neo-border p-4 mb-6 text-xs font-black uppercase">
             ⚠️ {error || pendingError}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-xs font-black text-black uppercase mb-1">Email</label>
+            <label className="block text-xs font-black text-white uppercase mb-1">Email</label>
             <input 
               type="email" 
               name="email" 
               required
-              className="w-full px-3.5 py-2.5 neo-input font-bold"
+              className="w-full px-3.5 py-2.5 neo-input font-bold text-black"
               placeholder="contoh@email.com"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-black text-black uppercase mb-1">Password</label>
+            <label className="block text-xs font-black text-white uppercase mb-1">Password</label>
             <div className="relative">
               <input 
                 type={showPassword ? 'text' : 'password'} 
                 name="password" 
                 required
-                className="w-full px-3.5 py-2.5 pr-10 neo-input font-bold"
+                className="w-full px-3.5 py-2.5 pr-10 neo-input font-bold text-black"
                 placeholder="••••••••"
               />
               <button
@@ -82,14 +82,14 @@ function LoginForm() {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full bg-[#00f0ff] hover:bg-[#00d8e6] text-black font-black uppercase neo-btn py-3 text-sm shadow-md"
+            className="w-full bg-[#1d4ed8] hover:bg-[#1e40af] text-white font-black uppercase neo-btn py-3 text-sm shadow-md"
           >
-            {loading ? 'Memproses...' : 'Masuk'}
+            {loading ? 'Memproses...' : '🚀 Masuk Sesi'}
           </button>
         </form>
 
-        <p className="text-center text-xs font-bold text-black uppercase mt-6">
-          Belum punya akun? <Link href="/register" className="underline font-black hover:text-blue-700">Daftar sekarang</Link>
+        <p className="text-center text-xs font-bold text-white/90 uppercase mt-6">
+          Belum punya akun? <Link href="/register" className="underline font-black text-white hover:text-yellow-200">Daftar sekarang</Link>
         </p>
       </div>
     </div>

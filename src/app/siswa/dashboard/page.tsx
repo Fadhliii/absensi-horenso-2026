@@ -145,15 +145,15 @@ export default function SiswaDashboardPage() {
         
         {/* Compact Profile Card */}
         {data && (
-          <div className="bg-[#ffe600] neo-card p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-black pb-3 mb-3">
+          <div className="bg-[#dc2626] text-white neo-card p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-black/30 pb-3 mb-3">
               <div>
-                <span className="text-[10px] font-black uppercase text-black">Siswa LPK</span>
-                <h2 className="text-xl font-black text-black uppercase tracking-tight">{data.profile.name}</h2>
+                <span className="text-[10px] font-black uppercase text-white/80">Siswa LPK Horenso</span>
+                <h2 className="text-xl font-black text-white uppercase tracking-tight">{data.profile.name}</h2>
               </div>
 
               {data.profile.namaKelas ? (
-                <div className="bg-[#ff00c8] text-white px-3 py-1 neo-border text-xs font-black self-start sm:self-auto uppercase">
+                <div className="bg-[#1d4ed8] text-white px-3 py-1 neo-border text-xs font-black self-start sm:self-auto uppercase">
                   🎓 Kelas: {data.profile.namaKelas}
                 </div>
               ) : (
@@ -165,13 +165,13 @@ export default function SiswaDashboardPage() {
             
             {/* Status Penempatan Compact */}
             {data.profile.statusPenempatan === 'sudah' ? (
-              <div className="flex items-center bg-[#00e676] neo-border p-2.5 text-xs font-black text-black">
+              <div className="flex items-center bg-[#16a34a] text-white neo-border p-2.5 text-xs font-black">
                 <Building2 className="w-4 h-4 mr-2 shrink-0" />
                 <span>Penempatan: <span className="underline">{data.profile.namaPerusahaan}</span></span>
               </div>
             ) : (
-              <div className="flex items-center bg-[#fffde7] neo-border p-2.5 text-xs font-black text-black">
-                <AlertCircle className="w-4 h-4 mr-2 shrink-0 text-amber-600" />
+              <div className="flex items-center bg-black text-white neo-border p-2.5 text-xs font-black">
+                <AlertCircle className="w-4 h-4 mr-2 shrink-0 text-yellow-400" />
                 <span>Belum Ditempatkan di Perusahaan Mitra</span>
               </div>
             )}
@@ -243,7 +243,7 @@ export default function SiswaDashboardPage() {
                 <button 
                   onClick={handleMasukKelas}
                   disabled={masukLoading}
-                  className="flex items-center justify-center gap-2 bg-[#00f0ff] hover:bg-[#00d8e6] text-black font-black py-3 px-3 neo-btn text-xs uppercase shadow-md active:scale-95 transition-transform"
+                  className="flex items-center justify-center gap-2 bg-[#1d4ed8] hover:bg-[#1e40af] text-white font-black py-3 px-3 neo-btn text-xs uppercase shadow-md active:scale-95 transition-transform"
                 >
                   {masukLoading ? (
                     <>

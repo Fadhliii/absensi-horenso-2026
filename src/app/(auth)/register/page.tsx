@@ -93,11 +93,11 @@ export default function RegisterPage() {
         <div className="mb-6">
           <IndonesianClock />
         </div>
-        <div className="max-w-md w-full bg-[#00f0ff] neo-card neo-shadow-lg p-8 text-center">
-          <div className="w-16 h-16 bg-[#00e676] text-black neo-border neo-shadow-sm flex items-center justify-center mx-auto mb-4 text-2xl font-black">✓</div>
-          <h2 className="text-2xl font-black text-black uppercase mb-2">Registrasi Berhasil!</h2>
-          <p className="text-black font-bold text-sm mb-6">Akun kamu sedang menunggu persetujuan admin. Kamu baru bisa login setelah akun di-approve.</p>
-          <Link href="/login" className="inline-block bg-[#ffe600] text-black neo-btn py-3 px-8 text-sm font-black uppercase">
+        <div className="max-w-md w-full bg-[#dc2626] text-white neo-card neo-shadow-lg p-8 text-center">
+          <div className="w-16 h-16 bg-[#16a34a] text-white neo-border neo-shadow-sm flex items-center justify-center mx-auto mb-4 text-2xl font-black">✓</div>
+          <h2 className="text-2xl font-black text-white uppercase mb-2">Registrasi Berhasil!</h2>
+          <p className="text-white/90 font-bold text-sm mb-6">Akun kamu sedang menunggu persetujuan admin. Kamu baru bisa login setelah akun di-approve.</p>
+          <Link href="/login" className="inline-block bg-[#1d4ed8] hover:bg-[#1e40af] text-white neo-btn py-3 px-8 text-sm font-black uppercase">
             Kembali ke Login
           </Link>
         </div>
@@ -112,10 +112,10 @@ export default function RegisterPage() {
         <IndonesianClock />
       </div>
 
-      <div className="max-w-md w-full bg-[#00f0ff] neo-card neo-shadow-lg p-8">
+      <div className="max-w-md w-full bg-[#dc2626] text-white neo-card neo-shadow-lg p-8">
         <div className="text-center mb-8 border-b-4 border-black pb-4">
-          <h2 className="text-3xl font-black text-black uppercase tracking-tight">Daftar Akun Baru</h2>
-          <p className="text-xs text-black font-bold uppercase mt-1">Sistem Absensi & Penempatan LPK</p>
+          <h2 className="text-3xl font-black text-white uppercase tracking-tight">Daftar Akun Baru</h2>
+          <p className="text-xs text-white/90 font-bold uppercase mt-1">Sistem Absensi & Penempatan LPK</p>
         </div>
 
         {error && (
@@ -304,14 +304,14 @@ export default function RegisterPage() {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full bg-[#ffe600] hover:bg-[#ebd300] text-black font-black uppercase neo-btn py-3 mt-2 text-sm shadow-md"
+            className="w-full bg-[#1d4ed8] hover:bg-[#1e40af] text-white font-black uppercase neo-btn py-3 mt-2 text-sm shadow-md"
           >
-            {loading ? 'Memproses Registrasi...' : 'Daftar Sekarang'}
+            {loading ? 'Memproses Registrasi...' : '📝 Daftar Sekarang'}
           </button>
         </form>
 
-        <p className="text-center text-xs font-bold text-black uppercase mt-6">
-          Sudah punya akun? <Link href="/login" className="underline font-black hover:text-blue-700">Masuk di sini</Link>
+        <p className="text-center text-xs font-bold text-white/90 uppercase mt-6">
+          Sudah punya akun? <Link href="/login" className="underline font-black text-white hover:text-yellow-200">Masuk di sini</Link>
         </p>
       </div>
     </div>

@@ -460,12 +460,12 @@ export default function AdminDashboardPage() {
 
                 <Link 
                   href="/admin/approval-absensi"
-                  className="w-full bg-[#ffe600] hover:bg-[#ebd300] text-black font-black py-3.5 px-4 neo-btn text-xs uppercase flex items-center justify-center gap-2 shadow-md active:scale-95 relative"
+                  className="w-full bg-[#1d4ed8] hover:bg-[#1e40af] text-white font-black py-3.5 px-4 neo-btn text-xs uppercase flex items-center justify-center gap-2 shadow-md active:scale-95 relative"
                 >
-                  <ShieldCheck className="w-5 h-5 text-black" />
+                  <ShieldCheck className="w-5 h-5 text-white" />
                   <span className="text-sm font-black tracking-wide">PERSETUJUAN BERJAMAAH</span>
                   {pendingMasukCount > 0 && (
-                    <span className="bg-[#ff003c] text-white text-xs font-black px-2 py-0.5 rounded-full neo-border shadow-sm ml-1">
+                    <span className="bg-[#dc2626] text-white text-xs font-black px-2 py-0.5 rounded-full neo-border shadow-sm ml-1">
                       {pendingMasukCount}
                     </span>
                   )}
@@ -481,26 +481,26 @@ export default function AdminDashboardPage() {
                 {/* Kategori 1: Presensi & Sesi Kelas */}
                 <div className="bg-white neo-card p-5 space-y-3">
                   <div className="flex items-center gap-2 border-b-3 border-black pb-2 mb-3">
-                    <DoorOpen className="w-5 h-5 text-purple-700" />
+                    <DoorOpen className="w-5 h-5 text-blue-700" />
                     <h3 className="text-xs font-black text-black uppercase tracking-wider">1. Presensi & Sesi Kelas</h3>
                   </div>
                   <div className="space-y-2">
-                    <Link href="/admin/approval-absensi" className="bg-[#00f0ff] hover:bg-[#00d8e6] text-black p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
+                    <Link href="/admin/approval-absensi" className="bg-[#1d4ed8] hover:bg-[#1e40af] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
                       <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Approval Masuk Kelas</span>
-                      {pendingMasukCount > 0 && <span className="bg-[#ff003c] text-white px-2 py-0.5 text-[10px] font-black rounded-full">{pendingMasukCount}</span>}
+                      {pendingMasukCount > 0 && <span className="bg-[#dc2626] text-white px-2 py-0.5 text-[10px] font-black rounded-full">{pendingMasukCount}</span>}
                     </Link>
 
-                    <Link href="/admin/sesi" className="bg-[#ffe600] hover:bg-[#e6cf00] text-black p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
+                    <Link href="/admin/sesi" className="bg-[#dc2626] hover:bg-[#b91c1c] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
                       <span className="flex items-center gap-2"><DoorOpen className="w-4 h-4" /> Pengaturan Sesi & Lokasi</span>
                     </Link>
 
-                    <Link href="/admin/rekap" className="bg-[#74ee15] hover:bg-[#62cb12] text-black p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
+                    <Link href="/admin/rekap" className="bg-[#16a34a] hover:bg-[#15803d] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
                       <span className="flex items-center gap-2"><ClipboardList className="w-4 h-4" /> Rekap Grid Presensi</span>
                     </Link>
 
-                    <Link href="/admin/izin" className="bg-[#ff00c8] hover:bg-[#d600a8] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
+                    <Link href="/admin/izin" className="bg-[#1d4ed8] hover:bg-[#1e40af] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
                       <span className="flex items-center gap-2"><Calendar className="w-4 h-4" /> Permohonan Izin / Sakit</span>
-                      {data.stats.pendingIzin > 0 && <span className="bg-[#ff003c] text-white px-2 py-0.5 text-[10px] font-black rounded-full">{data.stats.pendingIzin}</span>}
+                      {data.stats.pendingIzin > 0 && <span className="bg-[#dc2626] text-white px-2 py-0.5 text-[10px] font-black rounded-full">{data.stats.pendingIzin}</span>}
                     </Link>
                   </div>
                 </div>
@@ -508,15 +508,15 @@ export default function AdminDashboardPage() {
                 {/* Kategori 2: Data Master & Akun Siswa */}
                 <div className="bg-white neo-card p-5 space-y-3">
                   <div className="flex items-center gap-2 border-b-3 border-black pb-2 mb-3">
-                    <Users className="w-5 h-5 text-amber-600" />
+                    <Users className="w-5 h-5 text-red-600" />
                     <h3 className="text-xs font-black text-black uppercase tracking-wider">2. Data Master & Siswa</h3>
                   </div>
                   <div className="space-y-2">
-                    <Link href="/admin/siswa" className="bg-[#ff9900] hover:bg-[#e68a00] text-black p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
+                    <Link href="/admin/siswa" className="bg-[#dc2626] hover:bg-[#b91c1c] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
                       <span className="flex items-center gap-2"><Users className="w-4 h-4" /> Data Siswa LPK</span>
                     </Link>
 
-                    <Link href="/admin/approval" className="bg-[#ffe600] hover:bg-[#e6cf00] text-black p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
+                    <Link href="/admin/approval" className="bg-[#1d4ed8] hover:bg-[#1e40af] text-white p-2.5 neo-btn text-xs font-black uppercase flex items-center justify-between">
                       <span className="flex items-center gap-2"><UserPlus className="w-4 h-4" /> Approval Registrasi Akun</span>
                       {data.stats.pendingApproval > 0 && <span className="bg-[#ff003c] text-white px-2 py-0.5 text-[10px] font-black rounded-full">{data.stats.pendingApproval}</span>}
                     </Link>
