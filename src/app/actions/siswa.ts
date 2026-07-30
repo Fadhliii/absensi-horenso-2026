@@ -33,7 +33,7 @@ function getWibNow() {
 
 export async function getStudentDashboardDataAction(monthFilter?: string) {
   try {
-    await closeExpiredSessions();
+    closeExpiredSessions().catch(console.error);
 
     const userId = await getStudentId();
 

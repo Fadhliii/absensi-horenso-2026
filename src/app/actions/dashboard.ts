@@ -7,7 +7,7 @@ import { closeExpiredSessions } from '@/app/actions/sesi';
 
 export async function getDashboardStatsAction() {
   try {
-    await closeExpiredSessions();
+    closeExpiredSessions().catch(console.error);
 
     const cookieStore = await cookies();
     const token = cookieStore.get('session')?.value;

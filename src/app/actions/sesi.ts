@@ -14,19 +14,23 @@ export async function closeExpiredSessions() {
   lastCleanupTime = now;
 
   try {
-    // 1. Matikan sesi aktif yang sudah melewati durasi_menit masing-masing
+    // 1. Matikan sesi aktif yang sudah melewati durasi_menit masing-masing dalam 1 BATCH QUERY
     const { data: activeList } = await supabase
       .from('sesi_absensi')
       .select('id, dibuat_pada, durasi_menit')
       .eq('status', 'aktif');
 
     if (activeList && activeList.length > 0) {
-      for (const item of activeList) {
-        const durationSec = (item.durasi_menit || 120) * 60;
-        const createdMs = new Date(item.dibuat_pada).getTime();
-        if (now - createdMs > durationSec * 1000) {
-          await supabase.from('sesi_absensi').update({ status: 'selesai' }).eq('id', item.id);
-        }
+      const expiredIds = activeList
+        .filter(item => {
+          const durationSec = (item.durasi_menit || 120) * 60;
+          const createdMs = new Date(item.dibuat_pada).getTime();
+          return now - createdMs > durationSec * 1000;
+        })
+        .map(item => item.id);
+
+      if (expiredIds.length > 0) {
+        await supabase.from('sesi_absensi').update({ status: 'selesai' }).in('id', expiredIds);
       }
     }
 
@@ -39,43 +43,11 @@ export async function closeExpiredSessions() {
       .in('status', ['pending_hadir', 'pending_telat', 'pending_luar_radius']);
 
     if (pendingList && pendingList.length > 0) {
-      const sesiPendingMap = new Map<string, { id: string; waktu_scan: string }[]>();
-      pendingList.forEach(item => {
-        const key = item.sesi_id || 'default_sesi';
-        if (!sesiPendingMap.has(key)) sesiPendingMap.set(key, []);
-        sesiPendingMap.get(key)!.push(item);
-      });
-
       const idsToAutoApprove: string[] = [];
-
-      for (const [sesiId, items] of sesiPendingMap.entries()) {
-        let earliestTime = Math.min(...items.map(i => new Date(i.waktu_scan).getTime()));
-
-        if (sesiId !== 'default_sesi') {
-          const { data: firstScan } = await supabase
-            .from('absensi')
-            .select('waktu_scan')
-            .eq('sesi_id', sesiId)
-            .order('waktu_scan', { ascending: true })
-            .limit(1)
-            .maybeSingle();
-
-          if (firstScan) {
-            const firstScanMs = new Date(firstScan.waktu_scan).getTime();
-            if (firstScanMs < earliestTime) earliestTime = firstScanMs;
-          }
-        }
-
-        // Jika sudah 3 jam dari scan PERTAMA siswa
-        if (now - earliestTime >= THREE_HOURS_MS) {
-          items.forEach(i => idsToAutoApprove.push(i.id));
-        }
-      }
-
-      // Auto-approve per-item jika waktu scan item itu sendiri > 3 jam
       const threeHoursAgoIso = new Date(now - THREE_HOURS_MS).toISOString();
+
       pendingList.forEach(item => {
-        if (item.waktu_scan <= threeHoursAgoIso && !idsToAutoApprove.includes(item.id)) {
+        if (item.waktu_scan <= threeHoursAgoIso) {
           idsToAutoApprove.push(item.id);
         }
       });
@@ -87,6 +59,7 @@ export async function closeExpiredSessions() {
           .in('id', idsToAutoApprove);
       }
     }
+
     // 3. JADWAL OTOMATIS: Auto open/close daily sessions based on schedule settings
     await processAutoDailySessions();
   } catch (err) {
@@ -122,6 +95,10 @@ async function processAutoDailySessions() {
 
     const startOfDayIso = startOfDay.toISOString();
     const endOfDayIso = endOfDay.toISOString();
+
+    // Cache admin ID sekali untuk seluruh perulangan
+    const { data: adminUser } = await supabase.from('users').select('id').eq('role', 'admin').limit(1).maybeSingle();
+    const adminId = adminUser?.id || null;
 
     for (const item of scheduleList) {
       // Cek apakah hari ini termasuk hari aktif
@@ -179,10 +156,6 @@ async function processAutoDailySessions() {
             lng = 107.082858;
             radius = 100;
           }
-
-          // Cari satu admin untuk dijadikan 'dibuat_oleh' karena DB butuh NOT NULL
-          const { data: adminUser } = await supabase.from('users').select('id').eq('role', 'admin').limit(1).single();
-          const adminId = adminUser?.id;
 
           await supabase.from('sesi_absensi').insert([
             {
