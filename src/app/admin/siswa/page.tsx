@@ -350,10 +350,10 @@ export default function SiswaPage() {
 
         <div className="bg-white neo-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y-3 divide-black">
-              <thead className="bg-[#dc2626] text-white border-b-3 border-black">
+            <table className="w-full divide-y-2 divide-black text-left border-collapse">
+              <thead className="bg-[#dc2626] text-white border-b-2 border-black">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left w-12">
+                  <th scope="col" className="px-3 py-3 text-center w-10">
                     <input 
                       type="checkbox" 
                       onChange={handleSelectAll}
@@ -361,23 +361,35 @@ export default function SiswaPage() {
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-black text-white uppercase tracking-wider">Nama Siswa</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-black text-white uppercase tracking-wider hidden lg:table-cell">Kontak</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-black text-white uppercase tracking-wider hidden sm:table-cell">Tgl Daftar</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-black text-white uppercase tracking-wider">Status & Kelas</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-black text-white uppercase tracking-wider">Penempatan & Batch</th>
-                  <th scope="col" className="relative px-6 py-3"><span className="sr-only">Aksi</span></th>
+                  <th scope="col" className="px-3 py-3 text-center text-xs font-black text-white uppercase tracking-wider w-12">No.</th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-black text-white uppercase tracking-wider">Nama Siswa</th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-black text-white uppercase tracking-wider hidden lg:table-cell">Kontak</th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-black text-white uppercase tracking-wider hidden sm:table-cell">Tgl Daftar</th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-black text-white uppercase tracking-wider">Status & Kelas</th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-black text-white uppercase tracking-wider">Penempatan & Batch</th>
+                  <th scope="col" className="px-4 py-3 text-right text-xs font-black text-white uppercase tracking-wider">Aksi</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {loading ? (
-                  <tr><td colSpan={7} className="px-6 py-10 text-center text-sm text-gray-800 font-medium">Memuat data...</td></tr>
+                  Array.from({ length: 5 }).map((_, idx) => (
+                    <tr key={idx} className="animate-pulse border-b border-gray-200">
+                      <td className="p-3 text-center"><div className="h-4 bg-slate-200 rounded w-4 mx-auto"></div></td>
+                      <td className="p-3 text-center"><div className="h-4 bg-slate-200 rounded w-6 mx-auto"></div></td>
+                      <td className="p-3"><div className="h-4 bg-slate-200 rounded w-36 mb-1"></div><div className="h-3 bg-slate-200 rounded w-24"></div></td>
+                      <td className="p-3 hidden lg:table-cell"><div className="h-4 bg-slate-200 rounded w-32"></div></td>
+                      <td className="p-3 hidden sm:table-cell"><div className="h-4 bg-slate-200 rounded w-20"></div></td>
+                      <td className="p-3"><div className="h-5 bg-slate-200 rounded w-24 mb-1"></div><div className="h-4 bg-slate-200 rounded w-20"></div></td>
+                      <td className="p-3"><div className="h-5 bg-slate-200 rounded w-28"></div></td>
+                      <td className="p-3 text-right"><div className="h-8 bg-slate-200 rounded w-20 ml-auto"></div></td>
+                    </tr>
+                  ))
                 ) : data.length === 0 ? (
-                  <tr><td colSpan={7} className="px-6 py-10 text-center text-sm text-gray-800 font-medium">Tidak ada data siswa ditemukan.</td></tr>
+                  <tr><td colSpan={8} className="px-6 py-10 text-center text-sm text-gray-800 font-medium">Tidak ada data siswa ditemukan.</td></tr>
                 ) : (
-                  data.map((s) => (
-                    <tr key={s.id} className="hover:bg-slate-100 font-bold transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
+                  data.map((s, index) => (
+                    <tr key={s.id} className="hover:bg-slate-50 font-bold transition-colors">
+                      <td className="px-3 py-3 text-center whitespace-nowrap">
                         <input 
                           type="checkbox"
                           checked={selectedIds.includes(s.id)}
@@ -385,20 +397,23 @@ export default function SiswaPage() {
                           className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-bold text-gray-900">{s.name}</div>
-                        <div className="text-sm text-gray-800 font-medium lg:hidden">{s.phone || s.email}</div>
+                      <td className="px-3 py-3 text-center text-xs font-black text-slate-700 whitespace-nowrap">
+                        {(page - 1) * 10 + index + 1}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
-                        <div className="text-sm font-bold text-gray-900">{s.email}</div>
-                        <div className="text-sm text-gray-800 font-medium">{s.phone || '-'}</div>
+                      <td className="px-4 py-3">
+                        <div className="text-sm font-black text-gray-900 break-words">{s.name}</div>
+                        <div className="text-xs text-gray-600 font-medium lg:hidden break-all">{s.phone || s.email}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap hidden sm:table-cell">
-                        <div className="text-sm text-gray-800 font-medium">
+                      <td className="px-4 py-3 hidden lg:table-cell">
+                        <div className="text-xs font-bold text-gray-900 break-all">{s.email}</div>
+                        <div className="text-xs text-gray-600 font-medium">{s.phone || '-'}</div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap hidden sm:table-cell">
+                        <div className="text-xs text-gray-700 font-medium">
                           {s.created_at ? new Date(s.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-3">
                         <div className="flex flex-col gap-1 items-start">
                           {s.siswa?.status_pendidikan === 'belum_mulai' ? (
                             <span className="text-[10px] font-black text-black bg-gray-200 px-2 py-0.5 border border-black uppercase">
@@ -433,10 +448,10 @@ export default function SiswaPage() {
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-3">
                         {s.siswa?.status_penempatan === 'sudah' ? (
                           <div className="flex flex-col gap-1 items-start">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-900">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-900 border border-green-300">
                               {s.siswa?.perusahaan?.nama || 'Ada Perusahaan'}
                             </span>
                             {s.siswa?.batch && (
@@ -451,25 +466,25 @@ export default function SiswaPage() {
                             )}
                           </div>
                         ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-200 text-gray-900">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-gray-100 text-gray-800 border border-gray-300">
                             Belum Ditempatkan
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <td className="px-4 py-3 whitespace-nowrap text-right text-xs font-medium">
                         <Link 
                           href={`/admin/siswa/${s.id}/edit`}
-                          className="inline-flex items-center text-green-600 hover:text-green-900 mr-3"
+                          className="inline-flex items-center text-green-700 hover:text-green-900 mr-2 font-bold"
                           title="Edit Profil"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-1 hidden sm:inline"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg> Edit
+                          Edit
                         </Link>
                         <button 
                           onClick={() => setAssignModal({ isOpen: true, userId: s.id, name: s.name, currentStatus: s.siswa?.status_penempatan || 'belum', currentCompanyId: s.siswa?.perusahaan_id || undefined, currentBatch: s.siswa?.batch_id || s.siswa?.batch || undefined, currentTanggalBerangkat: s.siswa?.tanggal_berangkat || undefined, currentKelasId: s.siswa?.kelas_id || undefined })} 
-                          className="inline-flex items-center text-blue-600 hover:text-blue-900 mr-3"
+                          className="inline-flex items-center text-blue-700 hover:text-blue-900 font-bold"
                           title="Ubah Penempatan"
                         >
-                          <Briefcase className="w-4 h-4 mr-1 hidden sm:inline" /> Assign
+                          <Briefcase className="w-3.5 h-3.5 mr-1" /> Assign
                         </button>
                       </td>
                     </tr>
