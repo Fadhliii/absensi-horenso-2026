@@ -44,6 +44,7 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
         name,
         created_at,
         siswa (
+          kelas_id,
           status_penempatan,
           status_pendidikan,
           perusahaan (nama),
@@ -54,6 +55,8 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
       .single();
 
     if (profileError) throw profileError;
+
+    const studentKelasId = profile?.siswa?.[0]?.kelas_id || null;
 
     // Tentukan rentang bulan (default bulan ini jika tidak diisi)
     const targetMonth = monthFilter || new Date().toISOString().slice(0, 7);
@@ -67,7 +70,33 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
     todayStart.setHours(0, 0, 0, 0);
     const todayISO = todayStart.toISOString();
 
-    // 2. Query Paralel: Absensi Aktual, Sesi Absensi, Izin Absen, Cek Sesi Aktif Hari Ini & Absensi Siswa Hari Ini
+    // Query untuk Sesi Aktif Siswa (Khusus Kelas Siswa atau General)
+    let activeSesiQuery = supabase
+      .from('sesi_absensi')
+      .select('id, kelas_id')
+      .eq('status', 'aktif');
+
+    if (studentKelasId) {
+      activeSesiQuery = activeSesiQuery.or(`kelas_id.eq.${studentKelasId},kelas_id.is.null`);
+    }
+
+    // Query Sesi Absensi Bulan Ini (Khusus Kelas Siswa atau General)
+    let sesiBulanQuery = supabase
+      .from('sesi_absensi')
+      .select(`
+        id,
+        dibuat_pada,
+        status,
+        kelas_id
+      `)
+      .gte('dibuat_pada', startDateISO)
+      .lte('dibuat_pada', endDateISO);
+
+    if (studentKelasId) {
+      sesiBulanQuery = sesiBulanQuery.or(`kelas_id.eq.${studentKelasId},kelas_id.is.null`);
+    }
+
+    // 2. Query Paralel
     const [
       { data: absensiList },
       { data: sesiList },
@@ -88,16 +117,7 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
         .gte('waktu_scan', startDateISO)
         .lte('waktu_scan', endDateISO),
 
-      // Semua Sesi Absensi yang dibuat guru/admin pada bulan ini
-      supabase
-        .from('sesi_absensi')
-        .select(`
-          id,
-          dibuat_pada,
-          status
-        `)
-        .gte('dibuat_pada', startDateISO)
-        .lte('dibuat_pada', endDateISO),
+      sesiBulanQuery,
 
       // Data Pengajuan Izin/Sakit siswa pada bulan ini
       supabase
@@ -113,12 +133,7 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
         .gte('tanggal', startDateOnly)
         .lte('tanggal', endDateOnly),
 
-      // Cek Sesi Aktif saat ini
-      supabase
-        .from('sesi_absensi')
-        .select('id')
-        .eq('status', 'aktif')
-        .limit(1),
+      activeSesiQuery.order('dibuat_pada', { ascending: false }).limit(1),
 
       // Cek Absensi Siswa hari ini
       supabase
