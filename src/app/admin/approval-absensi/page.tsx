@@ -328,7 +328,12 @@ export default function AdminApprovalAbsensiPage() {
                         </td>
                         <td className="p-3.5 border-r border-gray-300">
                           <span className="font-black text-black text-sm block">{item.name}</span>
-                          <span className="text-[10px] text-gray-500 font-mono">ID: {item.siswa_id.slice(0, 8)}...</span>
+                          <span className="text-[10px] text-gray-500 font-mono block">ID: {item.siswa_id.slice(0, 8)}...</span>
+                          {item.is_izin && item.alasan && (
+                            <div className="mt-1 text-[11px] font-bold text-gray-800 bg-amber-50 border border-amber-300 p-1.5 rounded italic">
+                              📝 &quot;{item.alasan}&quot;
+                            </div>
+                          )}
                         </td>
                         <td className="p-3.5 border-r border-gray-300">
                           <span className="font-black text-black block">{item.nama_kelas}</span>
@@ -341,15 +346,25 @@ export default function AdminApprovalAbsensiPage() {
                           </div>
                         </td>
                         <td className="p-3.5 border-r border-gray-300">
-                          <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-black border-2 ${
-                            isOutside 
-                              ? 'bg-red-100 text-red-900 border-red-500' 
-                              : 'bg-green-100 text-green-900 border-green-500'
-                          }`}>
-                            <MapPin className="w-3.5 h-3.5 shrink-0" />
-                            <span>{item.jarak_meter} m</span>
-                            {isOutside && <AlertTriangle className="w-3.5 h-3.5 ml-1 text-red-600 shrink-0" />}
-                          </div>
+                          {item.is_izin ? (
+                            <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-black border-2 ${
+                              item.tipe_izin === 'sakit'
+                                ? 'bg-purple-100 text-purple-900 border-purple-500'
+                                : 'bg-amber-100 text-amber-900 border-amber-500'
+                            }`}>
+                              <span>{item.tipe_izin === 'sakit' ? '🟣 PERMOHONAN SAKIT' : '🟡 PERMOHONAN IZIN'}</span>
+                            </div>
+                          ) : (
+                            <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-black border-2 ${
+                              isOutside 
+                                ? 'bg-red-100 text-red-900 border-red-500' 
+                                : 'bg-green-100 text-green-900 border-green-500'
+                            }`}>
+                              <MapPin className="w-3.5 h-3.5 shrink-0" />
+                              <span>{item.jarak_meter} m</span>
+                              {isOutside && <AlertTriangle className="w-3.5 h-3.5 ml-1 text-red-600 shrink-0" />}
+                            </div>
+                          )}
                         </td>
                         <td className="p-3.5 text-center">
                           <div className="flex items-center justify-center gap-2">
