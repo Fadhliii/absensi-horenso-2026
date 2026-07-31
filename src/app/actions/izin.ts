@@ -25,10 +25,42 @@ export async function ajukanIzinAction(formData: FormData) {
     const tanggal = formData.get('tanggal') as string;
     const tipe = formData.get('tipe') as 'izin' | 'sakit';
     const alasan = formData.get('alasan') as string;
-    const dilaporkan_ke = formData.get('dilaporkan_ke') as string;
+    let dilaporkan_ke = (formData.get('dilaporkan_ke') as string) || null;
 
     if (!tanggal || !tipe || !alasan) {
       return { error: 'Semua field harus diisi.' };
+    }
+
+    if (!dilaporkan_ke) {
+      // Auto lookup class instructor for student
+      const { data: siswaData } = await supabase
+        .from('siswa')
+        .select('kelas_id')
+        .eq('user_id', session.userId)
+        .maybeSingle();
+
+      if (siswaData?.kelas_id) {
+        const { data: classIns } = await supabase
+          .from('kelas_instruktur')
+          .select('instruktur_id')
+          .eq('kelas_id', siswaData.kelas_id)
+          .limit(1)
+          .maybeSingle();
+
+        if (classIns?.instruktur_id) {
+          dilaporkan_ke = classIns.instruktur_id;
+        }
+      }
+
+      if (!dilaporkan_ke) {
+        const { data: adminUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('role', 'admin')
+          .limit(1)
+          .maybeSingle();
+        dilaporkan_ke = adminUser?.id || null;
+      }
     }
 
     // Insert to DB
@@ -41,7 +73,7 @@ export async function ajukanIzinAction(formData: FormData) {
           tipe,
           alasan,
           status: 'pending',
-          dilaporkan_ke: dilaporkan_ke || null
+          dilaporkan_ke
         }
       ]);
 

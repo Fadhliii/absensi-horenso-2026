@@ -119,8 +119,8 @@ export default function SiswaDashboardPage() {
     const formData = new FormData();
     formData.append('tanggal', izinTanggal);
     formData.append('tipe', izinTipe);
-    formData.append('alasan', izinAlasan);
-    if (izinDilaporkanKe) formData.append('dilaporkan_ke', izinDilaporkanKe);
+    const targetInsId = data?.profile?.instrukturKelasId || izinDilaporkanKe;
+    if (targetInsId) formData.append('dilaporkan_ke', targetInsId);
 
     const result = await ajukanIzinAction(formData);
     if (result.error) {
@@ -551,18 +551,18 @@ export default function SiswaDashboardPage() {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Laporan Ke (Instruktur)</label>
-                <select 
-                  value={izinDilaporkanKe}
-                  onChange={(e) => setIzinDilaporkanKe(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                >
-                  <option value="">-- Pilih Instruktur / Admin --</option>
-                  {instrukturList.map(ins => (
-                    <option key={ins.id} value={ins.id}>{ins.name}</option>
-                  ))}
-                </select>
+              <div className="bg-[#f0fdf4] border-2 border-[#16a34a] neo-border p-3 rounded-lg">
+                <label className="block text-xs font-black text-[#15803d] uppercase mb-1">
+                  📢 Dilaporkan Kepada (Instruktur Kelas)
+                </label>
+                <div className="text-sm font-black text-black flex items-center gap-2">
+                  <span>👨‍🏫 {data?.profile?.namaInstrukturKelas || 'Instruktur Kelas / Admin LPK'}</span>
+                </div>
+                {data?.profile?.namaKelas && (
+                  <div className="text-xs font-bold text-gray-600 mt-0.5">
+                    Kelas: {data.profile.namaKelas}
+                  </div>
+                )}
               </div>
 
               <div>

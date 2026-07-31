@@ -236,6 +236,22 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
     const kelasObj = siswaObj?.master_kelas;
     const namaKelas = Array.isArray(kelasObj) ? kelasObj[0]?.nama_kelas : (kelasObj as any)?.nama_kelas;
 
+    let namaInstrukturKelas: string | null = null;
+    let instrukturKelasId: string | null = null;
+
+    if (studentKelasId) {
+      const { data: classInstrukturData } = await supabase
+        .from('kelas_instruktur')
+        .select('instruktur_id, users:instruktur_id(name)')
+        .eq('kelas_id', studentKelasId);
+
+      if (classInstrukturData && classInstrukturData.length > 0) {
+        const names = classInstrukturData.map((ci: any) => (Array.isArray(ci.users) ? ci.users[0]?.name : ci.users?.name)).filter(Boolean);
+        if (names.length > 0) namaInstrukturKelas = names.join(', ');
+        instrukturKelasId = classInstrukturData[0]?.instruktur_id || null;
+      }
+    }
+
     const isSesiAktif = (sesiAktifData && sesiAktifData.length > 0) || false;
     const latestTodayAbsensi = absensiHariIniData && absensiHariIniData.length > 0 ? absensiHariIniData[0] : null;
     const statusAbsensiToday = latestTodayAbsensi?.status || null;
@@ -248,7 +264,9 @@ export async function getStudentDashboardDataAction(monthFilter?: string) {
         statusPenempatan: siswaObj?.status_penempatan || 'belum',
         statusPendidikan: siswaObj?.status_pendidikan || 'aktif',
         namaPerusahaan: namaPerusahaan || null,
-        namaKelas: namaKelas || null
+        namaKelas: namaKelas || null,
+        namaInstrukturKelas: namaInstrukturKelas || null,
+        instrukturKelasId: instrukturKelasId || null
       },
       isSesiAktif,
       sesiAktif: sesiAktifData && sesiAktifData.length > 0 ? sesiAktifData[0] : null,
