@@ -611,8 +611,17 @@ export default function SiswaPage() {
                             name="perusahaan_id" 
                             required 
                             value={assignModal.currentCompanyId || ''}
-                            onChange={(e) => setAssignModal({...assignModal, currentCompanyId: e.target.value})}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                            onChange={(e) => {
+                              const newCoId = e.target.value;
+                              setModalBatchList([]);
+                              setAssignModal(prev => ({
+                                ...prev,
+                                currentCompanyId: newCoId,
+                                currentBatch: '',
+                                currentTanggalBerangkat: ''
+                              }));
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-bold"
                           >
                             <option value="" disabled>-- Pilih Perusahaan --</option>
                             {perusahaanList.map(p => (
@@ -622,32 +631,34 @@ export default function SiswaPage() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Batch / Angkatan (Opsional)</label>
-                          {modalBatchList.length > 0 ? (
-                            <select
-                              name="batch"
-                              defaultValue={assignModal.currentBatch || ''}
-                              onChange={(e) => {
-                                const selectedBatchObj = modalBatchList.find(b => b.id === e.target.value || b.nama_batch === e.target.value);
-                                if (selectedBatchObj?.tanggal_berangkat && !assignModal.currentTanggalBerangkat) {
-                                  setAssignModal(prev => ({ ...prev, currentTanggalBerangkat: selectedBatchObj.tanggal_berangkat || '' }));
-                                }
-                              }}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                            >
-                              <option value="">-- Tanpa Batch --</option>
-                              {modalBatchList.map(b => (
-                                <option key={b.id} value={b.id}>{b.nama_batch} {b.tanggal_berangkat ? `(Berangkat: ${b.tanggal_berangkat})` : ''}</option>
-                              ))}
-                            </select>
-                          ) : (
-                            <input 
-                              type="text"
-                              name="batch"
-                              defaultValue={assignModal.currentBatch || ''}
-                              placeholder="Contoh: Batch 1"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          )}
+                          <select
+                            name="batch"
+                            value={assignModal.currentBatch || ''}
+                            disabled={!assignModal.currentCompanyId}
+                            onChange={(e) => {
+                              const selectedValue = e.target.value;
+                              const selectedBatchObj = modalBatchList.find(b => b.id === selectedValue || b.nama_batch === selectedValue);
+                              setAssignModal(prev => ({
+                                ...prev,
+                                currentBatch: selectedValue,
+                                currentTanggalBerangkat: selectedBatchObj?.tanggal_berangkat || prev.currentTanggalBerangkat
+                              }));
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white disabled:bg-gray-100 disabled:text-gray-400 text-gray-900 font-bold"
+                          >
+                            {!assignModal.currentCompanyId ? (
+                              <option value="">-- Pilih Kaisha Terlebih Dahulu --</option>
+                            ) : (
+                              <>
+                                <option value="">-- Tanpa Batch --</option>
+                                {modalBatchList.map(b => (
+                                  <option key={b.id} value={b.id}>
+                                    {b.nama_batch} {b.tanggal_berangkat ? `(Berangkat: ${new Date(b.tanggal_berangkat).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })})` : ''}
+                                  </option>
+                                ))}
+                              </>
+                            )}
+                          </select>
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Tanggal Keberangkatan ✈️ (Opsional)</label>

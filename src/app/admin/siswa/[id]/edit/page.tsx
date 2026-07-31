@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSiswaByIdAction, updateSiswaProfileAction, getAllPerusahaanAction } from '@/app/actions/master';
+import { getSiswaByIdAction, updateSiswaProfileAction, getAllPerusahaanAction, getBatchesByPerusahaanAction } from '@/app/actions/master';
 import { ArrowLeft, Save, Loader2, Eye, EyeOff } from 'lucide-react';
 import React from 'react';
 import Link from 'next/link';
@@ -13,10 +13,22 @@ export default function EditSiswaPage({ params }: { params: Promise<{ id: string
   
   const [data, setData] = useState({ name: '', email: '', phone: '', password: '', perusahaan_id: '', batch: '' });
   const [perusahaanList, setPerusahaanList] = useState<{id: string, nama: string}[]>([]);
+  const [batchList, setBatchList] = useState<{id: string, nama_batch: string, tanggal_berangkat?: string | null}[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (data.perusahaan_id) {
+      getBatchesByPerusahaanAction(data.perusahaan_id).then(res => {
+        if (res.data) setBatchList(res.data);
+        else setBatchList([]);
+      });
+    } else {
+      setBatchList([]);
+    }
+  }, [data.perusahaan_id]);
 
   useEffect(() => {
     async function loadData() {
@@ -156,8 +168,12 @@ export default function EditSiswaPage({ params }: { params: Promise<{ id: string
                     <select
                       name="perusahaan_id"
                       value={data.perusahaan_id || ''}
-                      onChange={(e) => setData({ ...data, perusahaan_id: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                      onChange={(e) => {
+                        const newCoId = e.target.value;
+                        setBatchList([]);
+                        setData(prev => ({ ...prev, perusahaan_id: newCoId, batch: '' }));
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-bold"
                     >
                       <option value="">Belum Ditempatkan (Kosong)</option>
                       {perusahaanList.map((p) => (
@@ -169,16 +185,28 @@ export default function EditSiswaPage({ params }: { params: Promise<{ id: string
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Batch
+                      Batch / Angkatan (Opsional)
                     </label>
-                    <input 
-                      type="text" 
+                    <select
                       name="batch"
                       value={data.batch || ''}
+                      disabled={!data.perusahaan_id}
                       onChange={(e) => setData({ ...data, batch: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-                      placeholder="Contoh: Batch 1"
-                    />
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 font-bold bg-white disabled:bg-gray-100 disabled:text-gray-400"
+                    >
+                      {!data.perusahaan_id ? (
+                        <option value="">-- Pilih Kaisha Terlebih Dahulu --</option>
+                      ) : (
+                        <>
+                          <option value="">-- Tanpa Batch --</option>
+                          {batchList.map(b => (
+                            <option key={b.id} value={b.id}>
+                              {b.nama_batch} {b.tanggal_berangkat ? `(Berangkat: ${new Date(b.tanggal_berangkat).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })})` : ''}
+                            </option>
+                          ))}
+                        </>
+                      )}
+                    </select>
                   </div>
                 </div>
               </div>
