@@ -239,79 +239,66 @@ export async function getSiswaApprovedAction(
   sortOrder: string = 'desc', 
   batchFilter: string = '',
   kelasFilter: string = '',
-  statusPendidikanFilter: string = 'semua'
+  statusPendidikanFilter: string = 'semua',
+  tabGroupFilter: string = 'aktif'
 ) {
   const limit = 10;
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
-  let query = supabaseAdmin
-    .from('users')
+  let siswaQuery = supabaseAdmin
+    .from('siswa')
     .select(`
-      id, name, email, phone, created_at,
-      siswa ( id, status_penempatan, status_pendidikan, perusahaan_id, batch_id, batch, tanggal_berangkat, kelas_id, master_kelas (nama_kelas), perusahaan (nama) )
+      id, status_penempatan, status_pendidikan, perusahaan_id, batch_id, batch, tanggal_berangkat, kelas_id, master_kelas (nama_kelas), perusahaan (nama),
+      users!inner (id, name, email, phone, status_registrasi, role, created_at)
     `, { count: 'exact' })
-    .eq('role', 'siswa')
-    .eq('status_registrasi', 'approved');
+    .eq('users.status_registrasi', 'approved')
+    .eq('users.role', 'siswa');
 
-  if (search) {
-    query = query.ilike('name', `%${search}%`);
+  // Filter berdasarkan Tab Group (Aktif vs Nonaktif)
+  if (tabGroupFilter === 'aktif') {
+    siswaQuery = siswaQuery.or('status_pendidikan.eq.aktif,status_pendidikan.eq.belum_mulai,status_pendidikan.is.null');
+  } else if (tabGroupFilter === 'nonaktif') {
+    siswaQuery = siswaQuery.in('status_pendidikan', ['nonaktif', 'tunggu_terbang', 'alumni', 'dropout']);
   }
 
-  if (
-    (statusFilter && statusFilter !== 'semua') || 
-    perusahaanFilter || 
-    batchFilter || 
-    kelasFilter ||
-    (statusPendidikanFilter && statusPendidikanFilter !== 'semua') ||
-    (keberangkatanFilter && keberangkatanFilter !== 'semua')
-  ) {
-    let siswaQuery = supabaseAdmin
-    .from('siswa')
-      .select(`
-        id, status_penempatan, status_pendidikan, perusahaan_id, batch_id, batch, tanggal_berangkat, kelas_id, master_kelas (nama_kelas), perusahaan (nama),
-        users!inner (id, name, email, phone, status_registrasi, role, created_at)
-      `, { count: 'exact' })
-      .eq('users.status_registrasi', 'approved')
-      .eq('users.role', 'siswa');
+  if (statusFilter && statusFilter !== 'semua') {
+    siswaQuery = siswaQuery.eq('status_penempatan', statusFilter);
+  }
 
-    if (statusFilter && statusFilter !== 'semua') {
-      siswaQuery = siswaQuery.eq('status_penempatan', statusFilter);
+  if (statusPendidikanFilter && statusPendidikanFilter !== 'semua') {
+    siswaQuery = siswaQuery.eq('status_pendidikan', statusPendidikanFilter);
+  }
+
+  if (kelasFilter) {
+    if (kelasFilter === 'unassigned' || kelasFilter === 'tanpa_kelas') {
+      siswaQuery = siswaQuery.is('kelas_id', null);
+    } else {
+      siswaQuery = siswaQuery.eq('kelas_id', kelasFilter);
     }
+  }
 
-    if (statusPendidikanFilter && statusPendidikanFilter !== 'semua') {
-      siswaQuery = siswaQuery.eq('status_pendidikan', statusPendidikanFilter);
-    }
+  if (search) {
+    siswaQuery = siswaQuery.ilike('users.name', `%${search}%`);
+  }
 
-    if (kelasFilter) {
-      if (kelasFilter === 'unassigned' || kelasFilter === 'tanpa_kelas') {
-        siswaQuery = siswaQuery.is('kelas_id', null);
-      } else {
-        siswaQuery = siswaQuery.eq('kelas_id', kelasFilter);
-      }
-    }
+  if (perusahaanFilter) {
+    siswaQuery = siswaQuery.eq('perusahaan_id', perusahaanFilter);
+  }
 
-    if (search) {
-      siswaQuery = siswaQuery.ilike('users.name', `%${search}%`);
-    }
+  if (batchFilter) {
+    siswaQuery = siswaQuery.eq('batch_id', batchFilter);
+  }
 
-    if (perusahaanFilter) {
-      siswaQuery = siswaQuery.eq('perusahaan_id', perusahaanFilter);
-    }
+  if (keberangkatanFilter === 'sudah') {
+    siswaQuery = siswaQuery.not('tanggal_berangkat', 'is', null);
+  } else if (keberangkatanFilter === 'belum') {
+    siswaQuery = siswaQuery.is('tanggal_berangkat', null);
+  }
 
-    if (batchFilter) {
-      siswaQuery = siswaQuery.eq('batch_id', batchFilter);
-    }
-
-    if (keberangkatanFilter === 'sudah') {
-      siswaQuery = siswaQuery.not('tanggal_berangkat', 'is', null);
-    } else if (keberangkatanFilter === 'belum') {
-      siswaQuery = siswaQuery.is('tanggal_berangkat', null);
-    }
-
-    const { data, count, error } = await siswaQuery
-      .order('id', { ascending: sortOrder === 'asc' })
-      .range(from, to);
+  const { data, count, error } = await siswaQuery
+    .order('id', { ascending: sortOrder === 'asc' })
+    .range(from, to);
 
     if (error) return { error: error.message };
     
@@ -341,40 +328,6 @@ export async function getSiswaApprovedAction(
     }).filter((item): item is NonNullable<typeof item> => item !== null);
 
     return { data: mappedData, total: count || 0, limit };
-  }
-
-  const { data, count, error } = await query
-    .order('created_at', { ascending: sortOrder === 'asc' })
-    .range(from, to);
-
-  if (error) return { error: error.message };
-
-  const mappedData = (data || []).map(d => {
-    if (!d) return null;
-    const siswaObj = Array.isArray(d.siswa) ? d.siswa[0] : (d.siswa as any);
-    const perusahaanObj = siswaObj?.perusahaan ? (Array.isArray(siswaObj.perusahaan) ? siswaObj.perusahaan[0] : siswaObj.perusahaan) : null;
-    return {
-      id: d.id || '',
-      name: d.name || 'Siswa',
-      email: d.email || '',
-      phone: d.phone || '',
-      created_at: d.created_at || null,
-      siswa: siswaObj ? {
-        id: siswaObj.id || '',
-        status_penempatan: siswaObj.status_penempatan || 'belum',
-        status_pendidikan: siswaObj.status_pendidikan || 'aktif',
-        perusahaan_id: siswaObj.perusahaan_id || null,
-        batch_id: siswaObj.batch_id || null,
-        batch: siswaObj.batch || null,
-        tanggal_berangkat: siswaObj.tanggal_berangkat || null,
-        kelas_id: siswaObj.kelas_id || null,
-        master_kelas: siswaObj.master_kelas || null,
-        perusahaan: perusahaanObj ? { nama: perusahaanObj.nama || '' } : null
-      } : null
-    };
-  }).filter((item): item is NonNullable<typeof item> => item !== null);
-
-  return { data: mappedData, total: count || 0, limit };
 }
 
 export async function assignSiswaPerusahaanAction(

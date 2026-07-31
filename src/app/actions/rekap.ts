@@ -75,7 +75,13 @@ export async function getRekapAbsensiAction(year: number, month: number, perusah
     if (studentsError) throw studentsError;
 
     let students = rawStudents || [];
-    if (statusPendidikan && statusPendidikan !== 'all') {
+    if (statusPendidikan === 'aktif') {
+      students = students.filter(s => {
+        const siswaData = Array.isArray(s.siswa) ? s.siswa[0] : (s.siswa as any);
+        const st = siswaData?.status_pendidikan || 'aktif';
+        return st === 'aktif' || st === 'belum_mulai';
+      });
+    } else if (statusPendidikan && statusPendidikan !== 'all') {
       students = students.filter(s => {
         const siswaData = Array.isArray(s.siswa) ? s.siswa[0] : (s.siswa as any);
         const st = siswaData?.status_pendidikan || 'aktif';

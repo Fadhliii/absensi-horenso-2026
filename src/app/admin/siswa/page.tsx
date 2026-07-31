@@ -41,9 +41,10 @@ export default function SiswaPage() {
   const [kelasFilter, setKelasFilter] = useState('');
   const [statusPendidikanFilter, setStatusPendidikanFilter] = useState('semua');
   const [keberangkatanFilter, setKeberangkatanFilter] = useState('semua');
+  const [tabGroup, setTabGroup] = useState<'aktif' | 'nonaktif' | 'semua'>('aktif');
   const [sortOrder, setSortOrder] = useState('desc');
   const [total, setTotal] = useState(0);
-  
+
   const [perusahaanList, setPerusahaanList] = useState<{id: string, nama: string}[]>([]);
   const [modalBatchList, setModalBatchList] = useState<{id: string, nama_batch: string, tanggal_berangkat?: string | null}[]>([]);
   const [filterBatchList, setFilterBatchList] = useState<{id: string, nama_batch: string}[]>([]);
@@ -97,7 +98,7 @@ export default function SiswaPage() {
     setLoading(true);
     setPageError('');
     try {
-      const result = await getSiswaApprovedAction(page, search, statusFilter, perusahaanFilter, keberangkatanFilter, sortOrder, batchFilter, kelasFilter, statusPendidikanFilter);
+      const result = await getSiswaApprovedAction(page, search, statusFilter, perusahaanFilter, keberangkatanFilter, sortOrder, batchFilter, kelasFilter, statusPendidikanFilter, tabGroup);
       if (result?.data) {
         setData(result.data as any);
         setTotal(result.total || 0);
@@ -109,7 +110,7 @@ export default function SiswaPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, statusFilter, perusahaanFilter, keberangkatanFilter, sortOrder, batchFilter, kelasFilter, statusPendidikanFilter]);
+  }, [page, search, statusFilter, perusahaanFilter, keberangkatanFilter, sortOrder, batchFilter, kelasFilter, statusPendidikanFilter, tabGroup]);
 
   useEffect(() => {
     fetchPerusahaan();
@@ -232,6 +233,40 @@ export default function SiswaPage() {
           </div>
         )}
 
+        {/* TAB NAVIGASI KELOMPOK SISWA */}
+        <div className="flex border-b-2 border-black mb-6 bg-white neo-card p-1.5 gap-2 flex-wrap">
+          <button
+            onClick={() => { setTabGroup('aktif'); setPage(1); }}
+            className={`px-4 py-2 text-xs font-black uppercase transition-all flex items-center gap-1.5 neo-btn ${
+              tabGroup === 'aktif'
+                ? 'bg-[#16a34a] text-white shadow-sm'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            🟢 Siswa Aktif
+          </button>
+          <button
+            onClick={() => { setTabGroup('nonaktif'); setPage(1); }}
+            className={`px-4 py-2 text-xs font-black uppercase transition-all flex items-center gap-1.5 neo-btn ${
+              tabGroup === 'nonaktif'
+                ? 'bg-[#dc2626] text-white shadow-sm'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            🔴 Siswa Nonaktif / Berangkat
+          </button>
+          <button
+            onClick={() => { setTabGroup('semua'); setPage(1); }}
+            className={`px-4 py-2 text-xs font-black uppercase transition-all flex items-center gap-1.5 neo-btn ${
+              tabGroup === 'semua'
+                ? 'bg-[#0f172a] text-white shadow-sm'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            📋 Semua Siswa
+          </button>
+        </div>
+
         <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6">
           <div className="relative flex-1 max-w-md">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -262,6 +297,7 @@ export default function SiswaPage() {
               <option value="semua">Semua Status Pendidik</option>
               <option value="aktif">🟢 Aktif Belajar</option>
               <option value="belum_mulai">⚪ Belum Mulai Kelas</option>
+              <option value="nonaktif">🔴 Nonaktif (7+ Hari)</option>
               <option value="tunggu_terbang">🟡 Tunggu Terbang</option>
               <option value="alumni">🔵 Alumni</option>
               <option value="dropout">🔴 Drop Out</option>
@@ -415,7 +451,11 @@ export default function SiswaPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col gap-1 items-start">
-                          {s.siswa?.status_pendidikan === 'belum_mulai' ? (
+                          {s.siswa?.status_pendidikan === 'nonaktif' ? (
+                            <span className="text-[10px] font-black text-white bg-[#dc2626] px-2 py-0.5 border border-black uppercase">
+                              🔴 Nonaktif (7+ Hari)
+                            </span>
+                          ) : s.siswa?.status_pendidikan === 'belum_mulai' ? (
                             <span className="text-[10px] font-black text-black bg-gray-200 px-2 py-0.5 border border-black uppercase">
                               ⚪ Belum Mulai
                             </span>

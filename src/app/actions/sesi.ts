@@ -62,8 +62,50 @@ export async function closeExpiredSessions() {
 
     // 3. JADWAL OTOMATIS: Auto open/close daily sessions based on schedule settings
     await processAutoDailySessions();
+
+    // 4. AUTO NONAKTIF: Otomatis nonaktifkan siswa yang > 7 hari tidak ada presensi
+    await autoDeactivateInactiveStudents();
   } catch (err) {
     console.error('Gagal menutup sesi / auto-approve absensi:', err);
+  }
+}
+
+// Helper untuk otomatis mengubah status siswa > 7 hari tidak absen menjadi 'nonaktif'
+async function autoDeactivateInactiveStudents() {
+  try {
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+    const sevenDaysAgoIso = new Date(Date.now() - SEVEN_DAYS_MS).toISOString();
+
+    // 1. Ambil siswa berstatus 'aktif'
+    const { data: activeSiswa } = await supabase
+      .from('siswa')
+      .select('id, user_id, status_pendidikan')
+      .or('status_pendidikan.eq.aktif,status_pendidikan.is.null');
+
+    if (!activeSiswa || activeSiswa.length === 0) return;
+
+    const studentUserIds = activeSiswa.map(s => s.user_id);
+
+    // 2. Cari presensi siswa dalam 7 hari terakhir
+    const { data: recentAbsensi } = await supabase
+      .from('absensi')
+      .select('siswa_id')
+      .in('siswa_id', studentUserIds)
+      .gte('waktu_scan', sevenDaysAgoIso);
+
+    const activeUserIdsWithRecentScan = new Set(recentAbsensi?.map(a => a.siswa_id) || []);
+
+    // 3. Siswa aktif yang TIDAK punya presensi dalam 7 hari terakhir
+    const inactiveUserIds = studentUserIds.filter(userId => !activeUserIdsWithRecentScan.has(userId));
+
+    if (inactiveUserIds.length > 0) {
+      await supabase
+        .from('siswa')
+        .update({ status_pendidikan: 'nonaktif' })
+        .in('user_id', inactiveUserIds);
+    }
+  } catch (err) {
+    console.error('Gagal auto-deactivate inactive students:', err);
   }
 }
 
