@@ -10,13 +10,14 @@ import {
   updatePerusahaanBatchAction,
   deletePerusahaanBatchAction,
   getUnassignedSiswaAction,
-  bulkAssignSiswaBatchAction
+  bulkAssignSiswaBatchAction,
+  getSiswaTanpaKaishaAction
 } from '@/app/actions/master';
 import { logoutAction } from '@/app/actions/auth';
 import IndonesianClock from '@/components/IndonesianClock';
 import { 
   Plus, Edit2, Trash2, Search, LogOut, ArrowLeft, 
-  Layers, User, Calendar, Building2, Eye, ChevronRight, CheckSquare, Square, Users, X
+  Layers, User, Calendar, Building2, Eye, ChevronRight, CheckSquare, Square, Users, X, UserX
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -52,6 +53,7 @@ type PerusahaanHierarchy = {
 
 export default function PerusahaanPage() {
   const [data, setData] = useState<PerusahaanHierarchy[]>([]);
+  const [siswaTanpaKaisha, setSiswaTanpaKaisha] = useState<{ id: string; user_id: string; name: string; email: string; phone: string; created_at?: string; status_pendidikan?: string; nama_kelas?: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   
@@ -86,7 +88,10 @@ export default function PerusahaanPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const result = await getPerusahaanHierarchyAction(search);
+    const [result, tanpaKaishaRes] = await Promise.all([
+      getPerusahaanHierarchyAction(search),
+      getSiswaTanpaKaishaAction()
+    ]);
     if (result.data) {
       setData(result.data);
       // Sync detail company if active
@@ -94,6 +99,9 @@ export default function PerusahaanPage() {
         const updatedDetail = result.data.find(p => p.id === detailCompany.id);
         if (updatedDetail) setDetailCompany(updatedDetail);
       }
+    }
+    if (tanpaKaishaRes.data) {
+      setSiswaTanpaKaisha(tanpaKaishaRes.data as any);
     }
     setLoading(false);
   }, [search, detailCompany]);
@@ -362,6 +370,88 @@ export default function PerusahaanPage() {
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Dedicated Table: Siswa Belum Dapat Kaisha */}
+        <div className="mt-8 bg-white neo-card neo-shadow-md overflow-hidden">
+          <div className="p-4 bg-[#ffcc80] border-b-3 border-black flex justify-between items-center">
+            <h2 className="text-sm font-black text-black uppercase tracking-wide flex items-center gap-2">
+              <UserX className="w-4 h-4 text-black" /> Daftar Siswa Belum Dapat Kaisha / Perusahaan Mitra ({siswaTanpaKaisha.length})
+            </h2>
+            <span className="text-xs font-black text-black uppercase">
+              Siswa yang belum ditempatkan di Kaisha mana pun
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-black text-white text-xs font-black uppercase tracking-wider border-b-3 border-black">
+                  <th className="p-3 text-center w-12">#</th>
+                  <th className="p-3">Nama Siswa</th>
+                  <th className="p-3">Email & Kontak</th>
+                  <th className="p-3 text-center">Status Pendidikan</th>
+                  <th className="p-3 text-center">Kelas</th>
+                  <th className="p-3 text-center">Aksi Quick Assign</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y-2 divide-black text-xs font-bold text-black">
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-gray-500 animate-pulse font-black uppercase">
+                      Memuat Data Siswa Belum Dapat Kaisha...
+                    </td>
+                  </tr>
+                ) : siswaTanpaKaisha.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-black font-black uppercase bg-[#e8f5e9]">
+                      🎉 Semuanya Berhasil! Semua siswa sudah mendapatkan Kaisha (Perusahaan Mitra).
+                    </td>
+                  </tr>
+                ) : (
+                  siswaTanpaKaisha.map((s, idx) => (
+                    <tr key={s.id} className="hover:bg-[#fff3e0] transition-colors">
+                      <td className="p-3 text-center font-black">{idx + 1}</td>
+                      <td className="p-3">
+                        <div className="font-black text-black uppercase text-sm flex items-center gap-2">
+                          <User className="w-4 h-4 text-black shrink-0" />
+                          <span>{s.name}</span>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="space-y-0.5">
+                          <p className="font-bold text-black">{s.email}</p>
+                          <p className="text-[11px] text-gray-600">{s.phone || '-'}</p>
+                        </div>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className="px-2.5 py-1 neo-badge bg-[#74ee15] text-black text-xs font-black uppercase">
+                          {s.status_pendidikan || 'aktif'}
+                        </span>
+                      </td>
+                      <td className="p-3 text-center">
+                        {s.nama_kelas ? (
+                          <span className="px-2 py-0.5 neo-border bg-yellow-200 text-black text-xs font-black uppercase">
+                            🎓 {s.nama_kelas}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-gray-500 font-bold uppercase">Tanpa Kelas</span>
+                        )}
+                      </td>
+                      <td className="p-3 text-center">
+                        <Link
+                          href={`/admin/siswa?search=${encodeURIComponent(s.name)}`}
+                          className="inline-flex items-center px-3 py-1 text-xs text-black bg-[#ffe600] hover:bg-[#ebd300] neo-btn font-black uppercase"
+                        >
+                          🔗 Assign Kaisha
+                        </Link>
                       </td>
                     </tr>
                   ))

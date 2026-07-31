@@ -593,4 +593,38 @@ export async function getPublicPerusahaanWithBatchesAction() {
   };
 }
 
+export async function getSiswaTanpaKaishaAction() {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('siswa')
+      .select(`
+        id, user_id, status_penempatan, status_pendidikan, kelas_id, master_kelas (nama_kelas),
+        users!inner (id, name, email, phone, created_at)
+      `)
+      .is('perusahaan_id', null)
+      .eq('users.status_registrasi', 'approved')
+      .eq('users.role', 'siswa');
+
+    if (error) return { error: error.message };
+
+    const mappedData = (data || []).map(d => {
+      const user = Array.isArray(d.users) ? d.users[0] : (d.users as any);
+      return {
+        id: d.id,
+        user_id: user?.id || '',
+        name: user?.name || 'Siswa',
+        email: user?.email || '',
+        phone: user?.phone || '',
+        created_at: user?.created_at || null,
+        status_pendidikan: d.status_pendidikan || 'aktif',
+        nama_kelas: (d.master_kelas as any)?.nama_kelas || null
+      };
+    });
+
+    return { data: mappedData };
+  } catch (err: any) {
+    return { error: err.message || 'Gagal mengambil data siswa tanpa Kaisha.' };
+  }
+}
+
 

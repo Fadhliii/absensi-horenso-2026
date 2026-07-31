@@ -489,25 +489,29 @@ export default function SiswaPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        {s.siswa?.status_penempatan === 'sudah' ? (
+                        {s.siswa?.perusahaan_id ? (
                           <div className="flex flex-col gap-1 items-start">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-900 border border-green-300">
-                              {s.siswa?.perusahaan?.nama || 'Ada Perusahaan'}
+                            <span className="inline-flex items-center px-2 py-0.5 text-xs font-black bg-[#74ee15] text-black border border-black uppercase">
+                              🏢 {s.siswa?.perusahaan?.nama || 'Ada Kaisha'}
                             </span>
-                            {s.siswa?.batch && (
-                              <span className="text-xs text-gray-900 font-bold bg-gray-100 px-2 py-0.5 rounded-md border border-gray-300">
-                                Batch {s.siswa.batch}
+                            {s.siswa?.batch ? (
+                              <span className="text-xs text-black font-black bg-purple-200 px-2 py-0.5 neo-border uppercase">
+                                📦 Batch {s.siswa.batch}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-amber-900 font-bold bg-amber-100 px-1.5 py-0.5 border border-amber-400 uppercase">
+                                ⚠️ Belum Di-assign Batch
                               </span>
                             )}
                             {s.siswa?.tanggal_berangkat && (
-                              <span className="text-xs text-blue-900 font-bold bg-blue-100 px-2 py-0.5 rounded-md border border-blue-300 flex items-center">
+                              <span className="text-xs text-white font-black bg-[#1e40af] px-2 py-0.5 neo-border flex items-center">
                                 ✈️ {new Date(s.siswa.tanggal_berangkat).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                               </span>
                             )}
                           </div>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-gray-100 text-gray-800 border border-gray-300">
-                            Belum Ditempatkan
+                          <span className="inline-flex items-center px-2 py-0.5 text-xs font-black bg-gray-200 text-gray-800 border border-black uppercase">
+                            ⚪ Belum Dapat Kaisha
                           </span>
                         )}
                       </td>
