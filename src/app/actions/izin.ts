@@ -129,13 +129,53 @@ export async function getSemuaIzinAction() {
       .from('izin_absen')
       .select(`
         *,
-        users!izin_absen_siswa_id_fkey (name, email),
+        users!izin_absen_siswa_id_fkey (
+          id, 
+          name, 
+          email,
+          siswa (
+            kelas_id,
+            master_kelas (nama_kelas),
+            perusahaan (nama)
+          )
+        ),
         instruktur:users!izin_absen_dilaporkan_ke_fkey (name)
       `)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return { success: true, data: data || [] };
+
+    // Fetch class instructor map for fallback
+    const { data: mappingData } = await supabase
+      .from('kelas_instruktur')
+      .select('kelas_id, users:instruktur_id(name)');
+
+    const classInsMap: Record<string, string> = {};
+    mappingData?.forEach((m: any) => {
+      const insName = Array.isArray(m.users) ? m.users[0]?.name : m.users?.name;
+      if (m.kelas_id && insName) {
+        classInsMap[m.kelas_id] = insName;
+      }
+    });
+
+    const formattedData = (data || []).map((item: any) => {
+      const u = item.users;
+      const s = Array.isArray(u?.siswa) ? u.siswa[0] : u?.siswa;
+      const k = Array.isArray(s?.master_kelas) ? s?.master_kelas[0] : s?.master_kelas;
+      const p = Array.isArray(s?.perusahaan) ? s?.perusahaan[0] : s?.perusahaan;
+
+      const kelasId = s?.kelas_id;
+      const fallbackInsName = kelasId ? classInsMap[kelasId] : null;
+
+      return {
+        ...item,
+        nama_kelas: k?.nama_kelas || 'Tanpa Kelas',
+        nama_perusahaan: p?.nama || 'Belum Ditempatkan',
+        instruktur_name: item.instruktur?.name || fallbackInsName || 'Admin LPK / Instruktur Umum'
+      };
+    });
+
+    return { success: true, data: formattedData };
   } catch (err: any) {
     return { error: err.message || 'Error fetching data', data: [] };
   }

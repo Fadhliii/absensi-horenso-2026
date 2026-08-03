@@ -72,11 +72,11 @@ export default function DaftarIzinPage() {
               <table className="w-full text-left border-collapse border-4 border-black">
                 <thead>
                   <tr className="bg-black text-white">
-                    <th className="p-3 border-r-4 border-black font-black uppercase text-sm">Siswa</th>
+                    <th className="p-3 border-r-4 border-black font-black uppercase text-sm">Siswa & Kelas</th>
                     <th className="p-3 border-r-4 border-black font-black uppercase text-sm">Tanggal Izin</th>
                     <th className="p-3 border-r-4 border-black font-black uppercase text-sm">Jenis</th>
                     <th className="p-3 border-r-4 border-black font-black uppercase text-sm">Alasan</th>
-                    <th className="p-3 border-r-4 border-black font-black uppercase text-sm">Laporan Ke</th>
+                    <th className="p-3 border-r-4 border-black font-black uppercase text-sm">Dilaporkan Ke</th>
                     <th className="p-3 border-r-4 border-black font-black uppercase text-sm">Status</th>
                     <th className="p-3 font-black uppercase text-sm">Aksi</th>
                   </tr>
@@ -85,8 +85,9 @@ export default function DaftarIzinPage() {
                   {data.map((item, index) => (
                     <tr key={item.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-[#f4f4f0]'} border-b-4 border-black hover:bg-[#4deeea] transition-colors group`}>
                       <td className="p-3 border-r-4 border-black">
-                        <p className="font-bold">{item.users?.name}</p>
-                        <p className="text-xs font-semibold text-gray-600">{item.users?.email}</p>
+                        <p className="font-black text-black text-sm">{item.users?.name || 'Siswa'}</p>
+                        <p className="text-xs font-bold text-gray-700">{item.nama_kelas} • {item.nama_perusahaan}</p>
+                        <p className="text-[11px] font-mono text-gray-500">{item.users?.email}</p>
                       </td>
                       <td className="p-3 border-r-4 border-black font-bold whitespace-nowrap">
                         <div className="flex items-center">
@@ -100,10 +101,10 @@ export default function DaftarIzinPage() {
                         </span>
                       </td>
                       <td className="p-3 border-r-4 border-black max-w-xs truncate font-medium" title={item.alasan}>
-                        {item.alasan}
+                        {item.alasan || '-'}
                       </td>
                       <td className="p-3 border-r-4 border-black font-bold text-sm">
-                        {item.instruktur?.name || '-'}
+                        👨‍🏫 {item.instruktur_name || 'Admin LPK / Instruktur Umum'}
                       </td>
                       <td className="p-3 border-r-4 border-black">
                         {item.status === 'pending' && <span className="bg-yellow-200 text-yellow-800 px-2 py-1 text-xs font-black uppercase neo-border">Pending</span>}
