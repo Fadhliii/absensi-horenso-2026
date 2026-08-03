@@ -17,9 +17,10 @@ import { logoutAction } from '@/app/actions/auth';
 import IndonesianClock from '@/components/IndonesianClock';
 import { 
   Plus, Edit2, Trash2, Search, LogOut, ArrowLeft, 
-  Layers, User, Calendar, Building2, Eye, ChevronRight, CheckSquare, Square, Users, X, UserX
+  Layers, User, Calendar, Building2, Eye, ChevronRight, CheckSquare, Square, Users, X, UserX, AlertTriangle
 } from 'lucide-react';
 import Link from 'next/link';
+import { checkCompanySimilarity } from '@/lib/companySimilarityEngine';
 
 type SiswaItem = {
   id: string;
@@ -65,7 +66,28 @@ export default function PerusahaanPage() {
 
   // Modal state
   const [modalCompany, setModalCompany] = useState<{ isOpen: boolean; mode: 'create' | 'edit'; data?: PerusahaanHierarchy }>({ isOpen: false, mode: 'create' });
+  const [companyError, setCompanyError] = useState('');
+  const [liveCompanyInput, setLiveCompanyInput] = useState('');
   const [modalBatch, setModalBatch] = useState<{ isOpen: boolean; mode: 'create' | 'edit'; perusahaanId?: string; data?: BatchItem }>({ isOpen: false, mode: 'create' });
+
+  // Calculate live similarity warning
+  const liveSimilarityWarning = (() => {
+    if (!liveCompanyInput || !liveCompanyInput.trim() || !modalCompany.isOpen) return null;
+    const currentId = modalCompany.data?.id;
+
+    for (const p of data) {
+      if (currentId && p.id === currentId) continue;
+      const res = checkCompanySimilarity(liveCompanyInput, p.nama);
+      if (res.isDuplicate) {
+        return {
+          similarity: res.similarity,
+          matchedName: p.nama,
+          reason: res.reason
+        };
+      }
+    }
+    return null;
+  })();
 
   // Assign Siswa State
   const [modalAssign, setModalAssign] = useState<{ isOpen: boolean; batchId?: string; perusahaanId?: string; batchName?: string }>({ isOpen: false });
@@ -120,15 +142,23 @@ export default function PerusahaanPage() {
   // Submit Perusahaan Form
   async function handleCompanySubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setCompanyError('');
     const formData = new FormData(e.currentTarget);
     
+    let res: any;
     if (modalCompany.mode === 'create') {
-      await createPerusahaanAction(formData);
+      res = await createPerusahaanAction(formData);
     } else if (modalCompany.mode === 'edit' && modalCompany.data) {
-      await updatePerusahaanAction(modalCompany.data.id, formData);
+      res = await updatePerusahaanAction(modalCompany.data.id, formData);
     }
     
+    if (res?.error) {
+      setCompanyError(res.error);
+      return;
+    }
+
     setModalCompany({ isOpen: false, mode: 'create' });
+    setLiveCompanyInput('');
     fetchData();
   }
 
@@ -653,6 +683,14 @@ export default function PerusahaanPage() {
             <h3 className="text-xl font-black text-black uppercase mb-4 border-b-3 border-black pb-2">
               {modalCompany.mode === 'create' ? 'Tambah Perusahaan Mitra Baru' : 'Edit Perusahaan'}
             </h3>
+            
+            {companyError && (
+              <div className="bg-red-100 border-2 border-red-800 text-red-900 font-bold text-xs p-3 neo-border mb-4 flex items-center justify-between">
+                <span>{companyError}</span>
+                <button onClick={() => setCompanyError('')} className="font-black">✕</button>
+              </div>
+            )}
+
             <form onSubmit={handleCompanySubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-black text-black uppercase mb-1">Nama Perusahaan *</label>
@@ -660,11 +698,25 @@ export default function PerusahaanPage() {
                   type="text" 
                   name="nama" 
                   required 
-                  defaultValue={modalCompany.data?.nama} 
+                  defaultValue={modalCompany.data?.nama}
+                  onChange={(e) => setLiveCompanyInput(e.target.value)} 
                   placeholder="Contoh: PT. Ichikoh Indonesia / Toyota Japan Ltd."
                   className="w-full px-3.5 py-2.5 neo-input text-xs"
                 />
               </div>
+
+              {liveSimilarityWarning && (
+                <div className="p-3 bg-red-50 border-2 border-red-600 neo-border rounded flex items-start gap-2">
+                  <span className="text-lg leading-none">🤖</span>
+                  <div>
+                    <p className="font-black text-red-950 text-xs uppercase">Deteksi AI/ML Duplikasi ({Math.round(liveSimilarityWarning.similarity * 100)}% Mirip)</p>
+                    <p className="text-[11px] text-red-900 font-bold mt-0.5">
+                      Nama &quot;{liveCompanyInput}&quot; terdeteksi sangat mirip dengan perusahaan <u>&quot;{liveSimilarityWarning.matchedName}&quot;</u>. Harap gunakan nama lain agar tidak duplikat!
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-black text-black uppercase mb-1">Kontak / No. Telp</label>
                 <input 

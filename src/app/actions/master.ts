@@ -33,14 +33,48 @@ export async function getAllPerusahaanAction() {
   return { data };
 }
 
+import { checkCompanySimilarity } from '@/lib/companySimilarityEngine';
+
+export async function checkPerusahaanDuplicateAction(nama: string, excludeId?: string) {
+  try {
+    if (!nama || !nama.trim()) return { isDuplicate: false };
+    const { data: existingList } = await supabaseAdmin.from('perusahaan').select('id, nama');
+    if (!existingList || existingList.length === 0) return { isDuplicate: false };
+
+    for (const item of existingList) {
+      if (excludeId && item.id === excludeId) continue;
+      const res = checkCompanySimilarity(nama, item.nama);
+      if (res.isDuplicate) {
+        return {
+          isDuplicate: true,
+          similarity: res.similarity,
+          matchedName: item.nama,
+          reason: res.reason
+        };
+      }
+    }
+    return { isDuplicate: false };
+  } catch (err: any) {
+    return { isDuplicate: false };
+  }
+}
+
 export async function createPerusahaanAction(formData: FormData) {
   const nama = formData.get('nama') as string;
   const alamat = formData.get('alamat') as string;
   const kontak = formData.get('kontak') as string;
 
-  if (!nama) return { error: 'Nama perusahaan wajib diisi.' };
+  if (!nama || !nama.trim()) return { error: 'Nama perusahaan wajib diisi.' };
 
-  const { error } = await supabaseAdmin.from('perusahaan').insert([{ nama, alamat, kontak }]);
+  // AI / ML Duplicate & Similarity Check
+  const duplicateCheck = await checkPerusahaanDuplicateAction(nama);
+  if (duplicateCheck.isDuplicate) {
+    return { 
+      error: `❌ PERUSAHAAN GAGAL DITAMBAHKAN: Nama '${nama}' terdeteksi duplikat / sangat mirip dengan perusahaan '${duplicateCheck.matchedName}' yang sudah ada (${Math.round((duplicateCheck.similarity || 0) * 100)}% mirip). Harap periksa kembali!` 
+    };
+  }
+
+  const { error } = await supabaseAdmin.from('perusahaan').insert([{ nama: nama.trim(), alamat, kontak }]);
   if (error) return { error: error.message };
 
   revalidatePath('/admin/perusahaan');
@@ -52,9 +86,17 @@ export async function updatePerusahaanAction(id: string, formData: FormData) {
   const alamat = formData.get('alamat') as string;
   const kontak = formData.get('kontak') as string;
 
-  if (!nama) return { error: 'Nama perusahaan wajib diisi.' };
+  if (!nama || !nama.trim()) return { error: 'Nama perusahaan wajib diisi.' };
 
-  const { error } = await supabaseAdmin.from('perusahaan').update({ nama, alamat, kontak }).eq('id', id);
+  // AI / ML Duplicate & Similarity Check
+  const duplicateCheck = await checkPerusahaanDuplicateAction(nama, id);
+  if (duplicateCheck.isDuplicate) {
+    return { 
+      error: `❌ PERUSAHAAN GAGAL DIUBAH: Nama '${nama}' terdeteksi duplikat / sangat mirip dengan perusahaan '${duplicateCheck.matchedName}' yang sudah ada (${Math.round((duplicateCheck.similarity || 0) * 100)}% mirip). Harap periksa kembali!` 
+    };
+  }
+
+  const { error } = await supabaseAdmin.from('perusahaan').update({ nama: nama.trim(), alamat, kontak }).eq('id', id);
   if (error) return { error: error.message };
 
   revalidatePath('/admin/perusahaan');
